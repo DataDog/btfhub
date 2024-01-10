@@ -13,7 +13,7 @@ jobs:
     steps:
       - name: Install needed amazon packages
         run: |
-          yum install -y yum-utils tar gzip xz clang make cmake git libdwarf-devel elfutils-libelf-devel elfutils-devel
+          yum install -y yum-utils wget tar gzip xz clang make cmake git libdwarf-devel elfutils-libelf-devel elfutils-devel
           yum-config-manager -y --enable amzn2-core-debuginfo
           yum-config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo
           yum install -y gh
@@ -48,6 +48,14 @@ jobs:
           echo "/usr/local/lib" >> /etc/ld.so.conf.d/pahole.conf
           ldconfig
         shell: bash
+
+      - name: build tar
+        run: |
+          wget https://ftpmirror.gnu.org/tar/tar-1.35.tar.xz
+          tar xf tar-1.35.tar.xz
+          cd tar-1.35
+          ./configure --prefix=/usr
+          make install
 
       - name: Compile BTFHub Tool
         run: |
