@@ -39,7 +39,7 @@ jobs:
           cd build
           cmake -D__LIB=lib ..
           sudo make install
-          echo "/usr/local/lib" >> /etc/ld.so.conf.d/pahole.conf
+          echo "/usr/local/lib" | sudo tee /etc/ld.so.conf.d/pahole.conf
           sudo ldconfig
         shell: bash
     #
