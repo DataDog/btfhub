@@ -1,5 +1,6 @@
 name: Update BTFHub Archive for Amazon Linux 2
 on:
+  push: {}
   schedule:
     - cron: "0 1 * * *"
   workflow_dispatch: {}
@@ -25,7 +26,7 @@ jobs:
           gh auth login --with-token <<<'${{ secrets.DD_BTFHUB_BOT_GITHUB_TOKEN }}'
 
       - name: Check out BTFHub
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
         with:
           token: ${{ secrets.DD_BTFHUB_BOT_GITHUB_TOKEN }}
           submodules: 'recursive'
@@ -54,7 +55,7 @@ jobs:
         shell: bash
 
       - name: Checkout BTFHub Archive
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
         with:
           repository: DataDog/btfhub-archive
           token: ${{ secrets.DD_BTFHUB_BOT_GITHUB_TOKEN }}
