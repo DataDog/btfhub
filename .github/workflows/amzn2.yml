@@ -1,0 +1,82 @@
+name: Update BTFHub Archive for Amazon Linux 2
+on:
+  schedule:
+    - cron: "0 1 * * *"
+  workflow_dispatch: {}
+jobs:
+  amazon-update:
+    name: update amazon linux 2 btfhub-archive
+    runs-on: ubuntu-latest
+    container:
+      image: amazonlinux:2
+    steps:
+      - name: Install needed amazon packages
+        run: |
+          yum install -y yum-utils tar gzip xz clang make cmake git libdwarf-devel elfutils-libelf-devel elfutils-devel
+          yum-config-manager -y --enable amzn2-core-debuginfo
+          yum-config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo
+          yum install -y gh
+          echo "[amzn2-core-debuginfo-alt]" >> /etc/yum.repos.d/amzn2-core.repo
+          awk '/^\[/{found=""} /^\[amzn2-core-debuginfo]$/{found=1;next} found && NF' /etc/yum.repos.d/amzn2-core.repo | sed 's/\$basearch/aarch64/g' >> /etc/yum.repos.d/amzn2-core.repo
+        shell: bash
+
+      - name: Authenticate
+        run: |
+          gh auth login --with-token <<<'${{ secrets.DD_BTFHUB_BOT_GITHUB_TOKEN }}'
+
+      - name: Check out BTFHub
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.DD_BTFHUB_BOT_GITHUB_TOKEN }}
+          submodules: 'recursive'
+
+      - run: git config --system --add safe.directory $(pwd)
+        shell: bash
+
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '1.20'
+
+      - name: build pahole
+        run: |
+          cd ./3rdparty/dwarves
+          mkdir build
+          cd build
+          cmake -D__LIB=lib -DDWARF_INCLUDE_DIR=/usr/include ..
+          make install
+          echo "/usr/local/lib" >> /etc/ld.so.conf.d/pahole.conf
+          ldconfig
+        shell: bash
+
+      - name: Compile BTFHub Tool
+        run: |
+          make
+        shell: bash
+
+      - name: Checkout BTFHub Archive
+        uses: actions/checkout@v4
+        with:
+          repository: DataDog/btfhub-archive
+          token: ${{ secrets.DD_BTFHUB_BOT_GITHUB_TOKEN }}
+          path: archive
+          sparse-checkout: |
+            amzn/2
+
+      - name: Fetch and Generate new BTFs (AMAZON 2)
+        run: |
+          ./btfhub -workers 6 -d amzn -r 2 -a x86_64
+          ./btfhub -workers 6 -d amzn -r 2 -a arm64
+
+      - name: Check Status
+        run: |
+          cd archive
+          git status
+
+      - name: Commit and Push to BTFHub Archive
+        run: |
+          cd archive
+          git config --local user.name "Bryce Kahle"
+          git config --local user.email "bryce.kahle@datadoghq.com"
+          git add -A
+          git diff-index --quiet HEAD || git commit -m "amzn 2 update on $(date -u +%Y-%m-%d)"
+          git push

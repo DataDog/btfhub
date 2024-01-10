@@ -6,7 +6,7 @@ inputs:
   go-version:
     description: go version
     required: true
-    default: "1.19.5"
+    default: "1.20.13"
 runs:
   using: composite
   steps:
@@ -75,10 +75,6 @@ runs:
     - name: Install pahole
       run: |
         ./3rdparty/pahole.sh
-      shell: bash
-    - name: Install bpftool
-      run: |
-        ./3rdparty/bpftool.sh
       shell: bash
     - name: Install staticchecker
       run: |

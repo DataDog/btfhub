@@ -4,31 +4,27 @@ on:
     - cron: "0 1 * * *"
   workflow_dispatch: {}
 jobs:
-  amazon-update:
-    name: Update Amazon 2 BTF Archive
+  update-archive:
+    name: update btfhub-archive
     runs-on: ubuntu-latest
-    container:
-      image: amazonlinux:2
     steps:
-      - name: Install needed amazon packages
+    #
+      - name: Install needed ubuntu packages
         run: |
-          yum install -y yum-utils tar gzip xz clang make cmake git libdwarf-devel elfutils-libelf-devel elfutils-devel
-          yum-config-manager -y --enable amzn2-core-debuginfo
-          yum-config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo
-          yum install -y gh
-          echo "[amzn2-core-debuginfo-alt]" >> /etc/yum.repos.d/amzn2-core.repo
-          awk '/^\[/{found=""} /^\[amzn2-core-debuginfo]$/{found=1;next} found && NF' /etc/yum.repos.d/amzn2-core.repo | sed 's/\$basearch/aarch64/g' >> /etc/yum.repos.d/amzn2-core.repo
+          export DEBIAN_FRONTEND=noninteractive
+          sudo dpkg --purge unattended-upgrades
+          sudo apt-get update
+          sudo apt-get install -y clang bsdutils build-essential pkgconf zlib1g-dev libdwarf-dev libelf-dev software-properties-common devscripts ubuntu-dev-tools
         shell: bash
-
+    #
       - name: Authenticate
         run: |
-          gh auth login --with-token <<<'${{ secrets.PAT_RAFAEL }}'
-
+          gh auth login --with-token <<<'${{ secrets.DD_BTFHUB_BOT_GITHUB_TOKEN }}'
+    #
       - name: Check out BTFHub
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
-          submodules: 'recursive'
-          token: ${{ secrets.PAT_RAFAEL }}
+          token: ${{ secrets.DD_BTFHUB_BOT_GITHUB_TOKEN }}
 
       - run: git config --system --add safe.directory $(pwd)
         shell: bash
@@ -36,150 +32,40 @@ jobs:
       - uses: actions/setup-go@v4
         with:
           go-version: '1.20'
-
+    #
       - name: build pahole
         run: |
           cd ./3rdparty/dwarves
           mkdir build
           cd build
-          cmake -D__LIB=lib -DDWARF_INCLUDE_DIR=/usr/include ..
+          cmake -D__LIB=lib ..
           make install
           echo "/usr/local/lib" >> /etc/ld.so.conf.d/pahole.conf
           ldconfig
         shell: bash
-
-      - name: Compile BTFHub Tool
-        run: |
-          make
-        shell: bash
-
-      - name: Checkout BTFHub Archive
-        uses: actions/checkout@v3
-        with:
-          repository: aquasecurity/btfhub-archive
-          token: ${{ secrets.PAT_RAFAEL }}
-          path: archive
-          sparse-checkout: |
-            amzn
-
-      - name: Fetch and Generate new BTFs (AMAZON 2)
-        run: |
-          ./btfhub -workers 6 -d amzn -r 2
-
-      - name: Check Status
-        run: |
-          cd archive
-          git status
-
-      - name: Commit and Push to BTFHub Archive
-        run: |
-          cd archive
-          git config --local user.name "Rafael David Tinoco"
-          git config --local user.email "rafaeldtinoco@gmail.com"
-          git add -A
-          git diff-index --quiet HEAD || git commit -m "Update BTFHUB Archive from BTFHUB"
-          git push
-
-  build:
-    name: Update BTF Archive
-    env:
-      HOME: "/tmp/root"
-      GOPATH: "/tmp/go"
-      GOCACHE: "/tmp/go-cache"
-      GOROOT: "/usr/local/go"
-    runs-on:
-      [
-        "github-self-hosted_ami-0f4881c8d69684001_${{ github.event.number }}-${{ github.run_id }}",
-      ]
-    steps:
-    #
-      - name: Setup Swap File
-        run: |
-          sudo fallocate -l 16G /swapfile
-          sudo chmod 600 /swapfile
-          sudo mkswap /swapfile
-          sudo swapon /swapfile
-        shell: bash
-    #
-      - name: Install needed ubuntu packages
-        run: |
-          export DEBIAN_FRONTEND=noninteractive
-          sudo dpkg --purge unattended-upgrades
-          sudo apt-get update
-          sudo apt-get install -y bsdutils build-essential pkgconf
-          sudo apt-get install -y zlib1g-dev libelf-dev
-          sudo apt-get install -y software-properties-common
-          sudo apt-get install -y devscripts ubuntu-dev-tools
-        shell: bash
-    #
-      - name: Update alternatives for LLVM
-        run: |
-          export DEBIAN_FRONTEND=noninteractive
-          sudo update-alternatives --remove-all cc || true
-          sudo update-alternatives --remove-all clang || true
-          sudo update-alternatives --remove-all clang++ || true
-          sudo update-alternatives --remove-all llc || true
-          sudo update-alternatives --remove-all lld || true
-          sudo update-alternatives --remove-all clangd || true
-          sudo update-alternatives --remove-all clang-format || true
-          sudo update-alternatives --remove-all llvm-strip || true
-          sudo update-alternatives --remove-all llvm-config || true
-          sudo update-alternatives --remove-all ld.lld || true
-          sudo update-alternatives --remove-all llvm-ar || true
-          sudo update-alternatives --remove-all llvm-nm || true
-          sudo update-alternatives --remove-all llvm-objcopy || true
-          sudo update-alternatives --remove-all llvm-objdump || true
-          sudo update-alternatives --remove-all llvm-readelf || true
-          sudo update-alternatives --remove-all opt || true
-          sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-14 140 \
-            --slave /usr/bin/clang++ clang++ /usr/bin/clang++-14 \
-            --slave /usr/bin/clangd clangd /usr/bin/clangd-14 \
-            --slave /usr/bin/clang-format clang-format /usr/bin/clang-format-14 \
-            --slave /usr/bin/lld lld /usr/bin/lld-14 \
-            --slave /usr/bin/llc llc /usr/bin/llc-14 \
-            --slave /usr/bin/llvm-strip llvm-strip /usr/bin/llvm-strip-14 \
-            --slave /usr/bin/llvm-config llvm-config /usr/bin/llvm-config-14 \
-            --slave /usr/bin/ld.lld ld.lld /usr/bin/ld.lld-14 \
-            --slave /usr/bin/llvm-ar llvm-ar /usr/bin/llvm-ar-14 \
-            --slave /usr/bin/llvm-nm llvm-nm /usr/bin/llvm-nm-14 \
-            --slave /usr/bin/llvm-objcopy llvm-objcopy /usr/bin/llvm-objcopy-14 \
-            --slave /usr/bin/llvm-objdump llvm-objdump /usr/bin/llvm-objdump-14 \
-            --slave /usr/bin/llvm-readelf llvm-readelf /usr/bin/llvm-readelf-14 \
-            --slave /usr/bin/opt opt /usr/bin/opt-14 \
-            --slave /usr/bin/cc cc /usr/bin/clang-14
-        shell: bash
-    #
-      - name: Authenticate
-        run: |
-          gh auth login --with-token <<<'${{ secrets.PAT_RAFAEL }}'
-    #
-      - name: Check out BTFHub
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.PAT_RAFAEL }}
-    #
-      - name: Install pahole
-        run: |
-          ./3rdparty/pahole.sh
-        shell: bash
     #
       - name: Compile BTFHub Tool
-        run: |
-          make
+        run: make
         shell: bash
     #
       - name: Checkout BTFHub Archive
         uses: actions/checkout@v4
         with:
-          repository: aquasecurity/btfhub-archive
+          repository: DataDog/btfhub-archive
+          token: ${{ secrets.DD_BTFHUB_BOT_GITHUB_TOKEN }}
           path: archive
           sparse-checkout: |
             centos
             debian
             fedora
             ol
-            ubuntu            
-
+            ubuntu
+    #
+      - name: Setup git config
+        run: |
+          cd archive
+          git config --local user.name "Bryce Kahle"
+          git config --local user.email "bryce.kahle@datadoghq.com"
     #
       - name: Fetch and Generate new BTFs (UBUNTU)
         run: |
@@ -210,8 +96,6 @@ jobs:
       - name: Commit and Push to BTFHub Archive
         run: |
           cd archive
-          git config --local user.name "Rafael David Tinoco"
-          git config --local user.email "rafaeldtinoco@gmail.com"
           git add -A
-          git diff-index --quiet HEAD || git commit -m "Update BTFHUB Archive from BTFHUB"
+          git diff-index --quiet HEAD || git commit -m "update btfhub-archive on $(date -u +%Y-%m-%d)"
           git push
