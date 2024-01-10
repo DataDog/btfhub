@@ -1,0 +1,105 @@
+name: Update BTFHub Archive for Amazon Linux 1
+on:
+  schedule:
+    - cron: "0 1 * * *"
+  workflow_dispatch: {}
+jobs:
+  amazon-update:
+    name: update amazon linux 1 btfhub-archive
+    runs-on: ubuntu-latest
+    container:
+      image: amazonlinux:1
+    steps:
+      - name: Install needed amazon packages
+        run: |
+          yum install -y yum-utils clang wget bzip2 zlib-devel m4 xz gzip cmake find git
+          yum-config-manager -y --enable amzn-main-debuginfo amzn-updates-debuginfo
+          yum-config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo
+          yum install -y gh
+        shell: bash
+
+      - name: Authenticate
+        run: |
+          gh auth login --with-token <<<'${{ secrets.DD_BTFHUB_BOT_GITHUB_TOKEN }}'
+
+      - name: Check out BTFHub
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.DD_BTFHUB_BOT_GITHUB_TOKEN }}
+          submodules: 'recursive'
+
+      - run: git config --system --add safe.directory $(pwd)
+        shell: bash
+
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '1.20'
+
+      - name: build elfutils
+        run: |
+          wget -nv https://sourceware.org/elfutils/ftp/0.190/elfutils-0.190.tar.bz2
+          tar xf elfutils-0.190.tar.bz2
+          cd elfutils-0.190
+          ./configure --disable-libdebuginfod --disable-debuginfod --disable-demangler
+          make install
+          ldconfig
+
+      - name: build tar
+        run: |
+          wget -nv https://ftpmirror.gnu.org/tar/tar-1.35.tar.xz
+          tar xf tar-1.35.tar.xz
+          cd tar-1.35
+          FORCE_UNSAFE_CONFIGURE=1 ./configure --prefix=/
+          make install
+
+      - name: install newer clang
+        run: |
+          yum remove -y clang
+          wget -nv https://github.com/llvm/llvm-project/releases/download/llvmorg-12.0.1/clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-16.04.tar.xz
+          tar xf clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-16.04.tar.xz
+          mv clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu- clang
+          echo "$GITHUB_WORKSPACE/clang/bin" >> $GITHUB_PATH      
+
+      - name: build pahole
+        run: |
+          cd ./3rdparty/dwarves
+          mkdir build
+          cd build
+          cmake -D__LIB=lib -DDWARF_INCLUDE_DIR=/usr/include ..
+          make install
+          echo "/usr/local/lib" >> /etc/ld.so.conf.d/pahole.conf
+          ldconfig
+        shell: bash
+
+      - name: Compile BTFHub Tool
+        run: |
+          make
+        shell: bash
+
+      - name: Checkout BTFHub Archive
+        uses: actions/checkout@v3
+        with:
+          repository: DataDog/btfhub-archive
+          token: ${{ secrets.DD_BTFHUB_BOT_GITHUB_TOKEN }}
+          path: archive
+          sparse-checkout: |
+            amzn/1
+            amzn/2018
+
+      - name: Fetch and Generate new BTFs (AMAZON 1)
+        run: |
+          ./btfhub -workers 6 -d amzn -r 1 -a x86_64
+
+      - name: Check Status
+        run: |
+          cd archive
+          git status
+
+      - name: Commit and Push to BTFHub Archive
+        run: |
+          cd archive
+          git config --local user.name "Bryce Kahle"
+          git config --local user.email "bryce.kahle@datadoghq.com"
+          git add -A
+          git diff-index --quiet HEAD || git commit -m "amzn 1 update on $(date -u +%Y-%m-%d)"
+          git push
