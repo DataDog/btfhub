@@ -34,6 +34,7 @@ func (d *RHELRepo) GetKernelPackages(
 	_ string,
 	arch string,
 	force bool,
+	kernelModules bool,
 	jobChan chan<- job.Job,
 ) error {
 	altArch := d.archs[arch]
@@ -47,11 +48,11 @@ func (d *RHELRepo) GetKernelPackages(
 	}
 	sort.Sort(pkg.ByVersion(pkgs))
 
-	for _, pkg := range pkgs {
-		err := processPackage(ctx, pkg, workDir, force, jobChan)
+	for _, p := range pkgs {
+		err := processPackage(ctx, p, workDir, force, kernelModules, jobChan)
 		if err != nil {
-			if errors.Is(err, utils.ErrHasBTF) {
-				log.Printf("INFO: kernel %s has BTF already, skipping later kernels\n", pkg)
+			if errors.Is(err, utils.ErrKernelHasBTF) {
+				log.Printf("INFO: kernel %s has BTF already, skipping later kernels\n", p)
 				return nil
 			}
 			return err

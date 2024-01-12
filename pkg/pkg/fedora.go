@@ -34,8 +34,8 @@ func (pkg *FedoraPackage) String() string {
 	return pkg.Name
 }
 
-func (pkg *FedoraPackage) ExtractKernel(ctx context.Context, pkgpath string, vmlinuxPath string) error {
-	return utils.ExtractVmlinuxFromRPM(ctx, pkgpath, vmlinuxPath)
+func (pkg *FedoraPackage) ExtractKernel(ctx context.Context, pkgpath string, extractDir string, kernelModules bool) ([]string, error) {
+	return utils.ExtractVmlinuxFromRPM(ctx, pkgpath, extractDir, kernelModules)
 }
 
 func (pkg *FedoraPackage) Download(ctx context.Context, workDir string, force bool) (string, error) {

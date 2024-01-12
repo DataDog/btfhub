@@ -5,35 +5,29 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/aquasecurity/btfhub/pkg/pkg"
-	"github.com/aquasecurity/btfhub/pkg/utils"
 )
 
 type KernelExtractionJob struct {
-	Pkg       pkg.Package
-	WorkDir   string
-	ReplyChan chan interface{}
-	Force     bool
+	Pkg           pkg.Package
+	WorkDir       string
+	ReplyChan     chan any
+	Force         bool
+	KernelModules bool
+}
+
+type KernelExtractReply struct {
+	ExtractDir string
+	Paths      []string
 }
 
 // Do implements the Job interface, and is called by the worker. It downloads
 // the kernel package, extracts the vmlinux file, and replies with the path to
 // the vmlinux file in the reply channel.
 func (job *KernelExtractionJob) Do(ctx context.Context) error {
-
-	vmlinuxName := fmt.Sprintf("vmlinux-%s", job.Pkg.Filename())
-	vmlinuxPath := filepath.Join(job.WorkDir, vmlinuxName)
-
-	if !job.Force && utils.Exists(vmlinuxPath) {
-		job.ReplyChan <- vmlinuxPath // already extracted, reply with path
-		return nil
-	}
-
 	// Download the kernel package
-
 	downloadStart := time.Now()
 	log.Printf("DEBUG: downloading %s\n", job.Pkg)
 
@@ -46,27 +40,26 @@ func (job *KernelExtractionJob) Do(ctx context.Context) error {
 	log.Printf("DEBUG: finished downloading %s in %s\n", job.Pkg, time.Since(downloadStart))
 
 	// Extract downloaded kernel package
-
 	extractStart := time.Now()
 	log.Printf("DEBUG: extracting vmlinux from %s\n", kernPkgPath)
 
-	err = job.Pkg.ExtractKernel(ctx, kernPkgPath, vmlinuxPath)
+	paths, err := job.Pkg.ExtractKernel(ctx, kernPkgPath, job.WorkDir, job.KernelModules)
 	if err != nil {
-		os.Remove(vmlinuxPath)
-		return fmt.Errorf("extracting vmlinux from %s: %s", vmlinuxPath, err)
+		os.RemoveAll(job.WorkDir)
+		return fmt.Errorf("extracting vmlinux from %s: %s", kernPkgPath, err)
 	}
 
-	log.Printf("DEBUG: finished extracting from %s in %s\n", kernPkgPath, time.Since(extractStart))
-
+	log.Printf("DEBUG: finished extracting %d files from %s in %s\n", len(paths), kernPkgPath, time.Since(extractStart))
 	os.Remove(kernPkgPath) // remove downloaded kernel package
 
-	// Reply with the path to the extracted vmlinux file
-
-	job.ReplyChan <- vmlinuxPath
-
+	// Reply with the path to the extracted directory
+	job.ReplyChan <- &KernelExtractReply{
+		ExtractDir: job.WorkDir,
+		Paths:      paths,
+	}
 	return nil
 }
 
-func (job *KernelExtractionJob) Reply() chan<- interface{} {
+func (job *KernelExtractionJob) Reply() chan<- any {
 	return job.ReplyChan
 }

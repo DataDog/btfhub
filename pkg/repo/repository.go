@@ -13,6 +13,7 @@ type Repository interface {
 		release string,
 		arch string,
 		force bool,
+		kernelModules bool,
 		jobChan chan<- job.Job,
 	) error
 }

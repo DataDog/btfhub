@@ -48,6 +48,6 @@ func (pkg *CentOSPackage) Download(ctx context.Context, dir string, force bool) 
 	return rpmpath, nil
 }
 
-func (pkg *CentOSPackage) ExtractKernel(ctx context.Context, pkgpath string, vmlinuxPath string) error {
-	return utils.ExtractVmlinuxFromRPM(ctx, pkgpath, vmlinuxPath)
+func (pkg *CentOSPackage) ExtractKernel(ctx context.Context, pkgpath string, extractDir string, kernelModules bool) ([]string, error) {
+	return utils.ExtractVmlinuxFromRPM(ctx, pkgpath, extractDir, kernelModules)
 }

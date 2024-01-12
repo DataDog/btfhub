@@ -8,7 +8,6 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -16,9 +15,9 @@ import (
 	"github.com/aquasecurity/btfhub/pkg/utils"
 )
 
-func TarballBTF(ctx context.Context, btf string, out string) error {
+func TarballBTF(ctx context.Context, btfDir string, out string) error {
 	// Use external tool for performance reasons
-	return utils.RunCMD(ctx, filepath.Dir(btf), "tar",
+	return utils.RunCMD(ctx, btfDir, "tar",
 		"-cvJ",
 		"--sort=name",
 		"--owner=root:0",
@@ -27,7 +26,7 @@ func TarballBTF(ctx context.Context, btf string, out string) error {
 		"--mtime=@0",
 		"-f",
 		out,
-		filepath.Base(btf),
+		".",
 	)
 }
 

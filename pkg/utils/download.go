@@ -49,7 +49,7 @@ func Download(ctx context.Context, url string, dest io.Writer) error {
 
 	counter := &ProgressCounter{
 		Ctx:  ctx,
-		Op:   "Download",                 // operation
+		Op:   "Downloading",              // operation
 		Name: resp.Request.URL.String(),  // file name
 		Size: uint64(resp.ContentLength), // file length
 	}
@@ -118,7 +118,7 @@ func GetRelativeLinks(ctx context.Context, repoURL string, baseURL string) ([]st
 
 	counter := &ProgressCounter{
 		Ctx:  ctx,
-		Op:   "Download",
+		Op:   "Downloading",
 		Name: resp.Request.URL.String(),
 		Size: uint64(resp.ContentLength),
 	}

@@ -9,10 +9,11 @@ import (
 	"regexp"
 	"sort"
 
+	"golang.org/x/sync/errgroup"
+
 	"github.com/aquasecurity/btfhub/pkg/job"
 	"github.com/aquasecurity/btfhub/pkg/pkg"
 	"github.com/aquasecurity/btfhub/pkg/utils"
-	"golang.org/x/sync/errgroup"
 )
 
 type UbuntuRepo struct {
@@ -51,6 +52,7 @@ func (uRepo *UbuntuRepo) GetKernelPackages(
 	release string,
 	arch string,
 	force bool,
+	kernelModules bool,
 	jobChan chan<- job.Job,
 ) error {
 
@@ -187,7 +189,7 @@ func (uRepo *UbuntuRepo) GetKernelPackages(
 
 		g.Go(func() error {
 			log.Printf("DEBUG: start kernel flavor %s %s (%d pkgs)\n", theFlavor, arch, len(thePkgSlice))
-			err := uRepo.processPackages(ctx, workDir, thePkgSlice, force, jobChan)
+			err := uRepo.processPackages(ctx, workDir, thePkgSlice, force, kernelModules, jobChan)
 			log.Printf("DEBUG: end kernel flavor %s %s\n", theFlavor, arch)
 			return err
 		})
@@ -197,36 +199,37 @@ func (uRepo *UbuntuRepo) GetKernelPackages(
 }
 
 // processPackages processes a list of packages, sending jobs to the job channel.
-func (d *UbuntuRepo) processPackages(
+func (uRepo *UbuntuRepo) processPackages(
 	ctx context.Context,
 	workDir string,
 	pkgs []pkg.Package,
 	force bool,
+	kernelModules bool,
 	jobChan chan<- job.Job,
 ) error {
 
-	for i, pkg := range pkgs {
-		log.Printf("DEBUG: start pkg %s (%d/%d)\n", pkg, i+1, len(pkgs))
+	for i, p := range pkgs {
+		log.Printf("DEBUG: start pkg %s (%d/%d)\n", p, i+1, len(pkgs))
 
 		// Jobs about to be created:
 		//
 		// 1. Download package and extract vmlinux file
 		// 2. Extract BTF info from vmlinux file
 
-		if err := processPackage(ctx, pkg, workDir, force, jobChan); err != nil {
-			if errors.Is(err, utils.ErrHasBTF) {
-				log.Printf("INFO: kernel %s has BTF already, skipping later kernels\n", pkg)
+		if err := processPackage(ctx, p, workDir, force, kernelModules, jobChan); err != nil {
+			if errors.Is(err, utils.ErrKernelHasBTF) {
+				log.Printf("INFO: kernel %s has BTF already, skipping later kernels\n", p)
 				return nil
 			}
 			if errors.Is(err, context.Canceled) {
 				return nil
 			}
 
-			log.Printf("ERROR: %s: %s\n", pkg, err)
+			log.Printf("ERROR: %s: %s\n", p, err)
 			continue
 		}
 
-		log.Printf("DEBUG: end pkg %s (%d/%d)\n", pkg, i+1, len(pkgs))
+		log.Printf("DEBUG: end pkg %s (%d/%d)\n", p, i+1, len(pkgs))
 	}
 
 	return nil
