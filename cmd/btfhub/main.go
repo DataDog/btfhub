@@ -28,6 +28,18 @@ var distroReleases = map[string][]string{
 	"sles":   {"12.3", "12.5", "15.1", "15.2", "15.3", "15.4"},
 }
 
+var defaultReleases = map[string][]string{
+	"ubuntu": {"xenial", "bionic", "focal"},
+	// no stretch for debian
+	"debian": {"buster", "bullseye"},
+	"fedora": {"24", "25", "26", "27", "28", "29", "30", "31"},
+	"centos": {"7", "8"},
+	"ol":     {"7", "8"},
+	"rhel":   {"7", "8"},
+	"amzn":   {"1", "2"},
+	"sles":   {"12.3", "12.5", "15.1", "15.2", "15.3", "15.4"},
+}
+
 type repoFunc func() repo.Repository
 
 var repoCreators = map[string]repoFunc{
@@ -135,7 +147,7 @@ func run(ctx context.Context) error {
 	produce, prodCtx := errgroup.WithContext(ctx)
 
 	for _, d := range distros {
-		releases := distroReleases[d]
+		releases := defaultReleases[d]
 		if release != "" {
 			releases = []string{release}
 		}

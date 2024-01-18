@@ -5,6 +5,9 @@ on:
   workflow_dispatch: {}
 jobs:
   update-archive:
+    strategy:
+      matrix:
+        distro: [ ubuntu, debian, centos, fedora, ol ]
     name: update btfhub-archive
     runs-on: ubuntu-latest
     steps:
@@ -53,11 +56,7 @@ jobs:
           token: ${{ secrets.DD_BTFHUB_BOT_GITHUB_TOKEN }}
           path: archive
           sparse-checkout: |
-            centos
-            debian
-            fedora
-            ol
-            ubuntu
+            ${{ matrix.distro }}
     #
       - name: Setup git config
         run: |
@@ -65,26 +64,9 @@ jobs:
           git config --local user.name "Bryce Kahle"
           git config --local user.email "bryce.kahle@datadoghq.com"
     #
-      - name: Fetch and Generate new BTFs (UBUNTU)
+      - name: Fetch and Generate new BTFs
         run: |
-          ./btfhub -workers 6 -d ubuntu
-    # debian stretch seems to be gone, updates for buster and bullseye only
-      - name: Fetch and Generate new BTFs (DEBIAN)
-        run: |
-          ./btfhub -workers 6 -d debian -r buster
-          ./btfhub -workers 6 -d debian -r bullseye
-    #
-      - name: Fetch and Generate new BTFs (CENTOS)
-        run: |
-          ./btfhub -workers 6 -d centos
-    #
-      - name: Fetch and Generate new BTFs (FEDORA)
-        run: |
-          ./btfhub -workers 6 -d fedora
-    #
-      - name: Fetch and Generate new BTFs (ORACLE)
-        run: |
-          ./btfhub -workers 6 -d ol
+          ./btfhub -workers 6 -d ${{ matrix.distro }}
     #
       - name: Check Status
         run: |
@@ -95,5 +77,5 @@ jobs:
         run: |
           cd archive
           git add -A
-          git diff-index --quiet HEAD || git commit -m "update btfhub-archive on $(date -u +%Y-%m-%d)"
+          git diff-index --quiet HEAD || git commit -m "update ${{ matrix.distro }} btfhub-archive on $(date -u +%Y-%m-%d)"
           git push
