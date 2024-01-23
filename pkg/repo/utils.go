@@ -7,7 +7,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"time"
 
 	"golang.org/x/sync/errgroup"
 
@@ -48,6 +47,7 @@ func processPackage(
 	if err != nil {
 		return fmt.Errorf("create temp dir for package: %w", err)
 	}
+	defer os.RemoveAll(tmpDir)
 
 	// 1st job: Extract kernel vmlinux and module .ko.debug files
 	exDir := filepath.Join(tmpDir, "extract")
@@ -64,7 +64,6 @@ func processPackage(
 
 	select {
 	case <-ctx.Done():
-		os.RemoveAll(tmpDir)
 		return ctx.Err()
 	case jobChan <- kernelExtJob: // send vmlinux file extraction job to worker
 	}
@@ -73,7 +72,6 @@ func processPackage(
 	var extractReply *job.KernelExtractReply
 	switch v := reply.(type) {
 	case error:
-		os.RemoveAll(tmpDir)
 		return v
 	case *job.KernelExtractReply:
 		extractReply = v
@@ -87,7 +85,6 @@ func processPackage(
 	}
 	if hasBTF {
 		_ = pkg.MarkPackageHasBTF(p, workDir)
-		os.RemoveAll(tmpDir)
 		return utils.ErrKernelHasBTF
 	}
 
@@ -95,7 +92,6 @@ func processPackage(
 
 	btfGenDir := filepath.Join(tmpDir, "btfgen")
 	if err := os.Mkdir(btfGenDir, 0777); err != nil {
-		os.RemoveAll(tmpDir)
 		return err
 	}
 
@@ -145,25 +141,31 @@ func processPackage(
 			}
 		})
 	}
-	go func() {
-		defer os.RemoveAll(tmpDir)
-		if err := g.Wait(); err != nil {
-			if !errors.Is(err, context.Canceled) {
-				log.Printf("ERROR: %s", err)
-			}
-			return
+
+	if err := g.Wait(); err != nil {
+		if !errors.Is(err, context.Canceled) {
+			log.Printf("ERROR: %s", err)
 		}
+		return err
+	}
 
-		log.Printf("DEBUG: compressing BTF into %s\n", btfTarPath)
-		tarCompressStart := time.Now()
-		if err := pkg.TarballBTF(ctx, btfGenDir, btfTarPath); err != nil {
-			os.Remove(btfTarPath)
-			log.Printf("ERROR: btf.tar.xz gen: %s", err)
-			return
-		}
+	compressJob := &job.BTFCompressionJob{
+		SourceDir:  btfGenDir,
+		BTFTarPath: btfTarPath,
+		ReplyChan:  make(chan any),
+	}
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case jobChan <- compressJob: // send BTF compression job to worker
+	}
 
-		log.Printf("DEBUG: finished compressing BTF into %s in %s\n", btfTarPath, time.Since(tarCompressStart))
-	}()
-
-	return nil
+	// removing the temp directory requires we want for this job to complete
+	reply = <-compressJob.ReplyChan // wait for reply
+	switch v := reply.(type) {
+	case error:
+		return v
+	default:
+		return nil
+	}
 }
