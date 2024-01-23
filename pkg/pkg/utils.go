@@ -11,14 +11,26 @@ import (
 	"strconv"
 	"strings"
 
+	"golang.org/x/exp/slices"
+
 	"github.com/aquasecurity/btfhub/pkg/kernel"
 	"github.com/aquasecurity/btfhub/pkg/utils"
 )
 
 func TarballBTF(ctx context.Context, btfDir string, out string) error {
 	// Use external tool for performance reasons
-	return utils.RunCMD(ctx, btfDir, "tar",
-		"-cvJ",
+	f, err := os.Open(btfDir)
+	if err != nil {
+		return fmt.Errorf("open %s: %w", btfDir, err)
+	}
+	defer f.Close()
+	files, err := f.Readdirnames(-1)
+	if err != nil {
+		return fmt.Errorf("readdirnames: %w", err)
+	}
+	slices.Sort(files)
+
+	args := []string{"-cvJ",
 		"--sort=name",
 		"--owner=root:0",
 		"--group=root:0",
@@ -26,8 +38,9 @@ func TarballBTF(ctx context.Context, btfDir string, out string) error {
 		"--mtime=@0",
 		"-f",
 		out,
-		".",
-	)
+	}
+	args = append(args, files...)
+	return utils.RunCMD(ctx, btfDir, "tar", args...)
 }
 
 //
