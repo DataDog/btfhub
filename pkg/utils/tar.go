@@ -18,7 +18,7 @@ func TarballHasKernelModules(file string) (bool, error) {
 	}
 	defer f.Close()
 
-	vmlinuxName := strings.TrimSuffix(filepath.Base(file), ".tar.xz")
+	unameName := strings.TrimSuffix(filepath.Base(file), ".tar.xz")
 
 	xr, err := fastxz.NewReader(f, 0)
 	if err != nil {
@@ -33,8 +33,11 @@ func TarballHasKernelModules(file string) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		if hdr.Name != vmlinuxName {
-			log.Printf("TRACE: %s", hdr.Name)
+		if hdr.Typeflag != tar.TypeReg {
+			continue
+		}
+		if hdr.Name != unameName && hdr.Name != "vmlinux" {
+			log.Printf("TRACE: %s has kernel module BTF", file)
 			return true, nil
 		}
 	}
