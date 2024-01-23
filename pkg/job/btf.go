@@ -10,6 +10,7 @@ import (
 )
 
 type BTFGenerationJob struct {
+	BaseFilePath  string
 	DebugFilePath string
 	BTFPath       string
 	ReplyChan     chan any
@@ -21,7 +22,7 @@ func (job *BTFGenerationJob) Do(ctx context.Context) error {
 	log.Printf("DEBUG: generating BTF from %s\n", job.DebugFilePath)
 	btfGenStart := time.Now()
 
-	if err := GenerateBTF(ctx, job.DebugFilePath, job.BTFPath); err != nil {
+	if err := GenerateBTF(ctx, job.DebugFilePath, job.BaseFilePath, job.BTFPath); err != nil {
 		os.Remove(job.BTFPath)
 		if errors.Is(err, context.Canceled) {
 			return nil

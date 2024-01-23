@@ -19,8 +19,9 @@ type KernelExtractionJob struct {
 }
 
 type KernelExtractReply struct {
-	ExtractDir string
-	Paths      []string
+	ExtractDir  string
+	VMLinuxPath string
+	Paths       []string
 }
 
 // Do implements the Job interface, and is called by the worker. It downloads
@@ -43,7 +44,7 @@ func (job *KernelExtractionJob) Do(ctx context.Context) error {
 	extractStart := time.Now()
 	log.Printf("DEBUG: extracting vmlinux from %s\n", kernPkgPath)
 
-	paths, err := job.Pkg.ExtractKernel(ctx, kernPkgPath, job.WorkDir, job.KernelModules)
+	vmlinuxPath, paths, err := job.Pkg.ExtractKernel(ctx, kernPkgPath, job.WorkDir, job.KernelModules)
 	if err != nil {
 		os.RemoveAll(job.WorkDir)
 		return fmt.Errorf("extracting vmlinux from %s: %s", kernPkgPath, err)
@@ -54,8 +55,9 @@ func (job *KernelExtractionJob) Do(ctx context.Context) error {
 
 	// Reply with the path to the extracted directory
 	job.ReplyChan <- &KernelExtractReply{
-		ExtractDir: job.WorkDir,
-		Paths:      paths,
+		ExtractDir:  job.WorkDir,
+		VMLinuxPath: vmlinuxPath,
+		Paths:       paths,
 	}
 	return nil
 }

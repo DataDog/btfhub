@@ -34,7 +34,7 @@ func (pkg *RHELPackage) String() string {
 	return pkg.Name
 }
 
-func (pkg *RHELPackage) ExtractKernel(ctx context.Context, pkgpath string, extractDir string, kernelModules bool) ([]string, error) {
+func (pkg *RHELPackage) ExtractKernel(ctx context.Context, pkgpath string, extractDir string, kernelModules bool) (string, []string, error) {
 	return utils.ExtractVmlinuxFromRPM(ctx, pkgpath, extractDir, kernelModules)
 }
 

@@ -99,12 +99,33 @@ func processPackage(
 		return err
 	}
 
+	// submit vmlinux BTF gen first, and then kernel modules afterwards
+	vmlinuxBTF := filepath.Join(btfGenDir, "vmlinux")
+	btfGenJob := &job.BTFGenerationJob{
+		DebugFilePath: extractReply.VMLinuxPath,
+		BTFPath:       vmlinuxBTF,
+		ReplyChan:     make(chan any),
+	}
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case jobChan <- btfGenJob: // send BTF generation job to worker
+	}
+	reply = <-btfGenJob.ReplyChan // wait for reply
+	switch v := reply.(type) {
+	case error:
+		return v
+	default:
+	}
+
 	g := new(errgroup.Group)
 	for _, debugFilePath := range extractReply.Paths {
+		filename := filepath.Base(debugFilePath)
 		// 2nd job: Generate BTF file from vmlinux file
 		btfGenJob := &job.BTFGenerationJob{
 			DebugFilePath: debugFilePath,
-			BTFPath:       filepath.Join(btfGenDir, filepath.Base(debugFilePath)),
+			BaseFilePath:  vmlinuxBTF,
+			BTFPath:       filepath.Join(btfGenDir, filename),
 			ReplyChan:     make(chan any),
 		}
 

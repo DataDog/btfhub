@@ -86,24 +86,24 @@ func (pkg *UbuntuPackage) Download(ctx context.Context, dir string, force bool) 
 // ExtractKernel extracts the vmlinux file from the package and saves it to
 // vmlinuxPath. It returns an error if the package is not a ddeb or if the
 // vmlinux file is not found.
-func (pkg *UbuntuPackage) ExtractKernel(ctx context.Context, pkgPath string, extractDir string, kernelModules bool) ([]string, error) {
+func (pkg *UbuntuPackage) ExtractKernel(ctx context.Context, pkgPath string, extractDir string, kernelModules bool) (string, []string, error) {
 	vmlinuxName := fmt.Sprintf("vmlinux-%s", pkg.NameOfFile)
 	debpath := fmt.Sprintf("./usr/lib/debug/boot/%s", vmlinuxName)
 
 	ddeb, closer, err := deb.LoadFile(pkgPath)
 	if err != nil {
-		return nil, fmt.Errorf("deb load: %s", err)
+		return "", nil, fmt.Errorf("deb load: %s", err)
 	}
 	defer func() { _ = closer() }()
 
 	rdr := ddeb.Data // tar reader for the deb package
 
 	// Iterate over the files in the deb package to find the vmlinux file
-	foundVmlinux := false
+	vmlinuxPath := ""
 	var paths []string
 	for {
 		if err := ctx.Err(); err != nil {
-			return nil, err
+			return "", nil, err
 		}
 
 		hdr, err := rdr.Next()
@@ -111,36 +111,34 @@ func (pkg *UbuntuPackage) ExtractKernel(ctx context.Context, pkgPath string, ext
 			if errors.Is(err, io.EOF) {
 				break
 			}
-			return nil, fmt.Errorf("deb reader next: %s", err)
+			return "", nil, fmt.Errorf("deb reader next: %s", err)
 		}
 
 		// Found the vmlinux file, extract it
 		if hdr.Name == debpath {
-			outfile := filepath.Join(extractDir, "vmlinux")
-			err = extractFile(ctx, outfile, hdr, rdr)
+			vmlinuxPath = filepath.Join(extractDir, "vmlinux")
+			err = extractFile(ctx, vmlinuxPath, hdr, rdr)
 			if err != nil {
-				return nil, err
+				return "", nil, err
 			}
-			foundVmlinux = true
-			paths = append(paths, outfile)
 			if !kernelModules {
-				return paths, nil
+				return vmlinuxPath, nil, nil
 			}
 		} else if kernelModules && strings.HasSuffix(hdr.Name, ".ko.debug") {
 			filename := strings.TrimSuffix(filepath.Base(hdr.Name), ".ko.debug")
 			outfile := filepath.Join(extractDir, filename)
 			err = extractFile(ctx, outfile, hdr, rdr)
 			if err != nil {
-				return nil, err
+				return "", nil, err
 			}
 			paths = append(paths, outfile)
 		}
 	}
 
-	if !foundVmlinux {
-		return nil, fmt.Errorf("%s file not found in ddeb", debpath)
+	if vmlinuxPath == "" {
+		return "", nil, fmt.Errorf("%s file not found in ddeb", debpath)
 	}
-	return paths, nil
+	return vmlinuxPath, paths, nil
 }
 
 func extractFile(ctx context.Context, filename string, hdr *tar.Header, rdr *tar.Reader) error {
