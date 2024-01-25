@@ -86,6 +86,5 @@ jobs:
           git config --local user.name "Bryce Kahle"
           git config --local user.email "bryce.kahle@datadoghq.com"
           git add -A
-          git diff-index --quiet HEAD || git commit -m "amzn 2 update on $(date -u +%Y-%m-%d)"
-          git pull --rebase
+          git diff-index --quiet HEAD || (git commit -m "amzn 2 update on $(date -u +%Y-%m-%d)" && git pull --rebase)
           git push
