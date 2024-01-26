@@ -78,4 +78,4 @@ jobs:
           cd archive
           git add -A
           git diff-index --quiet HEAD || git commit -m "update ${{ matrix.distro }} btfhub-archive on $(date -u +%Y-%m-%d)"
-          git push
+          git push || (git pull --rebase && git push)
