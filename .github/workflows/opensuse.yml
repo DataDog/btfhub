@@ -9,10 +9,10 @@ jobs:
     strategy:
       matrix:
         release: [ "15.0" ]
-        platform: [ "linux/amd64" ]
+        platform: [ "linux/arm64" ]
         include:
-          - platform: "linux/amd64"
-            arch: "x86_64"
+          - platform: "linux/arm64"
+            arch: "arm64"
 #        release: [ "15.0", "15.1", "15.2", "15.3", "15.4" ]
 #        platform: [ "linux/amd64", "linux/arm64" ]
 #        include:
@@ -30,7 +30,10 @@ jobs:
         run: |
           zypper -n addrepo -C https://cli.github.com/packages/rpm/gh-cli.repo
           zypper --gpg-auto-import-keys ref
-          zypper -n install -y clang wget bzip2 zlib-devel m4 xz gzip cmake find git tar gcc gh
+          zypper -n install -y clang wget bzip2 zlib-devel m4 xz gzip cmake find tar gcc
+          wget -nv https://download.opensuse.org/ports/aarch64/distribution/leap/15.2/repo/oss/aarch64/git-2.25.0-lp152.1.2.aarch64.rpm
+          rpm -i git-2.25.0-lp152.1.2.aarch64.rpm
+          zypper -n install -y gh
         shell: bash
 
       - name: Authenticate
