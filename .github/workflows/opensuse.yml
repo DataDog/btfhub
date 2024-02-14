@@ -25,7 +25,7 @@ jobs:
         run: |
           zypper install -y clang wget bzip2 zlib-devel m4 xz gzip cmake find git tar gcc
           zypper addrepo https://cli.github.com/packages/rpm/gh-cli.repo
-          zypper ref
+          zypper --gpg-auto-import-keys ref
           zypper install -y gh
         shell: bash
 
