@@ -28,7 +28,7 @@ jobs:
     steps:
       - name: Install needed packages
         run: |
-          zypper --gpg-auto-import-keys addrepo https://cli.github.com/packages/rpm/gh-cli.repo
+          zypper --non-interactive --gpg-auto-import-keys addrepo https://cli.github.com/packages/rpm/gh-cli.repo
           zypper ref
           zypper install -y clang wget bzip2 zlib-devel m4 xz gzip cmake find git tar gcc gh
         shell: bash
