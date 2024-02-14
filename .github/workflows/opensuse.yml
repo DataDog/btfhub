@@ -28,10 +28,9 @@ jobs:
     steps:
       - name: Install needed packages
         run: |
-          zypper install -y clang wget bzip2 zlib-devel m4 xz gzip cmake find git tar gcc
-          zypper addrepo --gpg-auto-import-keys https://cli.github.com/packages/rpm/gh-cli.repo
+          zypper --gpg-auto-import-keys addrepo https://cli.github.com/packages/rpm/gh-cli.repo
           zypper ref
-          zypper -vvv install -y gh
+          zypper install -y clang wget bzip2 zlib-devel m4 xz gzip cmake find git tar gcc gh
         shell: bash
 
       - name: Authenticate
