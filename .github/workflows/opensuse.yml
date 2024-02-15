@@ -28,16 +28,25 @@ jobs:
     steps:
       - name: Install needed packages
         run: |
-          zypper -n addrepo -C https://cli.github.com/packages/rpm/gh-cli.repo
-          zypper --gpg-auto-import-keys ref
           zypper -n install -y clang wget bzip2 zlib-devel m4 xz gzip cmake find tar gcc
-          wget -nv https://download.opensuse.org/ports/aarch64/distribution/leap/15.2/repo/oss/aarch64/git-2.25.0-lp152.1.2.aarch64.rpm
-          rpm -i git-2.25.0-lp152.1.2.aarch64.rpm
-          zypper -n install -y gh
         shell: bash
+
+      - name: build git from source
+        run: |
+          zypper -n install --allow-downgrade -y autoconf dh-autoreconf libcurl-devel libexpat-devel gettext-tools libopenssl-1_1-devel zlib-devel
+          wget -nv https://mirrors.edge.kernel.org/pub/software/scm/git/git-2.43.2.tar.xz
+          tar xf git-2.43.2.tar.xz
+          cd git-2.43.2
+          make configure
+          ./configure --prefix=/usr
+          make all
+          make install
 
       - name: Authenticate
         run: |
+          zypper -n addrepo -C https://cli.github.com/packages/rpm/gh-cli.repo
+          zypper --gpg-auto-import-keys ref
+          zypper -n install -y gh
           gh auth login --with-token <<<'${{ secrets.DD_BTFHUB_BOT_GITHUB_TOKEN }}'
 
       - name: Check out BTFHub
