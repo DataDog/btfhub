@@ -8,7 +8,7 @@ jobs:
   update-archive:
     strategy:
       matrix:
-        distro: [ ubuntu, debian, centos, fedora, ol, opensuse-leap ]
+        distro: [ opensuse-leap ]
     name: update btfhub-archive
     runs-on: ubuntu-latest
     steps:

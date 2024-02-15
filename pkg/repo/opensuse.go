@@ -25,7 +25,31 @@ import (
 type openSUSERepo struct {
 	archs       map[string]string
 	repoAliases map[string]string
-	repos       map[string][]string
+	repos       map[string]map[string][]string
+}
+
+var oldOpenSUSERepos = map[string][]string{
+	"x86_64": {
+		"https://download.opensuse.org/debug/distribution/leap/%s/repo/oss/",
+		"https://download.opensuse.org/debug/update/leap/%s/oss/",
+	},
+	"aarch64": {
+		"https://download.opensuse.org/ports/aarch64/debug/distribution/leap/%s/repo/oss/",
+	},
+}
+
+var newOpenSUSERepos = map[string][]string{
+	"x86_64": {
+		"https://download.opensuse.org/debug/distribution/leap/%s/repo/oss/",
+		"https://download.opensuse.org/debug/update/leap/%s/oss/",
+		"https://download.opensuse.org/debug/update/leap/%s/sle/",
+	},
+	"aarch64": {
+		"https://download.opensuse.org/debug/distribution/leap/%s/repo/oss/",
+		"https://download.opensuse.org/debug/update/leap/%s/oss/",
+		"https://download.opensuse.org/debug/update/leap/%s/sle/",
+		"https://download.opensuse.org/ports/aarch64/debug/distribution/leap/%s/repo/oss/",
+	},
 }
 
 func NewOpenSUSERepo() Repository {
@@ -35,19 +59,29 @@ func NewOpenSUSERepo() Repository {
 			"arm64":  "aarch64",
 		},
 		repoAliases: map[string]string{},
-		repos: map[string][]string{
-			"x86_64": {
-				"https://download.opensuse.org/debug/distribution/leap/%s/repo/oss/",
-				"https://download.opensuse.org/debug/update/leap/%s/oss/",
+		repos: map[string]map[string][]string{
+			"15.0": oldOpenSUSERepos,
+			"15.1": oldOpenSUSERepos,
+			"15.2": {
+				"x86_64": {
+					"https://download.opensuse.org/debug/distribution/leap/%s/repo/oss/",
+					"https://download.opensuse.org/debug/update/leap/%s/oss/",
+				},
+				"aarch64": {
+					"https://download.opensuse.org/ports/aarch64/debug/distribution/leap/%s/repo/oss/",
+					"https://download.opensuse.org/debug/update/leap/%s/oss/",
+				},
 			},
-			"aarch64": {"https://download.opensuse.org/ports/aarch64/debug/distribution/leap/%s/repo/oss/"},
+			"15.3": newOpenSUSERepos,
+			"15.4": newOpenSUSERepos,
+			"15.5": newOpenSUSERepos,
 		},
 	}
 }
 
 func (d *openSUSERepo) GetKernelPackages(ctx context.Context, workDir string, release string, arch string, force bool, jobChan chan<- job.Job) error {
 	altArch := d.archs[arch]
-	repoURLs := d.repos[altArch]
+	repoURLs := d.repos[release][altArch]
 
 	var links []string
 	for _, repoURLFormat := range repoURLs {
@@ -77,7 +111,7 @@ func (d *openSUSERepo) GetKernelPackages(ctx context.Context, workDir string, re
 		links = append(links, rlinks...)
 	}
 
-	kre := regexp.MustCompile(fmt.Sprintf(`/kernel-([^-]+)-debuginfo-([-1-9].*\.%s)\.rpm`, altArch))
+	kre := regexp.MustCompile(fmt.Sprintf(`/kernel-([^-]+)-debuginfo-([-1-9].*)\.%s\.rpm`, altArch))
 
 	pkgsByKernelType := make(map[string][]pkg.Package)
 	for _, l := range links {
@@ -85,10 +119,9 @@ func (d *openSUSERepo) GetKernelPackages(ctx context.Context, workDir string, re
 		if match == nil {
 			continue
 		}
-
 		name := strings.TrimPrefix(strings.TrimSuffix(match[0], ".rpm"), "/")
 		flavor, ver := match[1], match[2]
-		if flavor == "debug" {
+		if strings.Contains(flavor, "debug") || strings.Contains(flavor, "vanilla") {
 			continue
 		}
 
