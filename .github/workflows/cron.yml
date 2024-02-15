@@ -78,6 +78,5 @@ jobs:
         run: |
           cd archive
           git add -A
-          git status
-#          git diff-index --quiet HEAD || git commit -m "update ${{ matrix.distro }} btfhub-archive on $(date -u +%Y-%m-%d)"
-#          git push || (git pull --rebase && git push)
+          git diff-index --quiet HEAD || git commit -m "update ${{ matrix.distro }} btfhub-archive on $(date -u +%Y-%m-%d)"
+          git push || (git pull --rebase && git push)
