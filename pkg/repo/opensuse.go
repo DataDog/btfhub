@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/url"
 	"regexp"
 	"sort"
 	"strconv"
@@ -24,6 +25,7 @@ import (
 type openSUSERepo struct {
 	archs       map[string]string
 	repoAliases map[string]string
+	repos       map[string][]string
 }
 
 func NewOpenSUSERepo() Repository {
@@ -33,35 +35,77 @@ func NewOpenSUSERepo() Repository {
 			"arm64":  "aarch64",
 		},
 		repoAliases: map[string]string{},
+		repos: map[string][]string{
+			"x86_64": {
+				"https://download.opensuse.org/debug/distribution/leap/%s/repo/oss/",
+				"https://download.opensuse.org/debug/update/leap/%s/oss/",
+			},
+			"aarch64": {"https://download.opensuse.org/ports/aarch64/debug/distribution/leap/%s/repo/oss/"},
+		},
 	}
 }
 
 func (d *openSUSERepo) GetKernelPackages(ctx context.Context, workDir string, release string, arch string, force bool, jobChan chan<- job.Job) error {
-	repos := []string{"repo-debug"}
-	for _, r := range repos {
-		if _, err := utils.RunZypperCMD(ctx, "modifyrepo", "--enable", r); err != nil {
-			return err
+	altArch := d.archs[arch]
+	repoURLs := d.repos[altArch]
+
+	var links []string
+	for _, repoURLFormat := range repoURLs {
+		repoURL := fmt.Sprintf(repoURLFormat, release)
+		// get repo directory and find primary index URL
+		repoDirectoryURL, _ := url.JoinPath(repoURL, "repodata/repomd.xml")
+		repolinks, err := utils.GetRelativeLinks(ctx, repoDirectoryURL, repoURL)
+		if err != nil {
+			return fmt.Errorf("ERROR: list repodata files: %s", err)
 		}
+		var primaryURL string
+		for _, l := range repolinks {
+			if strings.HasSuffix(l, "-primary.xml.gz") {
+				primaryURL = l
+				break
+			}
+		}
+		if primaryURL == "" {
+			return fmt.Errorf("unable to find primary repodata in %s", repoDirectoryURL)
+		}
+
+		// get package links from primary index URL
+		rlinks, err := utils.GetRelativeLinks(ctx, primaryURL, repoURL)
+		if err != nil {
+			return fmt.Errorf("ERROR: list packages: %s", err)
+		}
+		links = append(links, rlinks...)
 	}
 
-	if err := d.getRepoAliases(ctx); err != nil {
-		return fmt.Errorf("repo aliases: %s", err)
-	}
-
-	// packages are named kernel-<type>-debuginfo
-	// possible types are: default, vanilla
-	searchOut, err := zypperSearch(ctx, "kernel-*-debuginfo")
-	if err != nil {
-		return err
-	}
-
-	pkgs, err := d.parseZypperPackages(searchOut, arch)
-	if err != nil {
-		return fmt.Errorf("parse package listing: %s", err)
-	}
+	kre := regexp.MustCompile(fmt.Sprintf(`/kernel-([^-]+)-debuginfo-([-1-9].*\.%s)\.rpm`, altArch))
 
 	pkgsByKernelType := make(map[string][]pkg.Package)
-	for _, p := range pkgs {
+	for _, l := range links {
+		match := kre.FindStringSubmatch(l)
+		if match == nil {
+			continue
+		}
+
+		name := strings.TrimPrefix(strings.TrimSuffix(match[0], ".rpm"), "/")
+		flavor, ver := match[1], match[2]
+		if flavor == "debug" {
+			continue
+		}
+
+		// remove final .x because it is just a build counter and not included in `uname -r`
+		parts := strings.Split(ver, ".")
+		btfver := strings.Join(parts[:len(parts)-1], ".")
+
+		p := &pkg.OpenSUSEPackage{
+			Name:          name,
+			NameOfFile:    fmt.Sprintf("%s-%s", ver, flavor),
+			NameOfBTFFile: fmt.Sprintf("%s-%s", btfver, flavor),
+			Architecture:  altArch,
+			Flavor:        flavor,
+			URL:           l,
+			KernelVersion: kernel.NewKernelVersion(ver),
+		}
+
 		ks, ok := pkgsByKernelType[p.Flavor]
 		if !ok {
 			ks = make([]pkg.Package, 0, 1)
