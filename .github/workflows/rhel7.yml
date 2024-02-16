@@ -32,13 +32,13 @@ jobs:
           cd /etc/pki/rpm-gpg
           wget -O RPM-GPG-KEY-redhat-devel https://www.redhat.com/security/data/a5787476.txt
           rpm --import RPM-GPG-KEY-redhat-devel
-          yum install devtoolset-7 llvm-toolset-7
+          yum install -y devtoolset-7 llvm-toolset-7
           echo "source scl_source enable devtoolset-7 llvm-toolset-7" >> ~/.bashrc
           subscription-manager repos --disable rhel-7-server-optional-rpms --disable rhel-server-rhscl-7-rpms --disable rhel-7-server-devtools-rpms
 
       - name: install newer git
         run: |
-          yum remove git
+          yum remove -y git
           yum install -y https://repo.ius.io/ius-release-el7.rpm https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
           yum install -y git236
           yum-config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo
