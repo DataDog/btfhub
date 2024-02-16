@@ -32,15 +32,16 @@ func (d *RHELRepo) GetKernelPackages(
 	ctx context.Context,
 	workDir string,
 	_ string,
-	_ string,
+	arch string,
 	force bool,
 	jobChan chan<- job.Job,
 ) error {
-	searchOut, err := yumSearch(ctx, "kernel-debuginfo")
+	altArch := d.archs[arch]
+	searchOut, err := repoquery(ctx, "kernel-debuginfo", altArch)
 	if err != nil {
 		return err
 	}
-	pkgs, err := parseYumPackages(searchOut, d.minVersion)
+	pkgs, err := parseRepoqueryPackages(searchOut, d.minVersion)
 	if err != nil {
 		return fmt.Errorf("parse package listing: %s", err)
 	}
