@@ -1,7 +1,4 @@
 name: RHEL 7 x86_64
-defaults:
-  run:
-    shell: bash -leo pipefail {0}
 on:
   push:
   schedule:
@@ -33,7 +30,7 @@ jobs:
           wget -O RPM-GPG-KEY-redhat-devel https://www.redhat.com/security/data/a5787476.txt
           rpm --import RPM-GPG-KEY-redhat-devel
           yum install -y devtoolset-7 llvm-toolset-7
-          echo "source scl_source enable devtoolset-7 llvm-toolset-7" >> ~/.bashrc
+          echo "/opt/rh/llvm-toolset-7/root/usr/bin:/opt/rh/llvm-toolset-7/root/usr/sbin:/opt/rh/devtoolset-7/root/usr/bin" >> $GITHUB_PATH
           subscription-manager repos --disable rhel-7-server-optional-rpms --disable rhel-server-rhscl-7-rpms --disable rhel-7-server-devtools-rpms
 
       - name: install newer git
