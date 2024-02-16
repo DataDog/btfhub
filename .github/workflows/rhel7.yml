@@ -1,0 +1,126 @@
+name: RHEL 7 x86_64
+defaults:
+  run:
+    shell: bash -leo pipefail {0}
+on:
+  push:
+  schedule:
+    - cron: "0 1 * * *"
+  workflow_dispatch: {}
+jobs:
+  rhel7-update:
+    name: rhel 7 x86_64
+    runs-on: ubuntu-latest
+    container:
+      image: registry.access.redhat.com/rhel7:latest
+    steps:
+      - name: setup subscription
+        run: |
+          rm /etc/rhsm-host
+          yum repolist --disablerepo=*
+          subscription-manager register --org=${{ secrets.DD_BTFHUB_RHEL_ORG_ID }} --activationkey="btfhub-ci"
+          subscription-manager repos --enable=rhel-7-server-debug-rpms --enable=rhel-7-server-debug
+          yum -y update
+
+      - name: install required packages
+        run: |
+          yum install -y yum-utils wget bzip2 zlib-devel m4 xz gzip cmake find make
+
+      - name: install clang 5 and gcc 7
+        run: |
+          subscription-manager repos --enable rhel-7-server-optional-rpms --enable rhel-server-rhscl-7-rpms --enable rhel-7-server-devtools-rpms
+          cd /etc/pki/rpm-gpg
+          wget -O RPM-GPG-KEY-redhat-devel https://www.redhat.com/security/data/a5787476.txt
+          rpm --import RPM-GPG-KEY-redhat-devel
+          yum install devtoolset-7 llvm-toolset-7
+          echo "source scl_source enable devtoolset-7 llvm-toolset-7" >> ~/.bashrc
+          subscription-manager repos --disable rhel-7-server-optional-rpms --disable rhel-server-rhscl-7-rpms --disable rhel-7-server-devtools-rpms
+
+      - name: install newer git
+        run: |
+          yum remove git
+          yum install -y https://repo.ius.io/ius-release-el7.rpm https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+          yum install -y git236
+          yum-config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo
+          yum install -y gh
+
+      - name: github authenticate
+        run: |
+          gh auth login --with-token <<<'${{ secrets.DD_BTFHUB_BOT_GITHUB_TOKEN }}'
+
+      - name: checkout btfhub
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.DD_BTFHUB_BOT_GITHUB_TOKEN }}
+          submodules: 'recursive'
+
+      - run: git config --system --add safe.directory $(pwd)
+
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '1.20'
+
+      - name: build elfutils
+        run: |
+          wget -nv https://sourceware.org/elfutils/ftp/0.190/elfutils-0.190.tar.bz2
+          tar xf elfutils-0.190.tar.bz2
+          cd elfutils-0.190
+          ./configure --disable-libdebuginfod --disable-debuginfod --disable-demangler
+          make install
+          ldconfig
+
+      - name: build tar
+        run: |
+          wget -nv https://ftpmirror.gnu.org/tar/tar-1.35.tar.xz
+          tar xf tar-1.35.tar.xz
+          cd tar-1.35
+          FORCE_UNSAFE_CONFIGURE=1 ./configure --prefix=/usr
+          make install            
+
+      - name: build pahole
+        run: |
+          cd ./3rdparty/dwarves
+          mkdir build
+          cd build
+          cmake -D__LIB=lib -DDWARF_INCLUDE_DIR=/usr/include ..
+          make install
+          echo "/usr/local/lib" >> /etc/ld.so.conf.d/pahole.conf
+          ldconfig
+
+      - name: build btfhub
+        run: |
+          make
+
+      - name: checkout btfhub-archive
+        uses: actions/checkout@v3
+        with:
+          repository: DataDog/btfhub-archive
+          token: ${{ secrets.DD_BTFHUB_BOT_GITHUB_TOKEN }}
+          path: archive
+          sparse-checkout: |
+            rhel/7/x86_64
+
+      - name: generate BTFs
+        run: |
+          ./btfhub -workers 6 -d rhel -r 7 -a x86_64
+
+      - name: check status
+        run: |
+          cd archive
+          git status
+
+      - name: commit and push to btfhub-archive
+        run: |
+          cd archive
+          git config --local user.name "Bryce Kahle"
+          git config --local user.email "bryce.kahle@datadoghq.com"
+          git add -A
+          git diff-index --quiet HEAD || git commit -m "rhel 7 x86_64 update on $(date -u +%Y-%m-%d)"
+          git push || (git pull --rebase && git push)
+
+      - name: unregister from RHEL
+        if: always()
+        run: |
+          subscription-manager remove --all
+          subscription-manager unregister
+          subscription-manager clean
