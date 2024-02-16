@@ -4,6 +4,8 @@ on:
   schedule:
     - cron: "0 1 * * *"
   workflow_dispatch: {}
+env:
+  BTFHUB_NO_SUDO: true
 jobs:
   rhel7-update:
     name: rhel 7 x86_64
@@ -30,7 +32,9 @@ jobs:
           wget -O RPM-GPG-KEY-redhat-devel https://www.redhat.com/security/data/a5787476.txt
           rpm --import RPM-GPG-KEY-redhat-devel
           yum install -y devtoolset-7 llvm-toolset-7
-          echo "/opt/rh/llvm-toolset-7/root/usr/bin:/opt/rh/llvm-toolset-7/root/usr/sbin:/opt/rh/devtoolset-7/root/usr/bin" >> $GITHUB_PATH
+          echo "/opt/rh/devtoolset-7/root/usr/bin" >> $GITHUB_PATH
+          echo "/opt/rh/llvm-toolset-7/root/usr/sbin" >> $GITHUB_PATH
+          echo "/opt/rh/llvm-toolset-7/root/usr/bin" >> $GITHUB_PATH
           subscription-manager repos --disable rhel-7-server-optional-rpms --disable rhel-server-rhscl-7-rpms --disable rhel-7-server-devtools-rpms
 
       - name: install newer git
