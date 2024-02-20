@@ -1,19 +1,16 @@
 package repo
 
 import (
-	"bufio"
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"log"
 	"net/url"
 	"regexp"
 	"sort"
-	"strconv"
 	"strings"
-	"unicode"
 
+	"golang.org/x/exp/slices"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/aquasecurity/btfhub/pkg/job"
@@ -51,6 +48,8 @@ var newOpenSUSERepos = map[string][]string{
 		"https://download.opensuse.org/ports/aarch64/debug/distribution/leap/%s/repo/oss/",
 	},
 }
+
+var ignoredOpenSUSEFlavors = []string{"debug", "vanilla", "preempt", "rt"}
 
 func NewOpenSUSERepo() Repository {
 	return &openSUSERepo{
@@ -132,7 +131,7 @@ func (d *openSUSERepo) GetKernelPackages(ctx context.Context, workDir string, re
 		}
 		name := strings.TrimPrefix(strings.TrimSuffix(match[0], ".rpm"), "/")
 		flavor, ver := match[1], match[2]
-		if strings.Contains(flavor, "debug") || strings.Contains(flavor, "vanilla") {
+		if slices.Contains(ignoredOpenSUSEFlavors, flavor) {
 			continue
 		}
 
@@ -177,30 +176,6 @@ func (d *openSUSERepo) GetKernelPackages(ctx context.Context, workDir string, re
 	return g.Wait()
 }
 
-func (d *openSUSERepo) getRepoAliases(ctx context.Context) error {
-	repos, err := zypperRepos(ctx)
-	if err != nil {
-		return err
-	}
-	bio := bufio.NewScanner(repos)
-	for bio.Scan() {
-		line := bio.Text()
-		fields := strings.FieldsFunc(line, func(r rune) bool {
-			return unicode.IsSpace(r) || r == '|'
-		})
-		if len(fields) < 3 {
-			continue
-		}
-		// first field must be a number
-		if _, err := strconv.Atoi(fields[0]); err != nil {
-			continue
-		}
-		alias, name := fields[1], fields[2]
-		d.repoAliases[name] = alias
-	}
-	return bio.Err()
-}
-
 func (d *openSUSERepo) processPackages(ctx context.Context, dir string, pkgs []pkg.Package, force bool, jobchan chan<- job.Job) error {
 	for i, p := range pkgs {
 		log.Printf("DEBUG: start pkg %s (%d/%d)\n", p, i+1, len(pkgs))
@@ -218,54 +193,4 @@ func (d *openSUSERepo) processPackages(ctx context.Context, dir string, pkgs []p
 		log.Printf("DEBUG: end pkg %s (%d/%d)\n", p, i+1, len(pkgs))
 	}
 	return nil
-}
-
-func (d *openSUSERepo) parseZypperPackages(rdr io.Reader, arch string) ([]*pkg.SUSEPackage, error) {
-	var pkgs []*pkg.SUSEPackage
-	kre := regexp.MustCompile(`^kernel-([^-]+)-debuginfo$`)
-	bio := bufio.NewScanner(rdr)
-	for bio.Scan() {
-		line := bio.Text()
-		fields := strings.FieldsFunc(line, func(r rune) bool {
-			return unicode.IsSpace(r) || r == '|'
-		})
-		if len(fields) < 5 {
-			continue
-		}
-		name, ver, pkgarch, repo := fields[0], fields[2], fields[3], fields[4]
-		if pkgarch != arch {
-			continue
-		}
-		match := kre.FindStringSubmatch(name)
-		if match != nil {
-			alias, ok := d.repoAliases[repo]
-			if !ok {
-				return nil, fmt.Errorf("unknown repo %s", repo)
-			}
-			flavor := match[1]
-			if flavor == "preempt" {
-				continue
-			}
-
-			// remove final .x because it is just a build counter and not included in `uname -r`
-			parts := strings.Split(ver, ".")
-			btfver := strings.Join(parts[:len(parts)-1], ".")
-
-			p := &pkg.SUSEPackage{
-				Name:          name,
-				NameOfFile:    fmt.Sprintf("%s-%s", ver, flavor),
-				NameOfBTFFile: fmt.Sprintf("%s-%s", btfver, flavor),
-				KernelVersion: kernel.NewKernelVersion(ver),
-				Architecture:  pkgarch,
-				Repo:          repo,
-				Flavor:        flavor,
-				Downloaddir:   fmt.Sprintf("/var/cache/zypp/packages/%s/%s", alias, arch),
-			}
-			pkgs = append(pkgs, p)
-		}
-	}
-	if err := bio.Err(); err != nil {
-		return nil, err
-	}
-	return pkgs, nil
 }
