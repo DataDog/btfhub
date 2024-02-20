@@ -49,7 +49,7 @@ var newOpenSUSERepos = map[string][]string{
 	},
 }
 
-var ignoredOpenSUSEFlavors = []string{"debug", "vanilla", "preempt", "rt"}
+var ignoredOpenSUSEFlavors = []string{"debug", "vanilla", "preempt", "rt", "rt_debug"}
 
 func NewOpenSUSERepo() Repository {
 	return &openSUSERepo{
