@@ -26,7 +26,7 @@ var distroReleases = map[string][]string{
 	"rhel":          {"7", "8"},
 	"amzn":          {"1", "2"},
 	"sles":          {"12.3", "12.5", "15.1", "15.2", "15.3", "15.4"},
-	"opensuse-leap": {"15.0", "15.1", "15.2", "15.3", "15.4", "15.5"},
+	"opensuse-leap": {"15.0", "15.1", "15.2", "15.3"},
 }
 
 var defaultReleases = map[string][]string{
@@ -39,7 +39,7 @@ var defaultReleases = map[string][]string{
 	"rhel":          {"7", "8"},
 	"amzn":          {"1", "2"},
 	"sles":          {"12.3", "12.5", "15.1", "15.2", "15.3", "15.4"},
-	"opensuse-leap": {"15.0", "15.1", "15.2", "15.3", "15.4", "15.5"},
+	"opensuse-leap": {"15.0", "15.1", "15.2", "15.3"},
 }
 
 type repoFunc func() repo.Repository

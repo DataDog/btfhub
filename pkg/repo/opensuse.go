@@ -72,19 +72,6 @@ func NewOpenSUSERepo() Repository {
 				},
 			},
 			"15.3": newOpenSUSERepos,
-			"15.4": newOpenSUSERepos,
-			"15.5": {
-				"x86_64": {
-					"https://download.opensuse.org/debug/distribution/leap/%s/repo/oss/",
-					"https://download.opensuse.org/debug/update/leap/%s/oss/",
-					"https://download.opensuse.org/debug/update/leap/%s/sle/",
-				},
-				"aarch64": {
-					"https://download.opensuse.org/debug/distribution/leap/%s/repo/oss/",
-					"https://download.opensuse.org/debug/update/leap/%s/oss/",
-					"https://download.opensuse.org/debug/update/leap/%s/sle/",
-				},
-			},
 		},
 	}
 }
