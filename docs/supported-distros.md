@@ -120,3 +120,13 @@ In the tables bellow you will find BPF, BTF and HUB columns:
 | 10 (Buster)   | 2019-07-06   | 4.19.0  |  Y  |  -  |  Y  |
 | 11 (Bullseye) | 2021-08-14   | 5.10.0  |  Y  |  Y  |  -  |
 
+### [OpenSUSE Leap](https://en.wikipedia.org/wiki/OpenSUSE#Version_history)
+
+| OpenSUSE Leap | Release Date | Kernel  | BPF | BTF | HUB |
+|---------------|--------------|---------|-----|-----|-----|
+| 15.0          | 2018-05-25   | 4.12.14 |  Y  |  -  |  Y  |
+| 15.1          | 2019-05-22   | 4.12.14 |  Y  |  -  |  Y  |
+| 15.2          | 2020-07-02   | 5.3.18  |  Y  |  -  |  Y  |
+| 15.3          | 2021-06-02   | 5.3.18  |  Y  |  -  |  Y  |
+| 15.4          | 2022-06-08   | 5.14.21 |  Y  |  Y  |  -  |
+| ...           | ...          | ...     |  Y  |  Y  |  -  |
