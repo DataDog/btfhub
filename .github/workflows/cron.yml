@@ -1,4 +1,4 @@
-name: Update BTFHub Archive
+name: direct package repo access update
 on:
   schedule:
     - cron: "0 1 * * *"
@@ -7,24 +7,22 @@ jobs:
   update-archive:
     strategy:
       matrix:
-        distro: [ ubuntu, debian, centos, fedora, ol ]
-    name: update btfhub-archive
+        distro: [ ubuntu, debian, centos, fedora, ol, opensuse-leap ]
+    name: ${{ matrix.distro }}
     runs-on: ubuntu-latest
     steps:
-    #
-      - name: Install needed ubuntu packages
+      - name: install required packages
         run: |
           export DEBIAN_FRONTEND=noninteractive
           sudo dpkg --purge unattended-upgrades
           sudo apt-get update
           sudo apt-get install -y clang bsdutils build-essential pkgconf zlib1g-dev libdw-dev libdwarf-dev libelf-dev software-properties-common devscripts ubuntu-dev-tools
-        shell: bash
-    #
-      - name: Authenticate
+
+      - name: authenticate
         run: |
           gh auth login --with-token <<<'${{ secrets.DD_BTFHUB_BOT_GITHUB_TOKEN }}'
-    #
-      - name: Check out BTFHub
+
+      - name: checkout btfhub
         uses: actions/checkout@v3
         with:
           token: ${{ secrets.DD_BTFHUB_BOT_GITHUB_TOKEN }}
@@ -33,7 +31,7 @@ jobs:
       - uses: actions/setup-go@v4
         with:
           go-version: '1.20'
-    #
+
       - name: build pahole
         run: |
           cd ./3rdparty/dwarves
@@ -43,13 +41,11 @@ jobs:
           sudo make install
           echo "/usr/local/lib" | sudo tee /etc/ld.so.conf.d/pahole.conf
           sudo ldconfig
-        shell: bash
-    #
-      - name: Compile BTFHub Tool
+
+      - name: build btfhub
         run: make
-        shell: bash
-    #
-      - name: Checkout BTFHub Archive
+
+      - name: checkout btfhub-archive
         uses: actions/checkout@v3
         with:
           repository: DataDog/btfhub-archive
@@ -57,23 +53,23 @@ jobs:
           path: archive
           sparse-checkout: |
             ${{ matrix.distro }}
-    #
-      - name: Setup git config
+
+      - name: setup git config
         run: |
           cd archive
           git config --local user.name "Bryce Kahle"
           git config --local user.email "bryce.kahle@datadoghq.com"
-    #
-      - name: Fetch and Generate new BTFs
+
+      - name: generate BTFs
         run: |
           ./btfhub -workers 6 -d ${{ matrix.distro }}
-    #
-      - name: Check Status
+
+      - name: check git status
         run: |
           cd archive
           git status
-    #
-      - name: Commit and Push to BTFHub Archive
+
+      - name: commit and push to btfhub-archive
         run: |
           cd archive
           git add -A

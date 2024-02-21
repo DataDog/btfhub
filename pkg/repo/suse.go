@@ -56,9 +56,6 @@ func (d *suseRepo) GetKernelPackages(ctx context.Context, dir string, release st
 	case "15.3":
 		repos = append(repos, fmt.Sprintf("Basesystem_Module_%s:SLE-Module-Basesystem15-SP3-Debuginfo-Pool", arch))
 		repos = append(repos, fmt.Sprintf("Basesystem_Module_%s:SLE-Module-Basesystem15-SP3-Debuginfo-Updates", arch))
-	case "15.4":
-		repos = append(repos, fmt.Sprintf("Basesystem_Module_%s:SLE-Module-Basesystem15-SP4-Debuginfo-Pool", arch))
-		repos = append(repos, fmt.Sprintf("Basesystem_Module_%s:SLE-Module-Basesystem15-SP4-Debuginfo-Updates", arch))
 	}
 	for _, r := range repos {
 		if _, err := utils.RunZypperCMD(ctx, "modifyrepo", "--enable", r); err != nil {

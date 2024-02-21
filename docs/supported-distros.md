@@ -120,3 +120,29 @@ In the tables bellow you will find BPF, BTF and HUB columns:
 | 10 (Buster)   | 2019-07-06   | 4.19.0  |  Y  |  -  |  Y  |
 | 11 (Bullseye) | 2021-08-14   | 5.10.0  |  Y  |  Y  |  -  |
 
+### [SUSE Linux Enterprise Server (SLES)](https://www.suse.com/support/kb/doc/?id=000019587)
+
+The missing 15.X kernels are due to [this issue](https://github.com/aquasecurity/btfhub/issues/64).
+
+| SLES | Release Date | Kernel            | BPF | BTF | HUB |
+|------|--------------|-------------------|-----|-----|-----|
+| 12.3 | 2017-09-17   | 4.4.73-5          |  Y  |  -  | Y   |
+| 12.4 | 2018-12-11   | 4.12.14-94.41     |  Y  |  -  | -   |
+| 12.5 | 2019-12-09   | 4.12.14-120       |  Y  |  -  | Y   |
+| 15.0 | 2018-07-16   | 4.12.14-23        |  Y  |  -  | -   |
+| 15.1 | 2019-06-24   | 4.12.14-195       |  Y  |  -  | -   |
+| 15.2 | 2020-07-21   | 5.3.18-22         |  Y  |  -  | -   |
+| 15.3 | 2021-06-23   | 5.3.18-57         |  Y  |  -  | Y   |
+| 15.4 | 2022-06-24   | 5.14.21-150400.22 |  Y  |  Y  | -   |
+| ...  | ...          | ...               |  Y  |  Y  | -   |
+
+### [OpenSUSE Leap](https://en.wikipedia.org/wiki/OpenSUSE#Version_history)
+
+| OpenSUSE Leap | Release Date | Kernel  | BPF | BTF | HUB |
+|---------------|--------------|---------|-----|-----|-----|
+| 15.0          | 2018-05-25   | 4.12.14 |  Y  |  -  |  Y  |
+| 15.1          | 2019-05-22   | 4.12.14 |  Y  |  -  |  Y  |
+| 15.2          | 2020-07-02   | 5.3.18  |  Y  |  -  |  Y  |
+| 15.3          | 2021-06-02   | 5.3.18  |  Y  |  -  |  Y  |
+| 15.4          | 2022-06-08   | 5.14.21 |  Y  |  Y  |  -  |
+| ...           | ...          | ...     |  Y  |  Y  |  -  |

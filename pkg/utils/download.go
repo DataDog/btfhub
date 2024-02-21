@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"regexp"
+	"strings"
 
 	fastxz "github.com/therootcompany/xz"
 )
@@ -80,6 +81,10 @@ func Download(ctx context.Context, url string, dest io.Writer) error {
 
 // GetLinks returns a list of links from a given URL
 func GetLinks(ctx context.Context, repoURL string) ([]string, error) {
+	return GetRelativeLinks(ctx, repoURL, repoURL)
+}
+
+func GetRelativeLinks(ctx context.Context, repoURL string, baseURL string) ([]string, error) {
 	// Read the repo URL
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, repoURL, nil)
 	if err != nil {
@@ -95,6 +100,16 @@ func GetLinks(ctx context.Context, repoURL string) ([]string, error) {
 		return nil, fmt.Errorf("url %s returned %d", repoURL, resp.StatusCode)
 	}
 
+	var reader io.ReadCloser
+	reader = resp.Body
+	if strings.HasSuffix(repoURL, ".gz") {
+		reader, err = gzip.NewReader(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("gzip reader: %s", err)
+		}
+		defer reader.Close()
+	}
+
 	re := regexp.MustCompile(`.*href="([^"]+)"`)
 
 	var links []string
@@ -108,7 +123,7 @@ func GetLinks(ctx context.Context, repoURL string) ([]string, error) {
 		Size: uint64(resp.ContentLength),
 	}
 
-	scan := bufio.NewScanner(io.TeeReader(resp.Body, counter))
+	scan := bufio.NewScanner(io.TeeReader(reader, counter))
 
 	for scan.Scan() {
 		line := string(scan.Bytes())
@@ -121,7 +136,7 @@ func GetLinks(ctx context.Context, repoURL string) ([]string, error) {
 		// Find all links in the line
 
 		for _, m := range matches {
-			res, err := url.JoinPath(repoURL, m[1])
+			res, err := url.JoinPath(baseURL, m[1])
 			if err != nil {
 				continue
 			}

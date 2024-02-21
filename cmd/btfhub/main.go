@@ -18,39 +18,42 @@ import (
 )
 
 var distroReleases = map[string][]string{
-	"ubuntu": {"xenial", "bionic", "focal"},
-	"debian": {"stretch", "buster", "bullseye"},
-	"fedora": {"24", "25", "26", "27", "28", "29", "30", "31"},
-	"centos": {"7", "8"},
-	"ol":     {"7", "8"},
-	"rhel":   {"7", "8"},
-	"amzn":   {"1", "2"},
-	"sles":   {"12.3", "12.5", "15.1", "15.2", "15.3", "15.4"},
+	"ubuntu":        {"xenial", "bionic", "focal"},
+	"debian":        {"stretch", "buster", "bullseye"},
+	"fedora":        {"24", "25", "26", "27", "28", "29", "30", "31"},
+	"centos":        {"7", "8"},
+	"ol":            {"7", "8"},
+	"rhel":          {"7", "8"},
+	"amzn":          {"1", "2"},
+	"sles":          {"12.3", "12.5", "15.1", "15.2", "15.3"},
+	"opensuse-leap": {"15.0", "15.1", "15.2", "15.3"},
 }
 
 var defaultReleases = map[string][]string{
 	"ubuntu": {"xenial", "bionic", "focal"},
 	// no stretch for debian
-	"debian": {"buster", "bullseye"},
-	"fedora": {"24", "25", "26", "27", "28", "29", "30", "31"},
-	"centos": {"7", "8"},
-	"ol":     {"7", "8"},
-	"rhel":   {"7", "8"},
-	"amzn":   {"1", "2"},
-	"sles":   {"12.3", "12.5", "15.1", "15.2", "15.3", "15.4"},
+	"debian":        {"buster", "bullseye"},
+	"fedora":        {"24", "25", "26", "27", "28", "29", "30", "31"},
+	"centos":        {"7", "8"},
+	"ol":            {"7", "8"},
+	"rhel":          {"7", "8"},
+	"amzn":          {"1", "2"},
+	"sles":          {"12.3", "12.5", "15.1", "15.2", "15.3"},
+	"opensuse-leap": {"15.0", "15.1", "15.2", "15.3"},
 }
 
 type repoFunc func() repo.Repository
 
 var repoCreators = map[string]repoFunc{
-	"ubuntu": repo.NewUbuntuRepo,
-	"debian": repo.NewDebianRepo,
-	"fedora": repo.NewFedoraRepo,
-	"centos": repo.NewCentOSRepo,
-	"ol":     repo.NewOracleRepo,
-	"rhel":   repo.NewRHELRepo,
-	"amzn":   repo.NewAmazonRepo,
-	"sles":   repo.NewSUSERepo,
+	"ubuntu":        repo.NewUbuntuRepo,
+	"debian":        repo.NewDebianRepo,
+	"fedora":        repo.NewFedoraRepo,
+	"centos":        repo.NewCentOSRepo,
+	"ol":            repo.NewOracleRepo,
+	"rhel":          repo.NewRHELRepo,
+	"amzn":          repo.NewAmazonRepo,
+	"sles":          repo.NewSUSERepo,
+	"opensuse-leap": repo.NewOpenSUSERepo,
 }
 
 var distro, release, arch string
