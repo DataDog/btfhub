@@ -8,6 +8,9 @@ env:
   BTFHUB_NO_SUDO: true
 jobs:
   rhel8-update:
+    defaults:
+      run:
+        shell: bash
     strategy:
       matrix:
         platform: [ "linux/amd64", "linux/arm64" ]
