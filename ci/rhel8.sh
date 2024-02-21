@@ -14,7 +14,6 @@ trap unregister EXIT
 rm -rf /etc/rhsm-host
 subscription-manager register --org="${DD_BTFHUB_RHEL_ORG_ID}" --activationkey="btfhub-ci"
 subscription-manager repos --enable="rhel-8-for-${REPO_ARCH}-baseos-debug-rpms"
-yum-config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo
 yum install -y yum-utils wget bzip2 zlib-devel m4 xz gzip cmake make clang-12.0.1 gcc
 
 # go
