@@ -51,7 +51,7 @@ jobs:
             -w ${{ github.workspace }} \
             --platform linux/${{ matrix.platform_arch }} \
             registry.access.redhat.com/ubi8/ubi:latest \
-            rhel8.sh ${{ matrix.btfhub_arch }} ${{ matrix.repo_arch }} ${{ secrets.DD_BTFHUB_RHEL_ORG_ID }}
+            ci/rhel8.sh ${{ matrix.btfhub_arch }} ${{ matrix.repo_arch }} ${{ secrets.DD_BTFHUB_RHEL_ORG_ID }}
 
       - name: check status
         run: |
