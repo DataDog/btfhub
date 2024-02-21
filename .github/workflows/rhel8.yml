@@ -4,42 +4,21 @@ on:
   schedule:
     - cron: "0 1 * * *"
   workflow_dispatch: {}
-env:
-  BTFHUB_NO_SUDO: true
 jobs:
   rhel8-update:
-    defaults:
-      run:
-        shell: bash
     strategy:
       matrix:
-        platform: [ "linux/amd64", "linux/arm64" ]
+        platform_arch: [ "amd64", "arm64" ]
         include:
-          - platform: "linux/amd64"
-            image_sha: "sha256:e5d89fb9c9b6592d0d5e576c53021598cde831b20213207ecd896049c4b21c08"
-            arch: "x86_64"
-            alt_arch: "x86_64"
-          - platform: "linux/arm64"
-            image_sha: "sha256:d2a8886b5d850e419e49bcee435df03f59323dc23949df3d3a16d87a7e5bc7a8"
-            arch: "arm64"
-            alt_arch: "aarch64"
-    name: rhel 8 ${{ matrix.arch }}
+          - platform_arch: "amd64"
+            btfhub_arch: "x86_64"
+            repo_arch: "x86_64"
+          - platform_arch: "arm64"
+            btfhub_arch: "arm64"
+            repo_arch: "aarch64"
+    name: rhel 8 ${{ matrix.btfhub_arch }}
     runs-on: ubuntu-latest
-    container:
-      image: registry.access.redhat.com/ubi8/ubi:latest@${{ matrix.image_sha }}
-      options: --platform ${{ matrix.platform }}
     steps:
-      - name: setup subscription
-        run: |
-          rm -rf /etc/rhsm-host
-          subscription-manager register --org=${{ secrets.DD_BTFHUB_RHEL_ORG_ID }} --activationkey="btfhub-ci"
-          subscription-manager repos --enable=rhel-8-for-${{ matrix.alt_arch }}-baseos-debug-rpms
-
-      - name: install required packages
-        run: |
-          yum-config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo
-          yum install -y yum-utils wget bzip2 zlib-devel m4 xz gzip cmake make clang-12.0.1 gcc gh
-
       - name: github authenticate
         run: |
           gh auth login --with-token <<<'${{ secrets.DD_BTFHUB_BOT_GITHUB_TOKEN }}'
@@ -50,43 +29,6 @@ jobs:
           token: ${{ secrets.DD_BTFHUB_BOT_GITHUB_TOKEN }}
           submodules: 'recursive'
 
-      - run: git config --system --add safe.directory $(pwd)
-
-      - uses: actions/setup-go@v4
-        with:
-          go-version: '1.20'
-
-      - name: build elfutils
-        run: |
-          wget -nv https://sourceware.org/elfutils/ftp/0.190/elfutils-0.190.tar.bz2
-          tar xf elfutils-0.190.tar.bz2
-          cd elfutils-0.190
-          ./configure --disable-libdebuginfod --disable-debuginfod --disable-demangler
-          make install
-          ldconfig
-
-      - name: build tar
-        run: |
-          wget -nv https://ftpmirror.gnu.org/tar/tar-1.35.tar.xz
-          tar xf tar-1.35.tar.xz
-          cd tar-1.35
-          FORCE_UNSAFE_CONFIGURE=1 ./configure --prefix=/usr
-          make install            
-
-      - name: build pahole
-        run: |
-          cd ./3rdparty/dwarves
-          mkdir build
-          cd build
-          cmake -D__LIB=lib -DDWARF_INCLUDE_DIR=/usr/include ..
-          make install
-          echo "/usr/local/lib" >> /etc/ld.so.conf.d/pahole.conf
-          ldconfig
-
-      - name: build btfhub
-        run: |
-          make
-
       - name: checkout btfhub-archive
         uses: actions/checkout@v3
         with:
@@ -94,11 +36,22 @@ jobs:
           token: ${{ secrets.DD_BTFHUB_BOT_GITHUB_TOKEN }}
           path: archive
           sparse-checkout: |
-            rhel/8/${{ matrix.arch }}
+            rhel/8/${{ matrix.btfhub_arch }}
 
-      - name: generate BTFs
+      - name: setup QEMU
+        uses: docker/setup-qemu-action@v1
+        with:
+          platforms: ${{ matrix.platform_arch }}
+
+      - name: run in docker
         run: |
-          ./btfhub -workers 6 -d rhel -r 8 -a ${{ matrix.arch }}
+          docker run \
+            --rm \
+            -v $(pwd):/${{ github.workspace }} \
+            -w ${{ github.workspace }} \
+            --platform linux/${{ matrix.platform_arch }} \
+            registry.access.redhat.com/ubi8/ubi:latest \
+            rhel8.sh ${{ matrix.btfhub_arch }} ${{ matrix.repo_arch }} ${{ secrets.DD_BTFHUB_RHEL_ORG_ID }}
 
       - name: check status
         run: |
@@ -111,12 +64,5 @@ jobs:
           git config --local user.name "Bryce Kahle"
           git config --local user.email "bryce.kahle@datadoghq.com"
           git add -A
-          git diff-index --quiet HEAD || git commit -m "rhel 8 ${{ matrix.arch }} update on $(date -u +%Y-%m-%d)"
+          git diff-index --quiet HEAD || git commit -m "rhel 8 ${{ matrix.btfhub_arch }} update on $(date -u +%Y-%m-%d)"
           git push || (git pull --rebase && git push)
-
-      - name: unregister from RHEL
-        if: always()
-        run: |
-          subscription-manager remove --all
-          subscription-manager unregister
-          subscription-manager clean
