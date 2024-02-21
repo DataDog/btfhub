@@ -14,9 +14,8 @@ import (
 )
 
 type RHELRepo struct {
-	archs           map[string]string
-	releaseVersions map[string]string
-	minVersion      kernel.Version
+	archs      map[string]string
+	minVersion kernel.Version
 }
 
 func NewRHELRepo() Repository {
@@ -25,12 +24,6 @@ func NewRHELRepo() Repository {
 			"x86_64": "x86_64",
 			"arm64":  "aarch64",
 		},
-		releaseVersions: map[string]string{
-			"7:x86_64":  "7.9",
-			"7:aarch64": "7Server",
-			"8:x86_64":  "8.1",
-			"8:aarch64": "8.1",
-		},
 		minVersion: kernel.NewKernelVersion("3.10.0-957"),
 	}
 }
@@ -38,23 +31,17 @@ func NewRHELRepo() Repository {
 func (d *RHELRepo) GetKernelPackages(
 	ctx context.Context,
 	workDir string,
-	release string,
+	_ string,
 	arch string,
 	force bool,
 	jobChan chan<- job.Job,
 ) error {
 	altArch := d.archs[arch]
-	rver := d.releaseVersions[release+":"+altArch]
-	binary, args := utils.SudoCMD("subscription-manager", "release", fmt.Sprintf("--set=%s", rver))
-	if err := utils.RunCMD(ctx, "", binary, args...); err != nil {
-		return err
-	}
-
-	searchOut, err := yumSearch(ctx, "kernel-debuginfo")
+	searchOut, err := repoquery(ctx, "kernel-debuginfo", altArch)
 	if err != nil {
 		return err
 	}
-	pkgs, err := parseYumPackages(searchOut, d.minVersion)
+	pkgs, err := parseRepoqueryPackages(searchOut, d.minVersion)
 	if err != nil {
 		return fmt.Errorf("parse package listing: %s", err)
 	}

@@ -5,6 +5,7 @@ import (
 	"context"
 	"debug/elf"
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 )
@@ -38,7 +39,9 @@ func RunCMD(ctx context.Context, cwd string, binary string, args ...string) erro
 func SudoCMD(binary string, args ...string) (string, []string) {
 	_, err := exec.LookPath("sudo")
 	if err == nil {
-		return "sudo", append([]string{binary}, args...)
+		if no := os.Getenv("BTFHUB_NO_SUDO"); no == "" {
+			return "sudo", append([]string{binary}, args...)
+		}
 	}
 	return binary, args
 }
