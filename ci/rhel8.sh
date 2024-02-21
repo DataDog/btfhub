@@ -21,7 +21,7 @@ mkdir -p ~/bin
 curl -sL -o ~/bin/gimme https://raw.githubusercontent.com/travis-ci/gimme/master/gimme
 chmod +x ~/bin/gimme
 ~/bin/gimme 1.21.7
-source ~/.gimme/envs/1.21.7.env
+source ~/.gimme/envs/go1.21.7.env
 
 # elfutils
 wget -nv https://sourceware.org/elfutils/ftp/0.190/elfutils-0.190.tar.bz2
