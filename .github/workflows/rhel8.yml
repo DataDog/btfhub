@@ -1,6 +1,5 @@
 name: RHEL 8
 on:
-  push:
   schedule:
     - cron: "0 1 * * *"
   workflow_dispatch: {}
