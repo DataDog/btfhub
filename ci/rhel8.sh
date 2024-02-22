@@ -28,7 +28,7 @@ wget -nv https://sourceware.org/elfutils/ftp/0.190/elfutils-0.190.tar.bz2
 tar xf elfutils-0.190.tar.bz2
 pushd elfutils-0.190
 ./configure --disable-libdebuginfod --disable-debuginfod --disable-demangler
-make install
+make -j 3 install
 ldconfig
 popd
 
@@ -37,7 +37,7 @@ wget -nv https://ftpmirror.gnu.org/tar/tar-1.35.tar.xz
 tar xf tar-1.35.tar.xz
 pushd tar-1.35
 FORCE_UNSAFE_CONFIGURE=1 ./configure --prefix=/usr
-make install
+make -j 3 install
 popd
 
 # pahole
@@ -45,7 +45,7 @@ pushd ./3rdparty/dwarves
 mkdir build
 cd build
 cmake -D__LIB=lib -DDWARF_INCLUDE_DIR=/usr/include ..
-make install
+make -j 3 install
 echo "/usr/local/lib" >> /etc/ld.so.conf.d/pahole.conf
 ldconfig
 popd
