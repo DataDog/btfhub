@@ -2,6 +2,7 @@
 set -eEuo pipefail
 
 declare -xr ARCH="$1" REPO_ARCH="$2" DD_BTFHUB_RHEL_ORG_ID="$3"
+NPROC=$(nproc)
 
 function unregister() {
   subscription-manager remove --all
@@ -28,7 +29,7 @@ wget -nv https://sourceware.org/elfutils/ftp/0.190/elfutils-0.190.tar.bz2
 tar xf elfutils-0.190.tar.bz2
 pushd elfutils-0.190
 ./configure --disable-libdebuginfod --disable-debuginfod --disable-demangler
-make -j 3 install
+make -j "${NPROC}" install
 ldconfig
 popd
 
@@ -37,7 +38,7 @@ wget -nv https://ftpmirror.gnu.org/tar/tar-1.35.tar.xz
 tar xf tar-1.35.tar.xz
 pushd tar-1.35
 FORCE_UNSAFE_CONFIGURE=1 ./configure --prefix=/usr
-make -j 3 install
+make -j "${NPROC}" install
 popd
 
 # pahole
@@ -45,7 +46,7 @@ pushd ./3rdparty/dwarves
 mkdir build
 cd build
 cmake -D__LIB=lib -DDWARF_INCLUDE_DIR=/usr/include ..
-make -j 3 install
+make -j "${NPROC}" install
 echo "/usr/local/lib" >> /etc/ld.so.conf.d/pahole.conf
 ldconfig
 popd
