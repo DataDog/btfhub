@@ -18,7 +18,6 @@ jobs:
           yum repolist --disablerepo=*
           subscription-manager register --org=${{ secrets.DD_BTFHUB_RHEL_ORG_ID }} --activationkey="btfhub-ci"
           subscription-manager repos --enable=rhel-7-server-debug-rpms --enable=rhel-7-server-rpms
-          yum -y update
 
       - name: install required packages
         run: |
