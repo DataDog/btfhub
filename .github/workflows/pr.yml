@@ -34,8 +34,10 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: true
+
       - name: Install Dependencies
         uses: ./.github/actions/build-dependencies
+
       - name: Lint
         run: |
           if test -z "$(gofmt -l .)"; then
@@ -45,9 +47,11 @@ jobs:
             gofmt -s -d .
             exit 1
           fi
+
       - name: Check Golang Vet
         run: |
           make check-vet
+
       - name: Check with StaticCheck
         run: |
           make check-staticcheck
@@ -64,8 +68,10 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: true
+
       - name: Install Dependencies
         uses: ./.github/actions/build-dependencies
+
       - name: Run Unit Tests
         run: |
           make test-unit
