@@ -72,10 +72,7 @@ runs:
           --slave /usr/bin/opt opt /usr/bin/opt-14 \
           --slave /usr/bin/cc cc /usr/bin/clang-14
       shell: bash
-    - name: Install pahole
-      run: |
-        ./3rdparty/pahole.sh
-      shell: bash
+
     - name: Install staticchecker
       run: |
         GOROOT=/usr/local/go GOPATH=$HOME/go go install honnef.co/go/tools/cmd/staticcheck@latest
