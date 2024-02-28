@@ -2,7 +2,5 @@
 btfhub
 # archives
 /archive
-# makefile leftovers
-.check*
 # JetBrains
 .idea/
