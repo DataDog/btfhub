@@ -76,7 +76,7 @@ func NewOpenSUSERepo() Repository {
 	}
 }
 
-func (d *openSUSERepo) GetKernelPackages(ctx context.Context, workDir string, release string, arch string, force bool, jobChan chan<- job.Job) error {
+func (d *openSUSERepo) GetKernelPackages(ctx context.Context, workDir string, release string, arch string, force bool, kernelModules bool, jobChan chan<- job.Job) error {
 	altArch := d.archs[arch]
 	repoURLs := d.repos[release][altArch]
 
@@ -155,7 +155,7 @@ func (d *openSUSERepo) GetKernelPackages(ctx context.Context, workDir string, re
 		cks := ks
 		g.Go(func() error {
 			log.Printf("DEBUG: start kernel type %s %s (%d pkgs)\n", ckt, arch, len(cks))
-			err := d.processPackages(ctx, workDir, cks, force, jobChan)
+			err := d.processPackages(ctx, workDir, cks, force, kernelModules, jobChan)
 			log.Printf("DEBUG: end kernel type %s %s\n", ckt, arch)
 			return err
 		})
@@ -163,11 +163,11 @@ func (d *openSUSERepo) GetKernelPackages(ctx context.Context, workDir string, re
 	return g.Wait()
 }
 
-func (d *openSUSERepo) processPackages(ctx context.Context, dir string, pkgs []pkg.Package, force bool, jobchan chan<- job.Job) error {
+func (d *openSUSERepo) processPackages(ctx context.Context, dir string, pkgs []pkg.Package, force bool, kernelModules bool, jobchan chan<- job.Job) error {
 	for i, p := range pkgs {
 		log.Printf("DEBUG: start pkg %s (%d/%d)\n", p, i+1, len(pkgs))
-		if err := processPackage(ctx, p, dir, force, jobchan); err != nil {
-			if errors.Is(err, utils.ErrHasBTF) {
+		if err := processPackage(ctx, p, dir, force, kernelModules, jobchan); err != nil {
+			if errors.Is(err, utils.ErrKernelHasBTF) {
 				log.Printf("INFO: kernel %s has BTF already, skipping later kernels\n", p)
 				return nil
 			}
