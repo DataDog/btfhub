@@ -124,8 +124,8 @@ func (pkg *UbuntuPackage) ExtractKernel(ctx context.Context, pkgPath string, ext
 			if !kernelModules {
 				return vmlinuxPath, nil, nil
 			}
-		} else if kernelModules && strings.HasSuffix(hdr.Name, ".ko.debug") {
-			filename := strings.TrimSuffix(filepath.Base(hdr.Name), ".ko.debug")
+		} else if kernelModules && strings.HasSuffix(hdr.Name, ".ko") {
+			filename := strings.TrimSuffix(filepath.Base(hdr.Name), ".ko")
 			outfile := filepath.Join(extractDir, filename)
 			err = extractFile(ctx, outfile, hdr, rdr)
 			if err != nil {
