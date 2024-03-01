@@ -10,6 +10,7 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"golang.org/x/sync/errgroup"
 
@@ -56,17 +57,17 @@ var repoCreators = map[string]repoFunc{
 	"opensuse-leap": repo.NewOpenSUSERepo,
 }
 
-var distro, release, arch string
+var distroArg, releaseArg, archArg string
 var numWorkers int
 var force, kernelModules bool
 
 func init() {
-	flag.StringVar(&distro, "distro", "", "distribution to update (ubuntu,debian,centos,fedora,ol,rhel,amazon,sles)")
-	flag.StringVar(&distro, "d", "", "distribution to update (ubuntu,debian,centos,fedora,ol,rhel,amazon,sles)")
-	flag.StringVar(&release, "release", "", "distribution release to update, requires specifying distribution")
-	flag.StringVar(&release, "r", "", "distribution release to update, requires specifying distribution")
-	flag.StringVar(&arch, "arch", "", "architecture to update (x86_64,arm64)")
-	flag.StringVar(&arch, "a", "", "architecture to update (x86_64,arm64)")
+	flag.StringVar(&distroArg, "distro", "", "distribution to update (ubuntu,debian,centos,fedora,ol,rhel,amazon,sles)")
+	flag.StringVar(&distroArg, "d", "", "distribution to update (ubuntu,debian,centos,fedora,ol,rhel,amazon,sles)")
+	flag.StringVar(&releaseArg, "release", "", "distribution release to update, requires specifying distribution")
+	flag.StringVar(&releaseArg, "r", "", "distribution release to update, requires specifying distribution")
+	flag.StringVar(&archArg, "arch", "", "architecture to update (x86_64,arm64)")
+	flag.StringVar(&archArg, "a", "", "architecture to update (x86_64,arm64)")
 	flag.IntVar(&numWorkers, "workers", 0, "number of concurrent workers (defaults to runtime.NumCPU() - 1)")
 	flag.IntVar(&numWorkers, "j", 0, "number of concurrent workers (defaults to runtime.NumCPU() - 1)")
 	flag.BoolVar(&force, "f", false, "force update regardless of existing files (defaults to false)")
@@ -84,43 +85,40 @@ func main() {
 }
 
 func run(ctx context.Context) error {
-
-	if distro != "" {
-		if _, ok := distroReleases[distro]; !ok {
-			return fmt.Errorf("invalid distribution %s", distro)
-		}
-		if release != "" {
-			found := false
-			for _, r := range distroReleases[distro] {
-				found = r == release
-				if found {
-					break
-				}
+	var distros []string
+	var releases []string
+	if distroArg != "" {
+		distros = strings.Split(distroArg, " ")
+		for i, d := range distros {
+			if _, ok := distroReleases[d]; !ok {
+				return fmt.Errorf("invalid distribution %s", d)
 			}
-			if !found {
-				return fmt.Errorf("invalid release %s for %s", release, distro)
+			if releaseArg != "" {
+				releases = strings.Split(releaseArg, " ")
+				found := false
+				for _, r := range distroReleases[d] {
+					found = r == releases[i]
+					if found {
+						break
+					}
+				}
+				if !found {
+					return fmt.Errorf("invalid release %s for %s", releases[i], d)
+				}
 			}
 		}
 	} else {
-		release = "" // no release if no distro is selected
-	}
-
-	// Distributions
-
-	distros := []string{"ubuntu", "debian", "fedora", "centos", "ol"} // RHEL needs subscription
-	if distro != "" {
-		distros = []string{distro}
+		distros = []string{"ubuntu", "debian", "fedora", "centos", "ol"}
+		releaseArg = "" // no release if no distro is selected
 	}
 
 	// Architectures
-
 	archs := []string{"x86_64", "arm64"}
-	if arch != "" {
-		archs = []string{arch}
+	if archArg != "" {
+		archs = []string{archArg}
 	}
 
 	// Environment
-
 	basedir, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("pwd: %s", err)
@@ -129,13 +127,9 @@ func run(ctx context.Context) error {
 
 	if numWorkers == 0 {
 		numWorkers = runtime.NumCPU() - 1
-		if numWorkers > 12 {
-			numWorkers = 12 // limit to 12 workers max (for bigger machines)
-		}
 	}
 
 	// Workers: job consumers (pool)
-
 	jobChan := make(chan job.Job)
 	consume, consCtx := errgroup.WithContext(ctx)
 
@@ -147,15 +141,14 @@ func run(ctx context.Context) error {
 	}
 
 	// Workers: job producers (per distro, per release)
-
 	produce, prodCtx := errgroup.WithContext(ctx)
-
-	for _, d := range distros {
-		releases := defaultReleases[d]
-		if release != "" {
-			releases = []string{release}
+	for i, d := range distros {
+		distroReleases := defaultReleases[d]
+		if len(releases) > 0 {
+			distroReleases = []string{releases[i]}
 		}
-		for _, r := range releases {
+
+		for _, r := range distroReleases {
 			release := r
 			for _, a := range archs {
 				arch := a
@@ -171,18 +164,15 @@ func run(ctx context.Context) error {
 					rep := repoCreators[distro]()
 					return rep.GetKernelPackages(prodCtx, workDir, release, arch, force, kernelModules, jobChan)
 				})
-
 			}
 		}
 	}
 
 	// Cleanup
-
 	err = produce.Wait()
 	close(jobChan)
 	if err != nil {
 		return err
 	}
-
 	return consume.Wait()
 }
