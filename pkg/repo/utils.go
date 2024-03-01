@@ -31,15 +31,26 @@ func processPackage(
 		return utils.ErrKernelHasBTF
 	}
 
-	if !force && utils.Exists(btfTarPath) {
-		if kernelModules {
-			hasmods, err := utils.TarballHasKernelModules(btfTarPath)
-			if err != nil || hasmods {
-				return err
-			}
-		} else {
-			log.Printf("SKIP: %s exists\n", btfTarName)
+	if !force {
+		if pkg.PackageFailed(p, workDir) {
+			log.Printf("SKIP: %s previously failed\n", btfTarName)
 			return nil
+		}
+
+		if pkg.PackageBTFExists(p, workDir) {
+			if kernelModules {
+				hasmods, err := utils.TarballHasKernelModules(btfTarPath)
+				if err != nil {
+					return err
+				}
+				if hasmods {
+					log.Printf("SKIP: %s exists\n", btfTarName)
+					return nil
+				}
+			} else {
+				log.Printf("SKIP: %s exists\n", btfTarName)
+				return nil
+			}
 		}
 	}
 

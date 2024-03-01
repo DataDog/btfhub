@@ -85,9 +85,6 @@ func (uRepo *UbuntuRepo) GetKernelPackages(
 			if match == nil {
 				continue
 			}
-			if !force && (pkg.PackageBTFExists(p, workDir) || pkg.PackageFailed(p, workDir)) {
-				continue
-			}
 			// match = [filename = linux-image-{unsigned}-XXX, flavor = generic, gke, aws, ...]
 			p.Flavor = match[1]
 			filteredKernelPkgs = append(filteredKernelPkgs, p)
@@ -121,9 +118,6 @@ func (uRepo *UbuntuRepo) GetKernelPackages(
 				continue
 			}
 			if p.Size < 10_000_000 { // ignore smaller than 10MB (signed vs unsigned emptiness)
-				continue
-			}
-			if !force && (pkg.PackageBTFExists(p, workDir) || pkg.PackageFailed(p, workDir)) {
 				continue
 			}
 			// match = [filename = linux-image-{unsigned}-XXX-dbgsym, flavor = generic, gke, aws, ...]
