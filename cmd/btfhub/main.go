@@ -133,9 +133,9 @@ func check(ctx context.Context) error {
 					}
 
 					if info.IsDir() {
-						return filepath.SkipDir
+						return nil
 					}
-					if filepath.Ext(path) != ".btf.tar.xz" {
+					if !strings.HasSuffix(path, ".btf.tar.xz") {
 						return nil
 					}
 
