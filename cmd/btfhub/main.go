@@ -59,7 +59,7 @@ var repoCreators = map[string]repoFunc{
 
 var distroArg, releaseArg, archArg string
 var numWorkers int
-var force, kernelModules bool
+var force, kernelModules, ordered bool
 
 func init() {
 	flag.StringVar(&distroArg, "distro", "", "distribution to update (ubuntu,debian,centos,fedora,ol,rhel,amazon,sles)")
@@ -72,6 +72,7 @@ func init() {
 	flag.IntVar(&numWorkers, "j", 0, "number of concurrent workers (defaults to runtime.NumCPU() - 1)")
 	flag.BoolVar(&force, "f", false, "force update regardless of existing files (defaults to false)")
 	flag.BoolVar(&kernelModules, "kmod", true, "generate BTF for kernel modules, in addition to the base kernel (defaults to true)")
+	flag.BoolVar(&ordered, "ordered", true, "process kernels in order so future kernels can be skipped once BTF is detected")
 }
 
 func main() {
@@ -162,7 +163,8 @@ func run(ctx context.Context) error {
 
 					// pick the repository creator and get the kernel packages
 					rep := repoCreators[distro]()
-					return rep.GetKernelPackages(prodCtx, workDir, release, arch, force, kernelModules, jobChan)
+					opts := repo.RepoOptions{Force: force, KernelModules: kernelModules, Ordered: ordered}
+					return rep.GetKernelPackages(prodCtx, workDir, release, arch, opts, jobChan)
 				})
 			}
 		}

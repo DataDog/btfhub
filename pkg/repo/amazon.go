@@ -38,8 +38,7 @@ func (d *AmazonRepo) GetKernelPackages(
 	workDir string,
 	_ string,
 	arch string,
-	force bool,
-	kernelModules bool,
+	opts RepoOptions,
 	jobChan chan<- job.Job,
 ) error {
 	altArch := d.archs[arch]
@@ -54,7 +53,7 @@ func (d *AmazonRepo) GetKernelPackages(
 	sort.Sort(pkg.ByVersion(pkgs))
 
 	for _, p := range pkgs {
-		err := processPackage(ctx, p, workDir, force, kernelModules, jobChan)
+		err := processPackage(ctx, p, workDir, opts, jobChan)
 		if err != nil {
 			if errors.Is(err, utils.ErrKernelHasBTF) {
 				log.Printf("INFO: kernel %s has BTF already, skipping later kernels\n", p)

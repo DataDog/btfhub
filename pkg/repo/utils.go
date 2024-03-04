@@ -21,8 +21,7 @@ func processPackage(
 	ctx context.Context,
 	p pkg.Package,
 	workDir string,
-	force bool,
-	kernelModules bool,
+	opts RepoOptions,
 	jobChan chan<- job.Job,
 ) error {
 	btfTarName := fmt.Sprintf("%s.btf.tar.xz", p.BTFFilename())
@@ -31,14 +30,14 @@ func processPackage(
 		return utils.ErrKernelHasBTF
 	}
 
-	if !force {
+	if !opts.Force {
 		if pkg.PackageFailed(p, workDir) {
 			log.Printf("SKIP: %s previously failed\n", btfTarName)
 			return nil
 		}
 
 		if pkg.PackageBTFExists(p, workDir) {
-			if kernelModules {
+			if opts.KernelModules {
 				hasmods, err := utils.TarballHasKernelModules(btfTarPath)
 				if err != nil {
 					return err
@@ -69,8 +68,8 @@ func processPackage(
 		Pkg:           p,
 		WorkDir:       exDir,
 		ReplyChan:     make(chan any),
-		Force:         force,
-		KernelModules: kernelModules,
+		Force:         opts.Force,
+		KernelModules: opts.KernelModules,
 	}
 
 	select {
@@ -100,7 +99,6 @@ func processPackage(
 	}
 
 	// from this point on, we just want to kick the jobs off and proceed with other packages
-
 	btfGenDir := filepath.Join(tmpDir, "btfgen")
 	if err := os.Mkdir(btfGenDir, 0777); err != nil {
 		return err

@@ -6,14 +6,19 @@ import (
 	"github.com/aquasecurity/btfhub/pkg/job"
 )
 
+type RepoOptions struct {
+	Force         bool
+	KernelModules bool
+	Ordered       bool
+}
+
 type Repository interface {
 	GetKernelPackages(
 		ctx context.Context,
 		workDir string,
 		release string,
 		arch string,
-		force bool,
-		kernelModules bool,
+		opts RepoOptions,
 		jobChan chan<- job.Job,
 	) error
 }
