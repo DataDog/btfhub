@@ -109,7 +109,7 @@ func run(ctx context.Context) error {
 }
 
 func check(ctx context.Context) error {
-	distros, releases, archs, err := processArgs(maps.Keys(distroReleases))
+	distros, releases, archs, err := processArgs(maps.Keys(distroReleases), distroReleases)
 	if err != nil {
 		return err
 	}
@@ -197,7 +197,7 @@ func check(ctx context.Context) error {
 	return nil
 }
 
-func processArgs(defDistros []string) (distros, releases, archs []string, err error) {
+func processArgs(defDistros []string, defReleases map[string][]string) (distros, releases, archs []string, err error) {
 	if distroArg != "" {
 		distros = strings.Split(distroArg, " ")
 		for i, d := range distros {
@@ -218,6 +218,8 @@ func processArgs(defDistros []string) (distros, releases, archs []string, err er
 					err = fmt.Errorf("invalid release %s for %s", releases[i], d)
 					return
 				}
+			} else {
+				releases = defReleases[d]
 			}
 		}
 	} else {
@@ -243,7 +245,7 @@ func archivePath() (string, error) {
 }
 
 func generate(ctx context.Context) error {
-	distros, releases, archs, err := processArgs(defaultDistros)
+	distros, releases, archs, err := processArgs(defaultDistros, defaultReleases)
 	if err != nil {
 		return err
 	}
@@ -273,13 +275,8 @@ func generate(ctx context.Context) error {
 
 	// Workers: job producers (per distro, per release)
 	produce, prodCtx := errgroup.WithContext(ctx)
-	for i, d := range distros {
-		distroReleases := defaultReleases[d]
-		if len(releases) > 0 {
-			distroReleases = []string{releases[i]}
-		}
-
-		for _, r := range distroReleases {
+	for _, d := range distros {
+		for _, r := range releases {
 			release := r
 			for _, a := range archs {
 				arch := a
