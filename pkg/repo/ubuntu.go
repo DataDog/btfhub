@@ -145,7 +145,8 @@ func (uRepo *UbuntuRepo) GetKernelPackages(
 		if !ok {
 			log.Printf("DEBUG: adding launchpad package for %s\n", p.Name)
 			filteredKernelDbgPkgMap[p.Filename()] = &pkg.UbuntuPackage{
-				Name:          fmt.Sprintf("linux-image-%s-dbgsym", p.Filename()),
+				// try unsigned first
+				Name:          fmt.Sprintf("linux-image-unsigned-%s-dbgsym", p.Filename()),
 				Architecture:  p.Architecture,
 				KernelVersion: p.KernelVersion,
 				NameOfFile:    p.NameOfFile,
