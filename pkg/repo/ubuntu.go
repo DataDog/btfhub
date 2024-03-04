@@ -202,10 +202,11 @@ func (uRepo *UbuntuRepo) processPackages(
 		g, ctx := errgroup.WithContext(ctx)
 		for i, p := range pkgs {
 			pos := i + 1
+			gp := p
 			g.Go(func() error {
-				err := processIndividualPackage(ctx, workDir, p, opts, jobChan, pos, len(pkgs))
+				err := processIndividualPackage(ctx, workDir, gp, opts, jobChan, pos, len(pkgs))
 				if err != nil {
-					log.Printf("ERROR: %s: %s\n", p, err)
+					log.Printf("ERROR: %s: %s\n", gp, err)
 				}
 				return nil
 			})
