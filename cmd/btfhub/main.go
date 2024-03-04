@@ -1,9 +1,12 @@
 package main
 
 import (
+	"archive/tar"
 	"context"
 	"flag"
 	"fmt"
+	"io"
+	"io/fs"
 	"log"
 	"os"
 	"os/signal"
@@ -12,11 +15,15 @@ import (
 	"runtime"
 	"strings"
 
+	fastxz "github.com/therootcompany/xz"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/aquasecurity/btfhub/pkg/job"
 	"github.com/aquasecurity/btfhub/pkg/repo"
+	"github.com/aquasecurity/btfhub/pkg/utils"
 )
+
+var possibleArchs = []string{"x86_64", "arm64"}
 
 var distroReleases = map[string][]string{
 	"ubuntu":        {"xenial", "bionic", "focal"},
@@ -87,6 +94,101 @@ func main() {
 }
 
 func run(ctx context.Context) error {
+	if fa := flag.Args(); len(fa) > 0 {
+		switch fa[0] {
+		case "check":
+			return check(ctx)
+		default:
+			log.Fatalf("unknown command %s", fa[0])
+		}
+	}
+	return generate(ctx)
+}
+
+func check(ctx context.Context) error {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("getwd: %s", err)
+	}
+	for distro, releases := range distroReleases {
+		for _, release := range releases {
+			for _, arch := range possibleArchs {
+				btfdir := filepath.Join(cwd, distro, release, arch)
+				if !utils.Exists(btfdir) {
+					continue
+				}
+
+				err = filepath.Walk(btfdir, func(path string, info fs.FileInfo, err error) error {
+					if cerr := ctx.Err(); cerr != nil {
+						return cerr
+					}
+
+					if info.IsDir() {
+						return filepath.SkipDir
+					}
+					if filepath.Ext(path) != ".btf.tar.xz" {
+						return nil
+					}
+
+					unameName := strings.TrimSuffix(filepath.Base(path), ".tar.xz")
+					hasKernelModules := false
+
+					f, err := os.Open(path)
+					if err != nil {
+						return err
+					}
+					defer f.Close()
+
+					xr, err := fastxz.NewReader(f, 0)
+					if err != nil {
+						return err
+					}
+					tr := tar.NewReader(xr)
+					for {
+						hdr, err := tr.Next()
+						if err == io.EOF {
+							break // End of archive
+						}
+						if err != nil {
+							return err
+						}
+
+						if hdr.ModTime.Unix() != 0 {
+							fmt.Printf("%s: BTF file timestamp is not unix epoch. name=%s time=%s unix=%d\n", path, hdr.Name, hdr.ModTime, hdr.ModTime.Unix())
+						}
+						if hdr.Mode != 0444 {
+							fmt.Printf("%s: BTF file mode is not 0444. name=%s mode=%o\n", path, hdr.Name, hdr.Mode)
+						}
+						if hdr.Uid != 0 {
+							fmt.Printf("%s: BTF file owner is not UID 0. name=%s uid=%d\n", path, hdr.Name, hdr.Uid)
+						}
+						if hdr.Gid != 0 {
+							fmt.Printf("%s: BTF file group is not GID 0. name=%s gid=%d\n", path, hdr.Name, hdr.Gid)
+						}
+
+						if hdr.Typeflag != tar.TypeReg {
+							continue
+						}
+						if hdr.Name != unameName && hdr.Name != "vmlinux" {
+							hasKernelModules = true
+						}
+					}
+
+					if !hasKernelModules {
+						fmt.Printf("%s: does not have kernel module BTF\n", path)
+					}
+					return nil
+				})
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func generate(ctx context.Context) error {
 	var distros []string
 	var releases []string
 	if distroArg != "" {
@@ -115,7 +217,7 @@ func run(ctx context.Context) error {
 	}
 
 	// Architectures
-	archs := []string{"x86_64", "arm64"}
+	archs := possibleArchs
 	if archArg != "" {
 		archs = []string{archArg}
 	}
