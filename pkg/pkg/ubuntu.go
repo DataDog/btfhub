@@ -69,8 +69,12 @@ func (pkg *UbuntuPackage) Download(ctx context.Context, dir string, force bool) 
 
 	if pkg.URL == "pull-lp-ddebs" {
 		if err := pkg.pullLaunchpadDdeb(ctx, dir, ddebPath); err != nil {
-			os.Remove(ddebPath)
-			return "", fmt.Errorf("downloading ddeb package: %s", err)
+			// try unsigned variant
+			pkg.Name = fmt.Sprintf("linux-image-unsigned-%s-dbgsym", pkg.Filename())
+			if err := pkg.pullLaunchpadDdeb(ctx, dir, ddebPath); err != nil {
+				os.Remove(ddebPath)
+				return "", fmt.Errorf("downloading ddeb package: %s", err)
+			}
 		}
 		return ddebPath, nil
 	}
