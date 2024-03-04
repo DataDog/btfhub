@@ -123,7 +123,6 @@ func check(ctx context.Context) error {
 			for _, arch := range archs {
 				btfdir := filepath.Join(archiveDir, distro, release, arch)
 				if !utils.Exists(btfdir) {
-					fmt.Printf("ignoring nonexistent directory %s\n", btfdir)
 					continue
 				}
 
