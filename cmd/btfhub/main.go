@@ -16,6 +16,7 @@ import (
 	"strings"
 
 	fastxz "github.com/therootcompany/xz"
+	"golang.org/x/exp/maps"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/aquasecurity/btfhub/pkg/job"
@@ -36,6 +37,8 @@ var distroReleases = map[string][]string{
 	"sles":          {"12.3", "12.5", "15.1", "15.2", "15.3"},
 	"opensuse-leap": {"15.0", "15.1", "15.2", "15.3"},
 }
+
+var defaultDistros = []string{"ubuntu", "debian", "fedora", "centos", "ol"}
 
 var defaultReleases = map[string][]string{
 	"ubuntu": {"xenial", "bionic", "focal"},
@@ -106,13 +109,18 @@ func run(ctx context.Context) error {
 }
 
 func check(ctx context.Context) error {
+	distros, releases, archs, err := processArgs(maps.Keys(distroReleases))
+	if err != nil {
+		return err
+	}
+
 	cwd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("getwd: %s", err)
 	}
-	for distro, releases := range distroReleases {
+	for _, distro := range distros {
 		for _, release := range releases {
-			for _, arch := range possibleArchs {
+			for _, arch := range archs {
 				btfdir := filepath.Join(cwd, distro, release, arch)
 				if !utils.Exists(btfdir) {
 					continue
@@ -188,14 +196,13 @@ func check(ctx context.Context) error {
 	return nil
 }
 
-func generate(ctx context.Context) error {
-	var distros []string
-	var releases []string
+func processArgs(defDistros []string) (distros, releases, archs []string, err error) {
 	if distroArg != "" {
 		distros = strings.Split(distroArg, " ")
 		for i, d := range distros {
 			if _, ok := distroReleases[d]; !ok {
-				return fmt.Errorf("invalid distribution %s", d)
+				err = fmt.Errorf("invalid distribution %s", d)
+				return
 			}
 			if releaseArg != "" {
 				releases = strings.Split(releaseArg, " ")
@@ -207,21 +214,29 @@ func generate(ctx context.Context) error {
 					}
 				}
 				if !found {
-					return fmt.Errorf("invalid release %s for %s", releases[i], d)
+					err = fmt.Errorf("invalid release %s for %s", releases[i], d)
+					return
 				}
 			}
 		}
 	} else {
-		distros = []string{"ubuntu", "debian", "fedora", "centos", "ol"}
+		distros = defDistros
 		releaseArg = "" // no release if no distro is selected
 	}
 
 	// Architectures
-	archs := possibleArchs
+	archs = possibleArchs
 	if archArg != "" {
 		archs = []string{archArg}
 	}
+	return
+}
 
+func generate(ctx context.Context) error {
+	distros, releases, archs, err := processArgs(defaultDistros)
+	if err != nil {
+		return err
+	}
 	if fileArg != "" && (len(archs) != 1 || len(distros) != 1 || len(releases) != 1) {
 		return fmt.Errorf("invalid use of pkg-file, requires specific distro+release+arch")
 	}
