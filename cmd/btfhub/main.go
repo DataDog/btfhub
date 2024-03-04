@@ -114,14 +114,14 @@ func check(ctx context.Context) error {
 		return err
 	}
 
-	cwd, err := os.Getwd()
+	archiveDir, err := archivePath()
 	if err != nil {
-		return fmt.Errorf("getwd: %s", err)
+		return fmt.Errorf("pwd: %s", err)
 	}
 	for _, distro := range distros {
 		for _, release := range releases {
 			for _, arch := range archs {
-				btfdir := filepath.Join(cwd, distro, release, arch)
+				btfdir := filepath.Join(archiveDir, distro, release, arch)
 				if !utils.Exists(btfdir) {
 					continue
 				}
@@ -232,6 +232,15 @@ func processArgs(defDistros []string) (distros, releases, archs []string, err er
 	return
 }
 
+func archivePath() (string, error) {
+	basedir, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("pwd: %s", err)
+	}
+	archiveDir := path.Join(basedir, "archive")
+	return archiveDir, nil
+}
+
 func generate(ctx context.Context) error {
 	distros, releases, archs, err := processArgs(defaultDistros)
 	if err != nil {
@@ -241,12 +250,10 @@ func generate(ctx context.Context) error {
 		return fmt.Errorf("invalid use of pkg-file, requires specific distro+release+arch")
 	}
 
-	// Environment
-	basedir, err := os.Getwd()
+	archiveDir, err := archivePath()
 	if err != nil {
 		return fmt.Errorf("pwd: %s", err)
 	}
-	archiveDir := path.Join(basedir, "archive")
 
 	if numWorkers == 0 {
 		numWorkers = runtime.NumCPU() - 1
