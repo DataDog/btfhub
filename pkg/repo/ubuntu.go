@@ -60,8 +60,9 @@ func (uRepo *UbuntuRepo) GetKernelPackages(
 	altArch := uRepo.archs[arch]
 	repoURL := uRepo.repo[altArch]
 
-	var err error
 	var kernelPkgs []*pkg.UbuntuPackage
+	filteredKernelDbgPkgMap := make(map[string]*pkg.UbuntuPackage) // map[filename]package
+
 	if opts.PackageFile != "" {
 		lines, err := readPackageFile(opts.PackageFile)
 		if err != nil {
@@ -88,6 +89,39 @@ func (uRepo *UbuntuRepo) GetKernelPackages(
 		if err != nil {
 			return fmt.Errorf("parsing main package list: %s", err)
 		}
+
+		// Get Packages.xz from debug repo
+		dbgRawPkgs, err := pkg.GetPackageList(ctx, uRepo.debugRepo, release, altArch)
+		if err != nil {
+			return fmt.Errorf("ddebs: %s", err)
+		}
+
+		// Get the list of kernel packages to download from debug repo
+		kernelDbgPkgs, err := pkg.ParseAPTPackages(dbgRawPkgs, uRepo.debugRepo, release)
+		if err != nil {
+			return fmt.Errorf("parsing debug package list: %s", err)
+		}
+
+		for _, restr := range uRepo.kernelTypes {
+			re := regexp.MustCompile(fmt.Sprintf("%s-dbgsym", restr))
+
+			for _, p := range kernelDbgPkgs {
+				match := re.FindStringSubmatch(p.Name)
+				if match == nil {
+					continue
+				}
+				if p.Size < 10_000_000 { // ignore smaller than 10MB (signed vs unsigned emptiness)
+					continue
+				}
+				// match = [filename = linux-image-{unsigned}-XXX-dbgsym, flavor = generic, gke, aws, ...]
+				p.Flavor = match[1]
+				if dp, ok := filteredKernelDbgPkgMap[p.Filename()]; !ok {
+					filteredKernelDbgPkgMap[p.Filename()] = p
+				} else {
+					log.Printf("DEBUG: duplicate %s filename from %s (other %s)", p.Filename(), p, dp)
+				}
+			}
+		}
 	}
 
 	var filteredKernelPkgs []*pkg.UbuntuPackage
@@ -101,40 +135,6 @@ func (uRepo *UbuntuRepo) GetKernelPackages(
 			// match = [filename = linux-image-{unsigned}-XXX, flavor = generic, gke, aws, ...]
 			p.Flavor = match[1]
 			filteredKernelPkgs = append(filteredKernelPkgs, p)
-		}
-	}
-
-	// Get Packages.xz from debug repo
-	dbgRawPkgs, err := pkg.GetPackageList(ctx, uRepo.debugRepo, release, altArch)
-	if err != nil {
-		return fmt.Errorf("ddebs: %s", err)
-	}
-
-	// Get the list of kernel packages to download from debug repo
-	kernelDbgPkgs, err := pkg.ParseAPTPackages(dbgRawPkgs, uRepo.debugRepo, release)
-	if err != nil {
-		return fmt.Errorf("parsing debug package list: %s", err)
-	}
-
-	filteredKernelDbgPkgMap := make(map[string]*pkg.UbuntuPackage) // map[filename]package
-	for _, restr := range uRepo.kernelTypes {
-		re := regexp.MustCompile(fmt.Sprintf("%s-dbgsym", restr))
-
-		for _, p := range kernelDbgPkgs {
-			match := re.FindStringSubmatch(p.Name)
-			if match == nil {
-				continue
-			}
-			if p.Size < 10_000_000 { // ignore smaller than 10MB (signed vs unsigned emptiness)
-				continue
-			}
-			// match = [filename = linux-image-{unsigned}-XXX-dbgsym, flavor = generic, gke, aws, ...]
-			p.Flavor = match[1]
-			if dp, ok := filteredKernelDbgPkgMap[p.Filename()]; !ok {
-				filteredKernelDbgPkgMap[p.Filename()] = p
-			} else {
-				log.Printf("DEBUG: duplicate %s filename from %s (other %s)", p.Filename(), p, dp)
-			}
 		}
 	}
 
