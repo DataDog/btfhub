@@ -1,17 +1,20 @@
 package repo
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"fmt"
 	"log"
 	"math"
+	"os"
 	"regexp"
 	"sort"
 
 	"golang.org/x/sync/errgroup"
 
 	"github.com/aquasecurity/btfhub/pkg/job"
+	"github.com/aquasecurity/btfhub/pkg/kernel"
 	"github.com/aquasecurity/btfhub/pkg/pkg"
 	"github.com/aquasecurity/btfhub/pkg/utils"
 )
@@ -54,29 +57,40 @@ func (uRepo *UbuntuRepo) GetKernelPackages(
 	opts RepoOptions,
 	jobChan chan<- job.Job,
 ) error {
-
 	altArch := uRepo.archs[arch]
-
-	// Get Packages.xz from main, updates and universe repos
-
 	repoURL := uRepo.repo[altArch]
 
-	rawPkgs, err := pkg.GetPackageList(ctx, repoURL, release, altArch)
-	if err != nil {
-		return fmt.Errorf("main: %s", err)
+	var err error
+	var kernelPkgs []*pkg.UbuntuPackage
+	if opts.PackageFile != "" {
+		lines, err := readPackageFile(opts.PackageFile)
+		if err != nil {
+			return err
+		}
+		for _, l := range lines {
+			kernelPkgs = append(kernelPkgs, &pkg.UbuntuPackage{
+				Name:          fmt.Sprintf("linux-image-%s", l),
+				NameOfFile:    l,
+				Release:       release,
+				Architecture:  altArch,
+				KernelVersion: kernel.NewKernelVersion(l),
+			})
+		}
+	} else {
+		// Get Packages.xz from main, updates and universe repos
+		rawPkgs, err := pkg.GetPackageList(ctx, repoURL, release, altArch)
+		if err != nil {
+			return fmt.Errorf("main: %s", err)
+		}
+
+		// Get the list of kernel packages to download from those repos
+		kernelPkgs, err = pkg.ParseAPTPackages(rawPkgs, repoURL, release)
+		if err != nil {
+			return fmt.Errorf("parsing main package list: %s", err)
+		}
 	}
-
-	// Get the list of kernel packages to download from those repos
-
-	kernelPkgs, err := pkg.ParseAPTPackages(rawPkgs, repoURL, release)
-	if err != nil {
-		return fmt.Errorf("parsing main package list: %s", err)
-	}
-
-	// Filter out kernel packages that we already have or failed to download
 
 	var filteredKernelPkgs []*pkg.UbuntuPackage
-
 	for _, restr := range uRepo.kernelTypes {
 		re := regexp.MustCompile(fmt.Sprintf("%s$", restr))
 		for _, p := range kernelPkgs {
@@ -91,23 +105,18 @@ func (uRepo *UbuntuRepo) GetKernelPackages(
 	}
 
 	// Get Packages.xz from debug repo
-
 	dbgRawPkgs, err := pkg.GetPackageList(ctx, uRepo.debugRepo, release, altArch)
 	if err != nil {
 		return fmt.Errorf("ddebs: %s", err)
 	}
 
 	// Get the list of kernel packages to download from debug repo
-
 	kernelDbgPkgs, err := pkg.ParseAPTPackages(dbgRawPkgs, uRepo.debugRepo, release)
 	if err != nil {
 		return fmt.Errorf("parsing debug package list: %s", err)
 	}
 
-	// Filter out kernel packages that we already have or failed to download
-
 	filteredKernelDbgPkgMap := make(map[string]*pkg.UbuntuPackage) // map[filename]package
-
 	for _, restr := range uRepo.kernelTypes {
 		re := regexp.MustCompile(fmt.Sprintf("%s-dbgsym", restr))
 
@@ -131,7 +140,6 @@ func (uRepo *UbuntuRepo) GetKernelPackages(
 
 	// Check if debug package exists for each kernel package and, if not,
 	// add pseudo-packages for the missing entries (try pull-lp-ddebs later on)
-
 	for _, p := range filteredKernelPkgs {
 		_, ok := filteredKernelDbgPkgMap[p.Filename()]
 		if !ok {
@@ -246,4 +254,22 @@ func processIndividualPackage(ctx context.Context, workDir string, p pkg.Package
 
 	log.Printf("DEBUG: end pkg %s (%d/%d)\n", p, pos, total)
 	return nil
+}
+
+func readPackageFile(pkgFile string) ([]string, error) {
+	f, err := os.Open(pkgFile)
+	if err != nil {
+		return nil, fmt.Errorf("open pkg file: %s", err)
+	}
+	defer f.Close()
+
+	var lines []string
+	scan := bufio.NewScanner(f)
+	for scan.Scan() {
+		lines = append(lines, scan.Text())
+	}
+	if scan.Err() != nil {
+		return nil, fmt.Errorf("read pkg file: %s", scan.Err())
+	}
+	return lines, nil
 }

@@ -10,6 +10,7 @@ type RepoOptions struct {
 	Force         bool
 	KernelModules bool
 	Ordered       bool
+	PackageFile   string
 }
 
 type Repository interface {

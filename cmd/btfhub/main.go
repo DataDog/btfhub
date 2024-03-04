@@ -57,7 +57,7 @@ var repoCreators = map[string]repoFunc{
 	"opensuse-leap": repo.NewOpenSUSERepo,
 }
 
-var distroArg, releaseArg, archArg string
+var distroArg, releaseArg, archArg, fileArg string
 var numWorkers int
 var force, kernelModules, ordered bool
 
@@ -68,6 +68,7 @@ func init() {
 	flag.StringVar(&releaseArg, "r", "", "distribution release to update, requires specifying distribution")
 	flag.StringVar(&archArg, "arch", "", "architecture to update (x86_64,arm64)")
 	flag.StringVar(&archArg, "a", "", "architecture to update (x86_64,arm64)")
+	flag.StringVar(&fileArg, "pkg-file", "", "file to use as list of packages rather than reading from repositories (requires distro, release, and arch)")
 	flag.IntVar(&numWorkers, "workers", 0, "number of concurrent workers (defaults to runtime.NumCPU() - 1)")
 	flag.IntVar(&numWorkers, "j", 0, "number of concurrent workers (defaults to runtime.NumCPU() - 1)")
 	flag.BoolVar(&force, "f", false, "force update regardless of existing files (defaults to false)")
@@ -119,6 +120,10 @@ func run(ctx context.Context) error {
 		archs = []string{archArg}
 	}
 
+	if fileArg != "" && (len(archs) != 1 || len(distros) != 1 || len(releases) != 1) {
+		return fmt.Errorf("invalid use of pkg-file, requires specific distro+release+arch")
+	}
+
 	// Environment
 	basedir, err := os.Getwd()
 	if err != nil {
@@ -163,7 +168,12 @@ func run(ctx context.Context) error {
 
 					// pick the repository creator and get the kernel packages
 					rep := repoCreators[distro]()
-					opts := repo.RepoOptions{Force: force, KernelModules: kernelModules, Ordered: ordered}
+					opts := repo.RepoOptions{
+						Force:         force,
+						KernelModules: kernelModules,
+						Ordered:       ordered,
+						PackageFile:   fileArg,
+					}
 					return rep.GetKernelPackages(prodCtx, workDir, release, arch, opts, jobChan)
 				})
 			}
