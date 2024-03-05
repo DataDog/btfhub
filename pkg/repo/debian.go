@@ -126,6 +126,12 @@ func (d *DebianRepo) GetKernelPackages(
 				if match == nil {
 					continue
 				}
+				archDbg := fmt.Sprintf("-%s-dbg", altArch)
+				if !strings.HasSuffix(name, archDbg) &&
+					!strings.HasSuffix(name, "-cloud"+archDbg) &&
+					!strings.HasSuffix(name, "-rt"+archDbg) {
+					continue
+				}
 
 				p := &pkg.UbuntuPackage{
 					Name:          name,
@@ -151,7 +157,7 @@ func (d *DebianRepo) GetKernelPackages(
 						continue
 					}
 					pi := info[0]
-					p.URL = fmt.Sprintf("https://snapshot-lw07.debian.org/archive/%s/%s/%s/%s", pi.ArchiveName, pi.FirstSeen, pi.Path, pi.Name)
+					p.URL = fmt.Sprintf("https://snapshot-lw07.debian.org/archive/%s/%s%s/%s", pi.ArchiveName, pi.FirstSeen, pi.Path, pi.Name)
 					p.Size = uint64(pi.Size)
 					break
 				}
