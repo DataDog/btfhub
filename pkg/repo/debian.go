@@ -31,6 +31,8 @@ var oldRepos = []string{
 	"http://ftp.debian.org/debian/dists/%s/main/binary-%s/Packages.gz",
 	"http://ftp.debian.org/debian/dists/%s-updates/main/binary-%s/Packages.gz",
 	"http://security.debian.org/debian-security/dists/%s/updates/main/binary-%s/Packages.gz",
+	"https://snapshot.debian.org/archive/debian/20200101T160433Z/dists/%s/main/binary-%s/Packages.gz",
+	"https://snapshot.debian.org/archive/debian-security/20200101T124427Z/dists/%s/updates/main/binary-%s/Packages.gz",
 }
 
 var newRepos = []string{
@@ -87,15 +89,13 @@ func (d *DebianRepo) GetKernelPackages(
 		}
 
 		// Get the list of kernel packages to download from those repos
-
 		repoURL, err := url.Parse(repo)
 		if err != nil {
 			return fmt.Errorf("repo url parse: %s", err)
 		}
 
 		// Get the list of kernel packages to download from debug repo
-
-		repoURL.Path = "/" + strings.Split(repoURL.Path, "/")[1]
+		repoURL.Path = strings.Split(repoURL.Path, "/dists")[0]
 		kernelDbgPkgs, err := pkg.ParseAPTPackages(rawPkgs, repoURL.String(), release)
 		if err != nil {
 			return fmt.Errorf("parsing package list: %s", err)
