@@ -13,6 +13,8 @@ import (
 	"sort"
 	"strings"
 
+	"golang.org/x/exp/slices"
+
 	"github.com/aquasecurity/btfhub/pkg/job"
 	"github.com/aquasecurity/btfhub/pkg/kernel"
 	"github.com/aquasecurity/btfhub/pkg/pkg"
@@ -52,8 +54,8 @@ func NewDebianRepo() Repository {
 			"buster":  "10",
 		},
 		snapshotVersions: map[string][]string{
-			"stretch": {"4.9.0"},
-			"buster":  {"4.19.0"},
+			"stretch": {`4\.9\.0`, `4\.19\.0-0\.bpo.\d+`},
+			"buster":  {`4\.19\.0-\d+`, `5\.10\.0-0\.deb10\.\d+`},
 		},
 	}
 }
@@ -117,8 +119,9 @@ func (d *DebianRepo) GetKernelPackages(
 		if err != nil {
 			return fmt.Errorf("parsing snapshot links: %s", err)
 		}
+		allowedFlavors := []string{"", "cloud", "rt"}
 		for _, sn := range d.snapshotVersions[release] {
-			re := regexp.MustCompile(fmt.Sprintf(`linux-image-(%s-.*)-%s-dbg`, regexp.QuoteMeta(sn), altArch))
+			re := regexp.MustCompile(fmt.Sprintf(`linux-image-(%s)(-[^-]+)?-%s-dbg`, sn, altArch))
 			for _, l := range allLinks {
 				parts := strings.Split(l, "/")
 				name := parts[len(parts)-2]
@@ -126,10 +129,11 @@ func (d *DebianRepo) GetKernelPackages(
 				if match == nil {
 					continue
 				}
-				archDbg := fmt.Sprintf("-%s-dbg", altArch)
-				if !strings.HasSuffix(name, archDbg) &&
-					!strings.HasSuffix(name, "-cloud"+archDbg) &&
-					!strings.HasSuffix(name, "-rt"+archDbg) {
+				flavor := ""
+				if len(match) == 3 {
+					flavor = match[2]
+				}
+				if !slices.Contains(allowedFlavors, flavor) {
 					continue
 				}
 
@@ -138,6 +142,7 @@ func (d *DebianRepo) GetKernelPackages(
 					NameOfFile:    strings.TrimPrefix(strings.TrimSuffix(name, "-dbg"), "linux-image-"),
 					Architecture:  altArch,
 					KernelVersion: kernel.NewKernelVersion(match[1]),
+					Flavor:        flavor,
 				}
 
 				var binpkg snapshotBinaryPackage
