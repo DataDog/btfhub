@@ -28,7 +28,7 @@ var possibleArchs = []string{"x86_64", "arm64"}
 
 var distroReleases = map[string][]string{
 	"ubuntu":        {"xenial", "bionic", "focal"},
-	"debian":        {"stretch", "buster", "bullseye"},
+	"debian":        {"stretch", "buster"},
 	"fedora":        {"24", "25", "26", "27", "28", "29", "30", "31"},
 	"centos":        {"7", "8"},
 	"ol":            {"7", "8"},
@@ -43,7 +43,7 @@ var defaultDistros = []string{"ubuntu", "debian", "fedora", "centos", "ol"}
 var defaultReleases = map[string][]string{
 	"ubuntu": {"xenial", "bionic", "focal"},
 	// no stretch for debian
-	"debian":        {"buster", "bullseye"},
+	"debian":        {"buster"},
 	"fedora":        {"24", "25", "26", "27", "28", "29", "30", "31"},
 	"centos":        {"7", "8"},
 	"ol":            {"7", "8"},

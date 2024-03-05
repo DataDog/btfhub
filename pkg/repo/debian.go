@@ -35,12 +35,6 @@ var oldRepos = []string{
 	"https://snapshot.debian.org/archive/debian-security/20200101T124427Z/dists/%s/updates/main/binary-%s/Packages.gz",
 }
 
-var newRepos = []string{
-	"http://ftp.debian.org/debian/dists/%s/main/binary-%s/Packages.xz",
-	"http://ftp.debian.org/debian/dists/%s-updates/main/binary-%s/Packages.xz",
-	"http://security.debian.org/debian-security/dists/%s-security/main/binary-%s/Packages.xz",
-}
-
 func NewDebianRepo() Repository {
 	return &DebianRepo{
 		archs: map[string]string{
@@ -48,14 +42,12 @@ func NewDebianRepo() Repository {
 			"arm64":  "arm64",
 		},
 		repos: map[string][]string{
-			"stretch":  archiveRepos,
-			"buster":   oldRepos,
-			"bullseye": newRepos,
+			"stretch": archiveRepos,
+			"buster":  oldRepos,
 		},
 		releaseNumbers: map[string]string{
-			"stretch":  "9",
-			"buster":   "10",
-			"bullseye": "11",
+			"stretch": "9",
+			"buster":  "10",
 		},
 	}
 }
