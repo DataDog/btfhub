@@ -31,8 +31,8 @@ var oldRepos = []string{
 	"http://ftp.debian.org/debian/dists/%s/main/binary-%s/Packages.gz",
 	"http://ftp.debian.org/debian/dists/%s-updates/main/binary-%s/Packages.gz",
 	"http://security.debian.org/debian-security/dists/%s/updates/main/binary-%s/Packages.gz",
-	"https://snapshot.debian.org/archive/debian/20200101T160433Z/dists/%s/main/binary-%s/Packages.gz",
-	"https://snapshot.debian.org/archive/debian-security/20200101T124427Z/dists/%s/updates/main/binary-%s/Packages.gz",
+	"https://snapshot-lw07.debian.org/archive/debian/20200101T160433Z/dists/%s/main/binary-%s/Packages.gz",
+	"https://snapshot-lw07.debian.org/archive/debian-security/20200101T124427Z/dists/%s/updates/main/binary-%s/Packages.gz",
 }
 
 func NewDebianRepo() Repository {
