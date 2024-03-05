@@ -24,7 +24,7 @@ type DebianRepo struct {
 
 var archiveRepos = []string{
 	"http://archive.debian.org/debian/dists/%s/main/binary-%s/Packages.gz",
-	"http://archive.debian.org/debian-security/dists/%s/main/binary-%s/Packages.gz",
+	"http://archive.debian.org/debian-security/dists/%s/updates/main/binary-%s/Packages.gz",
 }
 
 var oldRepos = []string{
