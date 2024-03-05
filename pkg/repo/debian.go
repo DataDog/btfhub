@@ -3,36 +3,38 @@ package repo
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
+	"net/http"
 	"net/url"
 	"regexp"
 	"sort"
 	"strings"
 
 	"github.com/aquasecurity/btfhub/pkg/job"
+	"github.com/aquasecurity/btfhub/pkg/kernel"
 	"github.com/aquasecurity/btfhub/pkg/pkg"
 	"github.com/aquasecurity/btfhub/pkg/utils"
 )
 
 type DebianRepo struct {
-	archs          map[string]string
-	repos          map[string][]string
-	releaseNumbers map[string]string
+	archs            map[string]string
+	repos            map[string][]string
+	releaseNumbers   map[string]string
+	snapshotVersions map[string][]string
 }
 
 var archiveRepos = []string{
-	"http://archive.debian.org/debian/dists/%s/main/binary-%s/Packages.gz",
-	"http://archive.debian.org/debian-security/dists/%s/updates/main/binary-%s/Packages.gz",
+	//"http://archive.debian.org/debian/dists/%s/main/binary-%s/Packages.gz",
+	//"http://archive.debian.org/debian-security/dists/%s/updates/main/binary-%s/Packages.gz",
 }
 
 var oldRepos = []string{
-	"http://ftp.debian.org/debian/dists/%s/main/binary-%s/Packages.gz",
-	"http://ftp.debian.org/debian/dists/%s-updates/main/binary-%s/Packages.gz",
-	"http://security.debian.org/debian-security/dists/%s/updates/main/binary-%s/Packages.gz",
-	"https://snapshot-lw07.debian.org/archive/debian/20200101T160433Z/dists/%s/main/binary-%s/Packages.gz",
-	"https://snapshot-lw07.debian.org/archive/debian-security/20200101T124427Z/dists/%s/updates/main/binary-%s/Packages.gz",
+	//"http://ftp.debian.org/debian/dists/%s/main/binary-%s/Packages.gz",
+	//"http://ftp.debian.org/debian/dists/%s-updates/main/binary-%s/Packages.gz",
+	//"http://security.debian.org/debian-security/dists/%s/updates/main/binary-%s/Packages.gz",
 }
 
 func NewDebianRepo() Repository {
@@ -48,6 +50,10 @@ func NewDebianRepo() Repository {
 		releaseNumbers: map[string]string{
 			"stretch": "9",
 			"buster":  "10",
+		},
+		snapshotVersions: map[string][]string{
+			"stretch": {"4.9.0"},
+			"buster":  {"4.19.0"},
 		},
 	}
 }
@@ -106,6 +112,61 @@ func (d *DebianRepo) GetKernelPackages(
 		}
 	}
 
+	if len(d.snapshotVersions[release]) > 0 {
+		allLinks, err := utils.GetLinks(ctx, "https://snapshot-lw07.debian.org/binary/?cat=l")
+		if err != nil {
+			return fmt.Errorf("parsing snapshot links: %s", err)
+		}
+		for _, sn := range d.snapshotVersions[release] {
+			re := regexp.MustCompile(fmt.Sprintf(`linux-image-(%s-.*)-%s-dbg`, regexp.QuoteMeta(sn), altArch))
+			for _, l := range allLinks {
+				parts := strings.Split(l, "/")
+				name := parts[len(parts)-2]
+				match := re.FindStringSubmatch(name)
+				if match == nil {
+					continue
+				}
+
+				p := &pkg.UbuntuPackage{
+					Name:          name,
+					NameOfFile:    strings.TrimPrefix(strings.TrimSuffix(name, "-dbg"), "linux-image-"),
+					Architecture:  altArch,
+					KernelVersion: kernel.NewKernelVersion(match[1]),
+				}
+
+				var binpkg snapshotBinaryPackage
+				if err := queryJsonAPI(ctx, fmt.Sprintf("https://snapshot-lw07.debian.org/mr/binary/%s/", name), &binpkg); err != nil {
+					return fmt.Errorf("snapshot package API error for %s: %s", name, err)
+				}
+				if len(binpkg.Result) == 0 {
+					continue
+				}
+
+				var verInfo snapshotBinaryVersionInfo
+				if err := queryJsonAPI(ctx, fmt.Sprintf("https://snapshot-lw07.debian.org/mr/binary/%s/%s/binfiles?fileinfo=1", name, binpkg.Result[0].BinaryVersion), &verInfo); err != nil {
+					return fmt.Errorf("snapshot version API error for %s: %s", name, err)
+				}
+				for _, info := range verInfo.FileInfo {
+					if len(info) == 0 {
+						continue
+					}
+					pi := info[0]
+					p.URL = fmt.Sprintf("https://snapshot-lw07.debian.org/archive/%s/%s/%s/%s", pi.ArchiveName, pi.FirstSeen, pi.Path, pi.Name)
+					p.Size = uint64(pi.Size)
+					break
+				}
+
+				if p.Size > 0 {
+					pkgs = append(pkgs, p)
+				} else {
+					fmt.Printf("WARN: unable to find detailed snapshot info for %s\n", p.Name)
+				}
+
+				// TODO deal with duplicates from APT repos?
+			}
+		}
+	}
+
 	sort.Sort(pkg.ByVersion(pkgs)) // so kernels can be skipped if previous has BTF already
 
 	for i, p := range pkgs {
@@ -131,6 +192,51 @@ func (d *DebianRepo) GetKernelPackages(
 		}
 
 		log.Printf("DEBUG: end pkg %s (%d/%d)\n", p, i+1, len(pkgs))
+	}
+	return nil
+}
+
+type snapshotBinaryPackageVersion struct {
+	BinaryVersion string `json:"binary_version"`
+	Name          string `json:"name"`
+	Version       string `json:"version"`
+}
+
+type snapshotBinaryPackage struct {
+	Binary string                         `json:"binary"`
+	Result []snapshotBinaryPackageVersion `json:"result"`
+}
+
+type snapshotBinaryPackageFileInfo struct {
+	ArchiveName string  `json:"archive_name"`
+	FirstSeen   string  `json:"first_seen"`
+	Name        string  `json:"name"`
+	Path        string  `json:"path"`
+	Size        float64 `json:"size"`
+}
+
+type snapshotBinaryVersionInfo struct {
+	FileInfo map[string][]snapshotBinaryPackageFileInfo `json:"fileinfo"`
+}
+
+func queryJsonAPI[T any](ctx context.Context, url string, out *T) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return err
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		return fmt.Errorf("%s returned status code: %d", url, resp.StatusCode)
+	}
+
+	err = json.NewDecoder(resp.Body).Decode(out)
+	if err != nil {
+		return fmt.Errorf("JSON decode error: %s", err)
 	}
 	return nil
 }
