@@ -55,7 +55,7 @@ func NewDebianRepo() Repository {
 		},
 		snapshotVersions: map[string][]string{
 			"stretch": {`4\.9\.0`, `4\.19\.0-0\.bpo.\d+`},
-			"buster":  {`4\.19\.0-\d+`, `5\.10\.0-0\.deb10\.\d+`},
+			"buster":  {`4\.19\.0-\d+`},
 		},
 	}
 }
