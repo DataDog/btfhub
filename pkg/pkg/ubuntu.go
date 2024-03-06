@@ -172,7 +172,7 @@ func (pkg *UbuntuPackage) pullLaunchpadDdeb(ctx context.Context, dir string, des
 
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
-	cmd := exec.CommandContext(ctx, "pull-lp-ddebs", "-s", "Published", "-s", "Pending", "-s", "Deleted", "--arch", pkg.Architecture, pkg.Name, pkg.Release)
+	cmd := exec.CommandContext(ctx, "pull-lp-ddebs", "-s", "Published", "-s", "Pending", "-s", "Deleted", "-s", "Superseded", "--arch", pkg.Architecture, pkg.Name, pkg.Release)
 	cmd.Dir = dir
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
