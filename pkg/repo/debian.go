@@ -131,7 +131,7 @@ func (d *DebianRepo) GetKernelPackages(
 				}
 				flavor := ""
 				if len(match) == 3 {
-					flavor = match[2]
+					flavor = strings.TrimPrefix(match[2], "-")
 				}
 				if !slices.Contains(allowedFlavors, flavor) {
 					continue
