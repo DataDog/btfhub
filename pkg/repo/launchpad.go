@@ -108,7 +108,7 @@ func getLaunchpadPackages(ctx context.Context, release string, arch string) ([]*
 			Architecture:  arch,
 			KernelVersion: kernel.NewKernelVersion(p.BinaryPackageVersion),
 			NameOfFile:    strings.TrimSuffix(strings.TrimPrefix(strings.TrimPrefix(p.BinaryPackageName, "linux-image-"), "unsigned-"), "-dbgsym"),
-			URL:           fmt.Sprintf("%s/+files/%s_%s_%s.ddeb", strings.ReplaceAll(p.BuildLink, "api.", ""), p.BinaryPackageName, p.BinaryPackageVersion, arch),
+			URL:           fmt.Sprintf("%s/+files/%s_%s_%s.ddeb", strings.ReplaceAll(p.BuildLink, "api.launchpad.net/devel", "launchpad.net"), p.BinaryPackageName, p.BinaryPackageVersion, arch),
 			Size:          math.MaxUint64, // no idea on real size
 			Release:       release,
 			Flavor:        "",
