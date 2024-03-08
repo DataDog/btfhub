@@ -28,7 +28,7 @@ func NewCentOSRepo() Repository {
 			"arm64":  "aarch64",
 		},
 		repos: map[string]string{
-			"7": "http://mirror.facebook.net/centos-debuginfo/7/%s/",
+			"7": "http://linuxsoft.cern.ch/centos-debuginfo/7/%s/",
 			"8": "http://mirror.facebook.net/centos-debuginfo/8/%s/Packages/",
 		},
 		minVersion: kernel.NewKernelVersion("3.10.0-957"),
