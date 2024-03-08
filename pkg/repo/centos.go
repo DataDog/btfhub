@@ -94,6 +94,10 @@ func (d *CentosRepo) GetKernelPackages(
 		err := processPackage(ctx, p, workDir, opts, jobChan)
 		if err != nil {
 			if errors.Is(err, utils.ErrKernelHasBTF) {
+				if !opts.Ordered {
+					log.Printf("INFO: kernel %s has BTF already\n", p)
+					continue
+				}
 				log.Printf("INFO: kernel %s has BTF already, skipping later kernels\n", p)
 				return nil
 			}
