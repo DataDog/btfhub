@@ -69,7 +69,7 @@ func getLaunchpadPackages(ctx context.Context, release string, arch string) ([]*
 	distroArchSeries := fmt.Sprintf("https://api.launchpad.net/devel/ubuntu/%s/%s", release, arch)
 	url := fmt.Sprintf("https://api.launchpad.net/devel/ubuntu/+archive/primary?ws.op=getPublishedBinaries&binary_name=%s&distro_arch_series=%s&ws.size=300", name, distroArchSeries)
 
-	pkgMap := make(map[lpPublishedBinary]struct{})
+	pkgMap := make(map[string]lpPublishedBinary)
 	for i := 0; ; i++ {
 		fmt.Printf("TRACE: get %s\n", url)
 		var binaries lpPublishedBinaries
@@ -94,7 +94,10 @@ func getLaunchpadPackages(ctx context.Context, release string, arch string) ([]*
 				continue
 			}
 			fmt.Printf("DEBUG: %+v\n", p)
-			pkgMap[p] = struct{}{}
+			url := fmt.Sprintf("%s/+files/%s_%s_%s.ddeb", strings.ReplaceAll(p.BuildLink, "api.launchpad.net/devel", "launchpad.net"), p.BinaryPackageName, p.BinaryPackageVersion, arch)
+			if _, ok := pkgMap[url]; !ok {
+				pkgMap[url] = p
+			}
 		}
 		if binaries.NextCollectionLink != "" {
 			url = binaries.NextCollectionLink
@@ -104,13 +107,13 @@ func getLaunchpadPackages(ctx context.Context, release string, arch string) ([]*
 	}
 
 	var pkgs []*pkg.UbuntuPackage
-	for p := range pkgMap {
+	for url, p := range pkgMap {
 		up := &pkg.UbuntuPackage{
 			Name:          p.BinaryPackageName,
 			Architecture:  arch,
 			KernelVersion: kernel.NewKernelVersion(p.BinaryPackageVersion),
 			NameOfFile:    strings.TrimSuffix(strings.TrimPrefix(strings.TrimPrefix(p.BinaryPackageName, "linux-image-"), "unsigned-"), "-dbgsym"),
-			URL:           fmt.Sprintf("%s/+files/%s_%s_%s.ddeb", strings.ReplaceAll(p.BuildLink, "api.launchpad.net/devel", "launchpad.net"), p.BinaryPackageName, p.BinaryPackageVersion, arch),
+			URL:           url,
 			Size:          math.MaxUint64, // no idea on real size
 			Release:       release,
 			Flavor:        "",
