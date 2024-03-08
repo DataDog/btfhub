@@ -67,7 +67,7 @@ type lpPublishedBinary struct {
 func getLaunchpadPackages(ctx context.Context, release string, arch string) ([]*pkg.UbuntuPackage, error) {
 	name := "linux-image-"
 	distroArchSeries := fmt.Sprintf("https://api.launchpad.net/devel/ubuntu/%s/%s", release, arch)
-	url := fmt.Sprintf("https://api.launchpad.net/devel/ubuntu/+archive/primary?ws.op=getPublishedBinaries&binary_name=%s&distro_arch_series=%s&ws.size=300&status=Published", name, distroArchSeries)
+	url := fmt.Sprintf("https://api.launchpad.net/devel/ubuntu/+archive/primary?ws.op=getPublishedBinaries&binary_name=%s&distro_arch_series=%s&ws.size=300", name, distroArchSeries)
 
 	pkgMap := make(map[string]lpPublishedBinary)
 	for i := 0; ; i++ {
