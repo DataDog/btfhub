@@ -53,6 +53,10 @@ func processPackage(
 		}
 	}
 
+	if opts.DryRun {
+		return nil
+	}
+
 	tmpDir, err := os.MkdirTemp("", fmt.Sprintf("btfhub-%s-*", p.BTFFilename()))
 	if err != nil {
 		return fmt.Errorf("create temp dir for package: %w", err)

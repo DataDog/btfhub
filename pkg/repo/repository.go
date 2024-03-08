@@ -11,6 +11,7 @@ type RepoOptions struct {
 	KernelModules bool
 	Ordered       bool
 	PackageFile   string
+	DryRun        bool
 }
 
 type Repository interface {
