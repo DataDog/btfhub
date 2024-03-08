@@ -58,6 +58,7 @@ type lpPublishedBinary struct {
 	DateCreated          time.Time `json:"date_created"`
 	DateSuperseded       time.Time `json:"date_superseded"`
 	DateRemoved          time.Time `json:"date_removed"`
+	DatePublished        time.Time `json:"date_published"`
 	BinaryPackageName    string    `json:"binary_package_name"`
 	BinaryPackageVersion string    `json:"binary_package_version"`
 	BuildLink            string    `json:"build_link"`
@@ -103,7 +104,7 @@ func getLaunchpadPackages(ctx context.Context, release string, arch string) ([]*
 
 	var pkgs []*pkg.UbuntuPackage
 	for p := range pkgMap {
-		pkgs = append(pkgs, &pkg.UbuntuPackage{
+		up := &pkg.UbuntuPackage{
 			Name:          p.BinaryPackageName,
 			Architecture:  arch,
 			KernelVersion: kernel.NewKernelVersion(p.BinaryPackageVersion),
@@ -112,7 +113,9 @@ func getLaunchpadPackages(ctx context.Context, release string, arch string) ([]*
 			Size:          math.MaxUint64, // no idea on real size
 			Release:       release,
 			Flavor:        "",
-		})
+		}
+		fmt.Printf("DEBUG: %+v\n", up)
+		pkgs = append(pkgs, up)
 	}
 
 	slices.SortFunc(pkgs, func(a, b *pkg.UbuntuPackage) int {
