@@ -86,20 +86,12 @@ func processPackage(
 	var extractReply *job.KernelExtractReply
 	switch v := reply.(type) {
 	case error:
+		if errors.Is(err, utils.ErrKernelHasBTF) {
+			_ = pkg.MarkPackageHasBTF(p, workDir)
+		}
 		return v
 	case *job.KernelExtractReply:
 		extractReply = v
-	}
-
-	// Check if BTF is already present in vmlinux (will skip further packages)
-	vmlinuxPath := filepath.Join(extractReply.ExtractDir, "vmlinux")
-	hasBTF, err := utils.HasBTFSection(vmlinuxPath)
-	if err != nil {
-		return fmt.Errorf("BTF check: %s", err)
-	}
-	if hasBTF {
-		_ = pkg.MarkPackageHasBTF(p, workDir)
-		return utils.ErrKernelHasBTF
 	}
 
 	// from this point on, we just want to kick the jobs off and proceed with other packages

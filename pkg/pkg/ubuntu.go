@@ -125,6 +125,13 @@ func (pkg *UbuntuPackage) ExtractKernel(ctx context.Context, pkgPath string, ext
 			if err != nil {
 				return "", nil, err
 			}
+			hasBTF, err := utils.HasBTFSection(vmlinuxPath)
+			if err != nil {
+				return "", nil, err
+			}
+			if hasBTF {
+				return "", nil, utils.ErrKernelHasBTF
+			}
 			if !kernelModules {
 				return vmlinuxPath, nil, nil
 			}
