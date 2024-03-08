@@ -2,10 +2,12 @@ package repo
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -146,7 +148,7 @@ func (d *DebianRepo) GetKernelPackages(
 				}
 
 				var binpkg snapshotBinaryPackage
-				if err := queryJsonAPI(ctx, fmt.Sprintf("https://snapshot-lw07.debian.org/mr/binary/%s/", name), &binpkg); err != nil {
+				if err := queryJsonAPI(ctx, fmt.Sprintf("https://snapshot-lw07.debian.org/mr/binary/%s/", name), &binpkg, nil); err != nil {
 					return fmt.Errorf("snapshot package API error for %s: %s", name, err)
 				}
 				if len(binpkg.Result) == 0 {
@@ -154,7 +156,7 @@ func (d *DebianRepo) GetKernelPackages(
 				}
 
 				var verInfo snapshotBinaryVersionInfo
-				if err := queryJsonAPI(ctx, fmt.Sprintf("https://snapshot-lw07.debian.org/mr/binary/%s/%s/binfiles?fileinfo=1", name, binpkg.Result[0].BinaryVersion), &verInfo); err != nil {
+				if err := queryJsonAPI(ctx, fmt.Sprintf("https://snapshot-lw07.debian.org/mr/binary/%s/%s/binfiles?fileinfo=1", name, binpkg.Result[0].BinaryVersion), &verInfo, nil); err != nil {
 					return fmt.Errorf("snapshot version API error for %s: %s", name, err)
 				}
 				for _, info := range verInfo.FileInfo {
@@ -230,11 +232,17 @@ type snapshotBinaryVersionInfo struct {
 	FileInfo map[string][]snapshotBinaryPackageFileInfo `json:"fileinfo"`
 }
 
-func queryJsonAPI[T any](ctx context.Context, url string, out *T) error {
+func queryJsonAPI[T any](ctx context.Context, url string, out *T, headers map[string]string) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return err
 	}
+	if headers != nil {
+		for k, v := range headers {
+			req.Header.Set(k, v)
+		}
+	}
+
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err
@@ -245,7 +253,20 @@ func queryJsonAPI[T any](ctx context.Context, url string, out *T) error {
 		return fmt.Errorf("%s returned status code: %d", url, resp.StatusCode)
 	}
 
-	err = json.NewDecoder(resp.Body).Decode(out)
+	var rdr io.Reader
+
+	transferEncoding := resp.Header.Get("Transfer-Encoding")
+	switch {
+	case transferEncoding == "gzip":
+		rdr, err = gzip.NewReader(resp.Body)
+		if err != nil {
+			return fmt.Errorf("gzip body read: %s", err)
+		}
+	default:
+		rdr = resp.Body
+	}
+
+	err = json.NewDecoder(rdr).Decode(out)
 	if err != nil {
 		return fmt.Errorf("JSON decode error: %s", err)
 	}
