@@ -93,6 +93,7 @@ func getLaunchpadPackages(ctx context.Context, release string, arch string) ([]*
 			if p.Status == "Deleted" && p.DateSuperseded.IsZero() {
 				continue
 			}
+			fmt.Printf("DEBUG: %+v\n", p)
 			pkgMap[p] = struct{}{}
 		}
 		if binaries.NextCollectionLink != "" {
@@ -114,7 +115,6 @@ func getLaunchpadPackages(ctx context.Context, release string, arch string) ([]*
 			Release:       release,
 			Flavor:        "",
 		}
-		fmt.Printf("DEBUG: %+v\n", up)
 		pkgs = append(pkgs, up)
 	}
 
