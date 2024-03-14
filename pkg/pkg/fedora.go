@@ -50,7 +50,7 @@ func (pkg *FedoraPackage) Download(ctx context.Context, workDir string, force bo
 	err := utils.DownloadFile(ctx, pkg.URL, rpmPath)
 	if err != nil {
 		os.Remove(rpmPath)
-		return "", fmt.Errorf("downloading rpm package: %s", err)
+		return "", fmt.Errorf("downloading rpm package: %w", err)
 	}
 
 	return rpmPath, nil

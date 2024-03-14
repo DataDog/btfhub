@@ -131,7 +131,7 @@ func extractFile(ctx context.Context, filename string, cpioHeader *cpio.Header, 
 	if err != nil {
 		outFile.Close()
 		os.Remove(filename)
-		return fmt.Errorf("cpio file copy: %s", err)
+		return fmt.Errorf("cpio file copy: %w", err)
 	}
 
 	outFile.Close()

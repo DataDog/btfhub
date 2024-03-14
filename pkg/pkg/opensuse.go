@@ -50,7 +50,7 @@ func (pkg *OpenSUSEPackage) Download(ctx context.Context, dir string, force bool
 
 	if err := utils.DownloadFile(ctx, pkg.URL, rpmpath); err != nil {
 		os.Remove(rpmpath)
-		return "", fmt.Errorf("downloading rpm package: %s", err)
+		return "", fmt.Errorf("downloading rpm package: %w", err)
 	}
 	return rpmpath, nil
 }
