@@ -217,10 +217,19 @@ func processPackages(
 			pos := i + 1
 			gp := p
 			g.Go(func() error {
-				err := processIndividualPackage(ctx, workDir, gp, opts, jobChan, pos, len(pkgs))
+				log.Printf("DEBUG: start pkg %s (%d/%d)\n", p, pos, len(pkgs))
+				err := processPackage(ctx, gp, workDir, opts, jobChan)
 				if err != nil {
+					if errors.Is(err, utils.ErrKernelHasBTF) {
+						log.Printf("INFO: kernel %s has BTF already, skipping later kernels\n", p)
+						return nil
+					}
+					if errors.Is(err, context.Canceled) {
+						return nil
+					}
 					log.Printf("ERROR: %s: %s\n", gp, err)
 				}
+				log.Printf("DEBUG: end pkg %s (%d/%d)\n", p, pos, len(pkgs))
 				return nil
 			})
 		}
@@ -228,36 +237,21 @@ func processPackages(
 	}
 
 	for i, p := range pkgs {
-		pos := i + 1
-		err := processIndividualPackage(ctx, workDir, p, opts, jobChan, pos, len(pkgs))
+		log.Printf("DEBUG: start pkg %s (%d/%d)\n", p, i+1, len(pkgs))
+		err := processPackage(ctx, p, workDir, opts, jobChan)
 		if err != nil {
+			if errors.Is(err, utils.ErrKernelHasBTF) {
+				log.Printf("INFO: kernel %s has BTF already, skipping later kernels\n", p)
+				return nil
+			}
+			if errors.Is(err, context.Canceled) {
+				return nil
+			}
 			log.Printf("ERROR: %s: %s\n", p, err)
 			continue
 		}
+		log.Printf("DEBUG: end pkg %s (%d/%d)\n", p, i+1, len(pkgs))
 	}
-	return nil
-}
-
-func processIndividualPackage(ctx context.Context, workDir string, p pkg.Package, opts RepoOptions, jobChan chan<- job.Job, pos int, total int) error {
-	log.Printf("DEBUG: start pkg %s (%d/%d)\n", p, pos, total)
-
-	// Jobs about to be created:
-	//
-	// 1. Download package and extract vmlinux file
-	// 2. Extract BTF info from vmlinux file
-
-	if err := processPackage(ctx, p, workDir, opts, jobChan); err != nil {
-		if errors.Is(err, utils.ErrKernelHasBTF) {
-			log.Printf("INFO: kernel %s has BTF already, skipping later kernels\n", p)
-			return nil
-		}
-		if errors.Is(err, context.Canceled) {
-			return nil
-		}
-		return err
-	}
-
-	log.Printf("DEBUG: end pkg %s (%d/%d)\n", p, pos, total)
 	return nil
 }
 
