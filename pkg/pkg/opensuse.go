@@ -38,7 +38,7 @@ func (pkg *OpenSUSEPackage) String() string {
 
 func (pkg *OpenSUSEPackage) ExtractKernel(ctx context.Context, pkgpath string, extractDir string, kernelModules bool) (string, []string, error) {
 	// vmlinux at: /usr/lib/debug/boot/vmlinux-<ver>-<type>.debug
-	return utils.ExtractVmlinuxFromRPM(ctx, pkgpath, extractDir, kernelModules)
+	return utils.ExtractVmlinuxFromRPM(ctx, pkgpath, extractDir, kernelModules, nil)
 }
 
 func (pkg *OpenSUSEPackage) Download(ctx context.Context, dir string, force bool) (string, error) {

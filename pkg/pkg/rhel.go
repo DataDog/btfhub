@@ -35,7 +35,7 @@ func (pkg *RHELPackage) String() string {
 }
 
 func (pkg *RHELPackage) ExtractKernel(ctx context.Context, pkgpath string, extractDir string, kernelModules bool) (string, []string, error) {
-	return utils.ExtractVmlinuxFromRPM(ctx, pkgpath, extractDir, kernelModules)
+	return utils.ExtractVmlinuxFromRPM(ctx, pkgpath, extractDir, kernelModules, nil)
 }
 
 func (pkg *RHELPackage) Download(ctx context.Context, dir string, force bool) (string, error) {

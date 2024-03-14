@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/DataDog/zstd"
@@ -17,7 +18,7 @@ import (
 	fastxz "github.com/therootcompany/xz"
 )
 
-func ExtractVmlinuxFromRPM(ctx context.Context, rpmPath string, extractDir string, kernelModules bool) (string, []string, error) {
+func ExtractVmlinuxFromRPM(ctx context.Context, rpmPath string, extractDir string, kernelModules bool, ignoredFiles []string) (string, []string, error) {
 	file, err := os.Open(rpmPath)
 	if err != nil {
 		return "", nil, err
@@ -99,6 +100,10 @@ func ExtractVmlinuxFromRPM(ctx context.Context, rpmPath string, extractDir strin
 			}
 		} else if kernelModules && strings.HasSuffix(cpioHeader.Name, ".ko.debug") {
 			filename := strings.TrimSuffix(filepath.Base(cpioHeader.Name), ".ko.debug")
+			if slices.Contains(ignoredFiles, filename) {
+				continue
+			}
+
 			outfile := filepath.Join(extractDir, filename)
 			err = extractFile(ctx, outfile, cpioHeader, cpioReader)
 			if err != nil {

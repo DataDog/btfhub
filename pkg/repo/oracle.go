@@ -68,6 +68,7 @@ func (d *oracleRepo) GetKernelPackages(
 				Architecture:  altArch,
 				URL:           l,
 				KernelVersion: kernel.NewKernelVersion(match[1]),
+				IgnoredFiles:  []string{"ctf"},
 			}
 			if p.Version().Less(d.minVersion) {
 				continue
