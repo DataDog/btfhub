@@ -2,9 +2,7 @@ package repo
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"log"
 	"regexp"
 	"sort"
 	"strings"
@@ -81,30 +79,5 @@ func (d *oracleRepo) GetKernelPackages(
 
 	sort.Sort(pkg.ByVersion(pkgs)) // so kernels can be skipped if previous has BTF already
 
-	for i, p := range pkgs {
-		log.Printf("DEBUG: start pkg %s (%d/%d)\n", p, i+1, len(pkgs))
-
-		// Jobs about to be created:
-		//
-		// 1. Download package and extract vmlinux file
-		// 2. Extract BTF info from vmlinux file
-
-		err := processPackage(ctx, p, workDir, opts, jobChan)
-		if err != nil {
-			if errors.Is(err, utils.ErrKernelHasBTF) {
-				log.Printf("INFO: kernel %s has BTF already, skipping later kernels\n", p)
-				return nil
-			}
-			if errors.Is(err, context.Canceled) {
-				return nil
-			}
-
-			log.Printf("ERROR: %s: %s\n", p, err)
-			continue
-		}
-
-		log.Printf("DEBUG: end pkg %s (%d/%d)\n", p, i+1, len(pkgs))
-	}
-
-	return nil
+	return processPackages(ctx, workDir, pkgs, opts, jobChan)
 }

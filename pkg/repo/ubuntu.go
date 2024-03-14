@@ -194,7 +194,7 @@ func (uRepo *UbuntuRepo) GetKernelPackages(
 
 		g.Go(func() error {
 			log.Printf("DEBUG: start kernel flavor %s %s (%d pkgs)\n", theFlavor, arch, len(thePkgSlice))
-			err := uRepo.processPackages(ctx, workDir, thePkgSlice, opts, jobChan)
+			err := processPackages(ctx, workDir, thePkgSlice, opts, jobChan)
 			log.Printf("DEBUG: end kernel flavor %s %s\n", theFlavor, arch)
 			return err
 		})
@@ -204,7 +204,7 @@ func (uRepo *UbuntuRepo) GetKernelPackages(
 }
 
 // processPackages processes a list of packages, sending jobs to the job channel.
-func (uRepo *UbuntuRepo) processPackages(
+func processPackages(
 	ctx context.Context,
 	workDir string,
 	pkgs []pkg.Package,
