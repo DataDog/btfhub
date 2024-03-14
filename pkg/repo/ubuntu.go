@@ -221,7 +221,7 @@ func processPackages(
 				err := processPackage(ctx, gp, workDir, opts, jobChan)
 				if err != nil {
 					if errors.Is(err, utils.ErrKernelHasBTF) {
-						log.Printf("INFO: kernel %s has BTF already, skipping later kernels\n", p)
+						log.Printf("INFO: kernel %s has BTF already\n", p)
 						return nil
 					}
 					if errors.Is(err, context.Canceled) {
