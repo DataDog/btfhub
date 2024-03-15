@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 	"regexp"
 	"sort"
 
@@ -139,16 +138,16 @@ func (uRepo *UbuntuRepo) GetKernelPackages(
 			}
 		}
 
-		f, err := os.Create(filepath.Join(os.TempDir(), fmt.Sprintf("ubuntu-%s-%s-filtered.packages", release, altArch)))
-		if err != nil {
-			return err
-		}
-		defer f.Close()
-		for _, p := range filteredKernelDbgPkgMap {
-			_, _ = f.WriteString(fmt.Sprintf("%s\n", p.Name))
-		}
-		fmt.Printf("%s\n", f.Name())
-		return nil
+		//f, err := os.Create(filepath.Join(os.TempDir(), fmt.Sprintf("ubuntu-%s-%s-filtered.packages", release, altArch)))
+		//if err != nil {
+		//	return err
+		//}
+		//defer f.Close()
+		//for _, p := range filteredKernelDbgPkgMap {
+		//	_, _ = f.WriteString(fmt.Sprintf("%s\n", p.Name))
+		//}
+		//fmt.Printf("%s\n", f.Name())
+		//return nil
 	}
 
 	//var filteredKernelPkgs []*pkg.UbuntuPackage
