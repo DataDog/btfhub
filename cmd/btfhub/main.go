@@ -109,6 +109,22 @@ func run(ctx context.Context) error {
 	return generate(ctx)
 }
 
+type checkResult struct {
+	time, mode, owner, group, kmod bool
+	distro, release, arch, version string
+}
+
+func (r checkResult) Failed() bool {
+	return r.time || r.mode || r.owner || r.group || r.kmod
+}
+
+func failedToEmoji(v bool) string {
+	if v {
+		return "❌"
+	}
+	return "✅"
+}
+
 func check(ctx context.Context) error {
 	distros, releases, archs, err := processArgs(maps.Keys(distroReleases), distroReleases)
 	if err != nil {
@@ -119,6 +135,25 @@ func check(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("pwd: %s", err)
 	}
+
+	maxDistro := 0
+	for _, distro := range distros {
+		maxDistro = max(maxDistro, len(distro))
+	}
+	maxRelease := 0
+	for _, release := range releases {
+		maxRelease = max(maxRelease, len(release))
+	}
+	maxArch := 0
+	for _, arch := range archs {
+		maxArch = max(maxArch, len(arch))
+	}
+	fmt.Printf(fmt.Sprintf(" time | mode | owner | group | kmod | %%-%ds | %%-%ds | %%-%ds | version\n", maxDistro, maxRelease, maxArch), "distro", "release", "arch")
+
+	var printResult = func(r checkResult) {
+		fmt.Printf(fmt.Sprintf(" %-4s | %-4s | %-5s | %-5s | %-4s | %%-%ds | %%-%ds | %%-%ds | %%s\n", failedToEmoji(r.time), failedToEmoji(r.mode), failedToEmoji(r.owner), failedToEmoji(r.group), failedToEmoji(r.kmod), maxDistro, maxRelease, maxArch), r.distro, r.release, r.arch, r.version)
+	}
+
 	for _, distro := range distros {
 		for _, release := range releases {
 			for _, arch := range archs {
@@ -152,6 +187,10 @@ func check(ctx context.Context) error {
 					if err != nil {
 						return err
 					}
+
+					version := strings.TrimSuffix(unameName, ".btf")
+					res := checkResult{distro: distro, release: release, arch: arch, version: version}
+
 					tr := tar.NewReader(xr)
 					for {
 						hdr, err := tr.Next()
@@ -163,16 +202,20 @@ func check(ctx context.Context) error {
 						}
 
 						if hdr.ModTime.Unix() != 0 {
-							fmt.Printf("%s: BTF file timestamp is not unix epoch. name=%s time=%s unix=%d\n", path, hdr.Name, hdr.ModTime, hdr.ModTime.Unix())
+							res.time = true
+							//fmt.Printf("%s: BTF file timestamp is not unix epoch. name=%s time=%s unix=%d\n", path, hdr.Name, hdr.ModTime, hdr.ModTime.Unix())
 						}
 						if hdr.Mode != 0444 {
-							fmt.Printf("%s: BTF file mode is not 0444. name=%s mode=%o\n", path, hdr.Name, hdr.Mode)
+							res.mode = true
+							//fmt.Printf("%s: BTF file mode is not 0444. name=%s mode=%o\n", path, hdr.Name, hdr.Mode)
 						}
 						if hdr.Uid != 0 {
-							fmt.Printf("%s: BTF file owner is not UID 0. name=%s uid=%d\n", path, hdr.Name, hdr.Uid)
+							res.owner = true
+							//fmt.Printf("%s: BTF file owner is not UID 0. name=%s uid=%d\n", path, hdr.Name, hdr.Uid)
 						}
 						if hdr.Gid != 0 {
-							fmt.Printf("%s: BTF file group is not GID 0. name=%s gid=%d\n", path, hdr.Name, hdr.Gid)
+							res.group = true
+							//fmt.Printf("%s: BTF file group is not GID 0. name=%s gid=%d\n", path, hdr.Name, hdr.Gid)
 						}
 
 						if hdr.Typeflag != tar.TypeReg {
@@ -184,7 +227,11 @@ func check(ctx context.Context) error {
 					}
 
 					if !hasKernelModules {
-						fmt.Printf("%s: does not have kernel module BTF\n", path)
+						//fmt.Printf("%s: does not have kernel module BTF\n", path)
+						res.kmod = true
+					}
+					if res.Failed() {
+						printResult(res)
 					}
 					return nil
 				})
