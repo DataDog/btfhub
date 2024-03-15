@@ -136,22 +136,23 @@ func check(ctx context.Context) error {
 		return fmt.Errorf("pwd: %s", err)
 	}
 
-	maxDistro := 0
+	maxDistro := len("distro")
 	for _, distro := range distros {
 		maxDistro = max(maxDistro, len(distro))
 	}
-	maxRelease := 0
+	maxRelease := len("release")
 	for _, release := range releases {
 		maxRelease = max(maxRelease, len(release))
 	}
-	maxArch := 0
+	maxArch := len("arch")
 	for _, arch := range archs {
 		maxArch = max(maxArch, len(arch))
 	}
 	fmt.Printf(fmt.Sprintf(" time | mode | owner | group | kmod | %%-%ds | %%-%ds | %%-%ds | version\n", maxDistro, maxRelease, maxArch), "distro", "release", "arch")
 
 	var printResult = func(r checkResult) {
-		fmt.Printf(fmt.Sprintf(" %-4s | %-4s | %-5s | %-5s | %-4s | %%-%ds | %%-%ds | %%-%ds | %%s\n", failedToEmoji(r.time), failedToEmoji(r.mode), failedToEmoji(r.owner), failedToEmoji(r.group), failedToEmoji(r.kmod), maxDistro, maxRelease, maxArch), r.distro, r.release, r.arch, r.version)
+		// widths are minus one because emoji is two chars wide
+		fmt.Printf(fmt.Sprintf(" %-3s | %-3s | %-4s | %-4s | %-3s | %%-%ds | %%-%ds | %%-%ds | %%s\n", failedToEmoji(r.time), failedToEmoji(r.mode), failedToEmoji(r.owner), failedToEmoji(r.group), failedToEmoji(r.kmod), maxDistro, maxRelease, maxArch), r.distro, r.release, r.arch, r.version)
 	}
 
 	for _, distro := range distros {
