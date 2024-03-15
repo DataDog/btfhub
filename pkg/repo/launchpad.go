@@ -93,7 +93,7 @@ func getLaunchpadPackages(ctx context.Context, release string, arch string) ([]*
 			if p.Status == "Deleted" && p.DateSuperseded.IsZero() {
 				continue
 			}
-			fmt.Printf("DEBUG: %+v\n", p)
+			//fmt.Printf("DEBUG: %+v\n", p)
 			url := fmt.Sprintf("%s/+files/%s_%s_%s.ddeb", strings.ReplaceAll(p.BuildLink, "api.launchpad.net/devel", "launchpad.net"), p.BinaryPackageName, p.BinaryPackageVersion, arch)
 			if _, ok := pkgMap[url]; !ok {
 				pkgMap[url] = p

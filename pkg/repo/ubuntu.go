@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"regexp"
 	"sort"
 
 	"golang.org/x/sync/errgroup"
@@ -106,26 +105,41 @@ func (uRepo *UbuntuRepo) GetKernelPackages(
 			return fmt.Errorf("launchpad search: %s", err)
 		}
 
-		for _, ktype := range []string{"unsigned", "signed"} {
-			re := regexp.MustCompile(fmt.Sprintf("%s-dbgsym", uRepo.kernelTypes[ktype]))
-
-			for _, p := range kernelDbgPkgs {
-				match := re.FindStringSubmatch(p.Name)
-				if match == nil {
-					continue
-				}
-				if p.Size < 10_000_000 { // ignore smaller than 10MB (signed vs unsigned emptiness)
-					continue
-				}
-				// match = [filename = linux-image-{unsigned}-XXX-dbgsym, flavor = generic, gke, aws, ...]
-				p.Flavor = match[1]
-				if dp, ok := filteredKernelDbgPkgMap[p.Filename()]; !ok {
-					filteredKernelDbgPkgMap[p.Filename()] = p
-				} else {
-					log.Printf("DEBUG: duplicate %s filename from %s (other %s)", p.Filename(), p, dp)
-				}
-			}
+		pkglist, err := os.MkdirTemp("", fmt.Sprintf("ubuntu-%s-%s-*.packages", release, altArch))
+		if err != nil {
+			return err
 		}
+		f, err := os.Open(pkglist)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+		for _, p := range kernelDbgPkgs {
+			_, _ = f.WriteString(fmt.Sprintf("%s\n", p.Name))
+		}
+		fmt.Printf("%s\n", pkglist)
+		return nil
+
+		//for _, ktype := range []string{"unsigned", "signed"} {
+		//	re := regexp.MustCompile(fmt.Sprintf("%s-dbgsym", uRepo.kernelTypes[ktype]))
+		//
+		//	for _, p := range kernelDbgPkgs {
+		//		match := re.FindStringSubmatch(p.Name)
+		//		if match == nil {
+		//			continue
+		//		}
+		//		if p.Size < 10_000_000 { // ignore smaller than 10MB (signed vs unsigned emptiness)
+		//			continue
+		//		}
+		//		// match = [filename = linux-image-{unsigned}-XXX-dbgsym, flavor = generic, gke, aws, ...]
+		//		p.Flavor = match[1]
+		//		if dp, ok := filteredKernelDbgPkgMap[p.Filename()]; !ok {
+		//			filteredKernelDbgPkgMap[p.Filename()] = p
+		//		} else {
+		//			log.Printf("DEBUG: duplicate %s filename from %s (other %s)", p.Filename(), p, dp)
+		//		}
+		//	}
+		//}
 	}
 
 	//var filteredKernelPkgs []*pkg.UbuntuPackage
