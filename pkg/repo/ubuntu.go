@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"sort"
 
 	"golang.org/x/sync/errgroup"
@@ -105,11 +106,7 @@ func (uRepo *UbuntuRepo) GetKernelPackages(
 			return fmt.Errorf("launchpad search: %s", err)
 		}
 
-		pkglist, err := os.MkdirTemp("", fmt.Sprintf("ubuntu-%s-%s-*.packages", release, altArch))
-		if err != nil {
-			return err
-		}
-		f, err := os.Open(pkglist)
+		f, err := os.Create(filepath.Join(os.TempDir(), fmt.Sprintf("ubuntu-%s-%s.packages", release, altArch)))
 		if err != nil {
 			return err
 		}
@@ -117,7 +114,7 @@ func (uRepo *UbuntuRepo) GetKernelPackages(
 		for _, p := range kernelDbgPkgs {
 			_, _ = f.WriteString(fmt.Sprintf("%s\n", p.Name))
 		}
-		fmt.Printf("%s\n", pkglist)
+		fmt.Printf("%s\n", f.Name())
 		return nil
 
 		//for _, ktype := range []string{"unsigned", "signed"} {
