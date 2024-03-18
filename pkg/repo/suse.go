@@ -39,23 +39,24 @@ func NewSUSERepo() Repository {
 
 func (d *suseRepo) GetKernelPackages(ctx context.Context, dir string, release string, arch string, opts RepoOptions, jobchan chan<- job.Job) error {
 	var repos []string
+	altArch := d.archs[arch]
 
 	switch release {
 	case "12.3":
-		repos = append(repos, fmt.Sprintf("SUSE_Linux_Enterprise_Server_12_SP3_%s:SLES12-SP3-Debuginfo-Pool", arch))
-		repos = append(repos, fmt.Sprintf("SUSE_Linux_Enterprise_Server_12_SP3_%s:SLES12-SP3-Debuginfo-Updates", arch))
+		repos = append(repos, fmt.Sprintf("SUSE_Linux_Enterprise_Server_12_SP3_%s:SLES12-SP3-Debuginfo-Pool", altArch))
+		repos = append(repos, fmt.Sprintf("SUSE_Linux_Enterprise_Server_12_SP3_%s:SLES12-SP3-Debuginfo-Updates", altArch))
 	case "12.5":
-		repos = append(repos, fmt.Sprintf("SUSE_Linux_Enterprise_Server_%s:SLES12-SP5-Debuginfo-Pool", arch))
-		repos = append(repos, fmt.Sprintf("SUSE_Linux_Enterprise_Server_%s:SLES12-SP5-Debuginfo-Updates", arch))
+		repos = append(repos, fmt.Sprintf("SUSE_Linux_Enterprise_Server_%s:SLES12-SP5-Debuginfo-Pool", altArch))
+		repos = append(repos, fmt.Sprintf("SUSE_Linux_Enterprise_Server_%s:SLES12-SP5-Debuginfo-Updates", altArch))
 	case "15.1":
-		repos = append(repos, fmt.Sprintf("Basesystem_Module_15_SP1_%s:SLE-Module-Basesystem15-SP1-Debuginfo-Pool", arch))
-		repos = append(repos, fmt.Sprintf("Basesystem_Module_15_SP1_%s:SLE-Module-Basesystem15-SP1-Debuginfo-Updates", arch))
+		repos = append(repos, fmt.Sprintf("Basesystem_Module_15_SP1_%s:SLE-Module-Basesystem15-SP1-Debuginfo-Pool", altArch))
+		repos = append(repos, fmt.Sprintf("Basesystem_Module_15_SP1_%s:SLE-Module-Basesystem15-SP1-Debuginfo-Updates", altArch))
 	case "15.2":
-		repos = append(repos, fmt.Sprintf("Basesystem_Module_%s:SLE-Module-Basesystem15-SP2-Debuginfo-Pool", arch))
-		repos = append(repos, fmt.Sprintf("Basesystem_Module_%s:SLE-Module-Basesystem15-SP2-Debuginfo-Updates", arch))
+		repos = append(repos, fmt.Sprintf("Basesystem_Module_%s:SLE-Module-Basesystem15-SP2-Debuginfo-Pool", altArch))
+		repos = append(repos, fmt.Sprintf("Basesystem_Module_%s:SLE-Module-Basesystem15-SP2-Debuginfo-Updates", altArch))
 	case "15.3":
-		repos = append(repos, fmt.Sprintf("Basesystem_Module_%s:SLE-Module-Basesystem15-SP3-Debuginfo-Pool", arch))
-		repos = append(repos, fmt.Sprintf("Basesystem_Module_%s:SLE-Module-Basesystem15-SP3-Debuginfo-Updates", arch))
+		repos = append(repos, fmt.Sprintf("Basesystem_Module_%s:SLE-Module-Basesystem15-SP3-Debuginfo-Pool", altArch))
+		repos = append(repos, fmt.Sprintf("Basesystem_Module_%s:SLE-Module-Basesystem15-SP3-Debuginfo-Updates", altArch))
 	}
 	for _, r := range repos {
 		if _, err := utils.RunZypperCMD(ctx, "modifyrepo", "--enable", r); err != nil {
