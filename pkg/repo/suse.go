@@ -75,7 +75,7 @@ func (d *suseRepo) GetKernelPackages(ctx context.Context, dir string, release st
 		return err
 	}
 
-	pkgs, err := d.parseZypperPackages(searchOut, arch)
+	pkgs, err := d.parseZypperPackages(searchOut, altArch)
 	if err != nil {
 		return fmt.Errorf("parse package listing: %s", err)
 	}
