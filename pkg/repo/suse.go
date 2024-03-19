@@ -16,7 +16,6 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
-	"github.com/aquasecurity/btfhub/pkg/job"
 	"github.com/aquasecurity/btfhub/pkg/kernel"
 	"github.com/aquasecurity/btfhub/pkg/pkg"
 	"github.com/aquasecurity/btfhub/pkg/utils"
@@ -37,7 +36,7 @@ func NewSUSERepo() Repository {
 	}
 }
 
-func (d *suseRepo) GetKernelPackages(ctx context.Context, dir string, release string, arch string, opts RepoOptions, jobchan chan<- job.Job) error {
+func (d *suseRepo) GetKernelPackages(ctx context.Context, dir string, release string, arch string, opts RepoOptions, chans *JobChannels) error {
 	var repos []string
 	altArch := d.archs[arch]
 
@@ -104,7 +103,7 @@ func (d *suseRepo) GetKernelPackages(ctx context.Context, dir string, release st
 		cks := ks
 		g.Go(func() error {
 			log.Printf("DEBUG: start kernel type %s %s (%d pkgs)\n", ckt, arch, len(cks))
-			err := d.processPackages(ctx, dir, cks, opts, jobchan)
+			err := d.processPackages(ctx, dir, cks, opts, chans)
 			log.Printf("DEBUG: end kernel type %s %s\n", ckt, arch)
 			return err
 		})
@@ -136,10 +135,10 @@ func (d *suseRepo) getRepoAliases(ctx context.Context) error {
 	return bio.Err()
 }
 
-func (d *suseRepo) processPackages(ctx context.Context, dir string, pkgs []pkg.Package, opts RepoOptions, jobchan chan<- job.Job) error {
+func (d *suseRepo) processPackages(ctx context.Context, dir string, pkgs []pkg.Package, opts RepoOptions, chans *JobChannels) error {
 	for i, p := range pkgs {
 		log.Printf("DEBUG: start pkg %s (%d/%d)\n", p, i+1, len(pkgs))
-		if err := processPackage(ctx, p, dir, opts, jobchan); err != nil {
+		if err := processPackage(ctx, p, dir, opts, chans); err != nil {
 			if errors.Is(err, utils.ErrKernelHasBTF) {
 				log.Printf("INFO: kernel %s has BTF already, skipping later kernels\n", p)
 				return nil

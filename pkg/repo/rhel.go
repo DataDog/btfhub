@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/aquasecurity/btfhub/pkg/job"
 	"github.com/aquasecurity/btfhub/pkg/kernel"
 	"github.com/aquasecurity/btfhub/pkg/pkg"
 )
@@ -31,7 +30,7 @@ func (d *RHELRepo) GetKernelPackages(
 	_ string,
 	arch string,
 	opts RepoOptions,
-	jobChan chan<- job.Job,
+	chans *JobChannels,
 ) error {
 	altArch := d.archs[arch]
 	searchOut, err := repoquery(ctx, "kernel-debuginfo", altArch)
@@ -44,5 +43,5 @@ func (d *RHELRepo) GetKernelPackages(
 	}
 	sort.Sort(pkg.ByVersion(pkgs))
 
-	return processPackages(ctx, workDir, pkgs, opts, jobChan)
+	return processPackages(ctx, workDir, pkgs, opts, chans)
 }

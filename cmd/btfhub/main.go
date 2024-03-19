@@ -312,15 +312,17 @@ func generate(ctx context.Context) error {
 
 	// Workers: job consumers (pool)
 	jobChan := make(chan job.Job)
+	btfChan := make(chan job.Job)
 	consume, consCtx := errgroup.WithContext(ctx)
 
 	log.Printf("Using %d workers\n", numWorkers)
 	for i := 0; i < numWorkers; i++ {
 		consume.Go(func() error {
-			return job.StartWorker(consCtx, jobChan)
+			return job.StartWorker(consCtx, btfChan, jobChan)
 		})
 	}
 
+	chans := &repo.JobChannels{BTF: btfChan, Default: jobChan}
 	// Workers: job producers (per distro, per release)
 	produce, prodCtx := errgroup.WithContext(ctx)
 	for _, d := range distros {
@@ -345,7 +347,7 @@ func generate(ctx context.Context) error {
 						PackageFile:   fileArg,
 						DryRun:        dryRun,
 					}
-					return rep.GetKernelPackages(prodCtx, workDir, release, arch, opts, jobChan)
+					return rep.GetKernelPackages(prodCtx, workDir, release, arch, opts, chans)
 				})
 			}
 		}

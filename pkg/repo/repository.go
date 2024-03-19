@@ -14,6 +14,11 @@ type RepoOptions struct {
 	DryRun        bool
 }
 
+type JobChannels struct {
+	BTF     chan<- job.Job
+	Default chan<- job.Job
+}
+
 type Repository interface {
 	GetKernelPackages(
 		ctx context.Context,
@@ -21,6 +26,6 @@ type Repository interface {
 		release string,
 		arch string,
 		opts RepoOptions,
-		jobChan chan<- job.Job,
+		chans *JobChannels,
 	) error
 }

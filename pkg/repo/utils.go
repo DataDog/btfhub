@@ -22,7 +22,7 @@ func processPackage(
 	p pkg.Package,
 	workDir string,
 	opts RepoOptions,
-	jobChan chan<- job.Job,
+	chans *JobChannels,
 ) error {
 	btfTarName := fmt.Sprintf("%s.btf.tar.xz", p.BTFFilename())
 	btfTarPath := filepath.Join(workDir, btfTarName)
@@ -79,7 +79,7 @@ func processPackage(
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
-	case jobChan <- kernelExtJob: // send vmlinux file extraction job to worker
+	case chans.Default <- kernelExtJob: // send vmlinux file extraction job to worker
 	}
 
 	reply := <-kernelExtJob.ReplyChan // wait for reply
@@ -110,7 +110,7 @@ func processPackage(
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
-	case jobChan <- btfGenJob: // send BTF generation job to worker
+	case chans.BTF <- btfGenJob: // send BTF generation job to worker
 	}
 	reply = <-btfGenJob.ReplyChan // wait for reply
 	switch v := reply.(type) {
@@ -133,7 +133,7 @@ func processPackage(
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		case jobChan <- btfGenJob: // send BTF generation job to worker
+		case chans.BTF <- btfGenJob: // send BTF generation job to worker
 		}
 
 		g.Go(func() error {
@@ -162,7 +162,7 @@ func processPackage(
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
-	case jobChan <- compressJob: // send BTF compression job to worker
+	case chans.BTF <- compressJob: // send BTF compression job to worker
 	}
 
 	// removing the temp directory requires we want for this job to complete

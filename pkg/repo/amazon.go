@@ -14,7 +14,6 @@ import (
 
 	"golang.org/x/exp/maps"
 
-	"github.com/aquasecurity/btfhub/pkg/job"
 	"github.com/aquasecurity/btfhub/pkg/kernel"
 	"github.com/aquasecurity/btfhub/pkg/pkg"
 	"github.com/aquasecurity/btfhub/pkg/utils"
@@ -39,7 +38,7 @@ func (d *AmazonRepo) GetKernelPackages(
 	_ string,
 	arch string,
 	opts RepoOptions,
-	jobChan chan<- job.Job,
+	chans *JobChannels,
 ) error {
 	altArch := d.archs[arch]
 	searchOut, err := repoquery(ctx, "kernel-debuginfo", altArch)
@@ -53,7 +52,7 @@ func (d *AmazonRepo) GetKernelPackages(
 	sort.Sort(pkg.ByVersion(pkgs))
 
 	for _, p := range pkgs {
-		err := processPackage(ctx, p, workDir, opts, jobChan)
+		err := processPackage(ctx, p, workDir, opts, chans)
 		if err != nil {
 			if errors.Is(err, utils.ErrKernelHasBTF) {
 				log.Printf("INFO: kernel %s has BTF already, skipping later kernels\n", p)

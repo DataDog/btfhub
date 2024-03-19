@@ -7,7 +7,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/aquasecurity/btfhub/pkg/job"
 	"github.com/aquasecurity/btfhub/pkg/kernel"
 	"github.com/aquasecurity/btfhub/pkg/pkg"
 	"github.com/aquasecurity/btfhub/pkg/utils"
@@ -39,7 +38,7 @@ func (d *oracleRepo) GetKernelPackages(
 	release string,
 	arch string,
 	opts RepoOptions,
-	jobChan chan<- job.Job,
+	chans *JobChannels,
 ) error {
 	var pkgs []pkg.Package
 
@@ -80,5 +79,5 @@ func (d *oracleRepo) GetKernelPackages(
 
 	sort.Sort(pkg.ByVersion(pkgs)) // so kernels can be skipped if previous has BTF already
 
-	return processPackages(ctx, workDir, pkgs, opts, jobChan)
+	return processPackages(ctx, workDir, pkgs, opts, chans)
 }

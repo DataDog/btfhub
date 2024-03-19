@@ -12,7 +12,6 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
-	"github.com/aquasecurity/btfhub/pkg/job"
 	"github.com/aquasecurity/btfhub/pkg/kernel"
 	"github.com/aquasecurity/btfhub/pkg/pkg"
 	"github.com/aquasecurity/btfhub/pkg/utils"
@@ -54,7 +53,7 @@ func (uRepo *UbuntuRepo) GetKernelPackages(
 	release string,
 	arch string,
 	opts RepoOptions,
-	jobChan chan<- job.Job,
+	chans *JobChannels,
 ) error {
 	altArch := uRepo.archs[arch]
 	//repoURL := uRepo.repo[altArch]
@@ -216,7 +215,7 @@ func (uRepo *UbuntuRepo) GetKernelPackages(
 
 		g.Go(func() error {
 			log.Printf("DEBUG: start kernel flavor %s %s (%d pkgs)\n", theFlavor, arch, len(thePkgSlice))
-			err := processPackages(ctx, workDir, thePkgSlice, opts, jobChan)
+			err := processPackages(ctx, workDir, thePkgSlice, opts, chans)
 			log.Printf("DEBUG: end kernel flavor %s %s\n", theFlavor, arch)
 			return err
 		})
@@ -231,7 +230,7 @@ func processPackages(
 	workDir string,
 	pkgs []pkg.Package,
 	opts RepoOptions,
-	jobChan chan<- job.Job,
+	chans *JobChannels,
 ) error {
 	if !opts.Ordered {
 		g, ctx := errgroup.WithContext(ctx)
@@ -240,7 +239,7 @@ func processPackages(
 			gp := p
 			g.Go(func() error {
 				log.Printf("DEBUG: start pkg %s (%d/%d)\n", p, pos, len(pkgs))
-				err := processPackage(ctx, gp, workDir, opts, jobChan)
+				err := processPackage(ctx, gp, workDir, opts, chans)
 				if err != nil {
 					if errors.Is(err, utils.ErrKernelHasBTF) {
 						log.Printf("INFO: kernel %s has BTF already\n", p)
@@ -260,7 +259,7 @@ func processPackages(
 
 	for i, p := range pkgs {
 		log.Printf("DEBUG: start pkg %s (%d/%d)\n", p, i+1, len(pkgs))
-		err := processPackage(ctx, p, workDir, opts, jobChan)
+		err := processPackage(ctx, p, workDir, opts, chans)
 		if err != nil {
 			if errors.Is(err, utils.ErrKernelHasBTF) {
 				log.Printf("INFO: kernel %s has BTF already, skipping later kernels\n", p)

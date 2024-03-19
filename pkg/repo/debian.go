@@ -17,7 +17,6 @@ import (
 
 	"golang.org/x/exp/slices"
 
-	"github.com/aquasecurity/btfhub/pkg/job"
 	"github.com/aquasecurity/btfhub/pkg/kernel"
 	"github.com/aquasecurity/btfhub/pkg/pkg"
 	"github.com/aquasecurity/btfhub/pkg/utils"
@@ -73,7 +72,7 @@ func (d *DebianRepo) GetKernelPackages(
 	release string,
 	arch string,
 	opts RepoOptions,
-	jobChan chan<- job.Job,
+	chans *JobChannels,
 ) error {
 	altArch := d.archs[arch]
 
@@ -190,7 +189,7 @@ func (d *DebianRepo) GetKernelPackages(
 		// 1. Download package and extract vmlinux file
 		// 2. Extract BTF info from vmlinux file
 
-		err := processPackage(ctx, p, workDir, opts, jobChan)
+		err := processPackage(ctx, p, workDir, opts, chans)
 		if err != nil {
 			if errors.Is(err, utils.ErrKernelHasBTF) {
 				log.Printf("INFO: kernel %s has BTF already, skipping later kernels\n", p)
