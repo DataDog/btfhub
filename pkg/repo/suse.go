@@ -48,6 +48,9 @@ func (d *suseRepo) GetKernelPackages(ctx context.Context, dir string, release st
 	case "12.5":
 		repos = append(repos, fmt.Sprintf("SUSE_Linux_Enterprise_Server_%s:SLES12-SP5-Debuginfo-Pool", altArch))
 		repos = append(repos, fmt.Sprintf("SUSE_Linux_Enterprise_Server_%s:SLES12-SP5-Debuginfo-Updates", altArch))
+	case "15.0":
+		repos = append(repos, fmt.Sprintf("Basesystem_Module_15_%s:SLE-Module-Basesystem15-Debuginfo-Pool", altArch))
+		repos = append(repos, fmt.Sprintf("Basesystem_Module_15_%s:SLE-Module-Basesystem15-Debuginfo-Updates", altArch))
 	case "15.1":
 		repos = append(repos, fmt.Sprintf("Basesystem_Module_15_SP1_%s:SLE-Module-Basesystem15-SP1-Debuginfo-Pool", altArch))
 		repos = append(repos, fmt.Sprintf("Basesystem_Module_15_SP1_%s:SLE-Module-Basesystem15-SP1-Debuginfo-Updates", altArch))
