@@ -86,7 +86,7 @@ func processPackage(
 	var extractReply *job.KernelExtractReply
 	switch v := reply.(type) {
 	case error:
-		if errors.Is(err, utils.ErrKernelHasBTF) {
+		if errors.Is(v, utils.ErrKernelHasBTF) {
 			_ = pkg.MarkPackageHasBTF(p, workDir)
 		}
 		return v
