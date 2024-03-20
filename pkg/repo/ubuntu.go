@@ -58,7 +58,6 @@ func (uRepo *UbuntuRepo) GetKernelPackages(
 	altArch := uRepo.archs[arch]
 
 	var kernelPkgs []*pkg.UbuntuPackage
-	kernelDbgPkgMap := make(map[string]*pkg.UbuntuPackage)
 	filteredKernelDbgPkgMap := make(map[string]*pkg.UbuntuPackage) // map[filename]package
 
 	if opts.PackageFile != "" {
@@ -86,44 +85,30 @@ func (uRepo *UbuntuRepo) GetKernelPackages(
 		if err != nil {
 			return fmt.Errorf("parsing debug package list: %s", err)
 		}
-		for _, p := range kernelDbgPkgs {
-			if dp, ok := kernelDbgPkgMap[p.Filename()]; ok {
-				log.Printf("DEBUG: duplicate %s filename from %s (other %s)", p.Filename(), p, dp)
-				continue
-			}
-			kernelDbgPkgMap[p.Filename()] = p
-		}
 
 		lpDbgPkgs, err := getLaunchpadPackages(ctx, release, altArch)
 		if err != nil {
 			return fmt.Errorf("launchpad search: %s", err)
 		}
 
-		// Check if debug package exists for each launchpad package and, if not,
-		// add launchpad package
-		for _, p := range lpDbgPkgs {
-			_, ok := kernelDbgPkgMap[p.Filename()]
-			if !ok {
-				kernelDbgPkgMap[p.Filename()] = p
-			}
-		}
-
 		for _, ktype := range []string{"unsigned", "signed"} {
 			re := regexp.MustCompile(fmt.Sprintf("%s-dbgsym", uRepo.kernelTypes[ktype]))
-			for _, p := range kernelDbgPkgMap {
-				match := re.FindStringSubmatch(p.Name)
-				if match == nil {
-					continue
-				}
-				if p.Size < 10_000_000 { // ignore smaller than 10MB (signed vs unsigned emptiness)
-					continue
-				}
-				// match = [filename = linux-image-{unsigned}-XXX-dbgsym, flavor = generic, gke, aws, ...]
-				p.Flavor = match[1]
-				if dp, ok := filteredKernelDbgPkgMap[p.Filename()]; !ok {
-					filteredKernelDbgPkgMap[p.Filename()] = p
-				} else {
-					log.Printf("DEBUG: duplicate %s filename from %s (other %s)", p.Filename(), p, dp)
+			for _, pkgs := range [][]*pkg.UbuntuPackage{kernelDbgPkgs, lpDbgPkgs} {
+				for _, p := range pkgs {
+					match := re.FindStringSubmatch(p.Name)
+					if match == nil {
+						continue
+					}
+					if p.Size < 10_000_000 { // ignore smaller than 10MB (signed vs unsigned emptiness)
+						continue
+					}
+					// match = [filename = linux-image-{unsigned}-XXX-dbgsym, flavor = generic, gke, aws, ...]
+					p.Flavor = match[1]
+					if dp, ok := filteredKernelDbgPkgMap[p.Filename()]; !ok {
+						filteredKernelDbgPkgMap[p.Filename()] = p
+					} else {
+						log.Printf("DEBUG: duplicate %s filename from %s (other %s)", p.Filename(), p, dp)
+					}
 				}
 			}
 		}
