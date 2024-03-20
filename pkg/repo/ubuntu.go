@@ -56,9 +56,9 @@ func (uRepo *UbuntuRepo) GetKernelPackages(
 	chans *JobChannels,
 ) error {
 	altArch := uRepo.archs[arch]
-	//repoURL := uRepo.repo[altArch]
 
 	var kernelPkgs []*pkg.UbuntuPackage
+	kernelDbgPkgMap := make(map[string]*pkg.UbuntuPackage)
 	filteredKernelDbgPkgMap := make(map[string]*pkg.UbuntuPackage) // map[filename]package
 
 	if opts.PackageFile != "" {
@@ -76,50 +76,41 @@ func (uRepo *UbuntuRepo) GetKernelPackages(
 			})
 		}
 	} else {
-		//// Get Packages.xz from main, updates and universe repos
-		//rawPkgs, err := pkg.GetPackageList(ctx, repoURL, release, altArch)
-		//if err != nil {
-		//	return fmt.Errorf("main: %s", err)
-		//}
-		//
-		//// Get the list of kernel packages to download from those repos
-		//kernelPkgs, err = pkg.ParseAPTPackages(rawPkgs, repoURL, release)
-		//if err != nil {
-		//	return fmt.Errorf("parsing main package list: %s", err)
-		//}
-		//
-		//// Get Packages.xz from debug repo
-		//dbgRawPkgs, err := pkg.GetPackageList(ctx, uRepo.debugRepo, release, altArch)
-		//if err != nil {
-		//	return fmt.Errorf("ddebs: %s", err)
-		//}
-		//
-		//// Get the list of kernel packages to download from debug repo
-		//kernelDbgPkgs, err := pkg.ParseAPTPackages(dbgRawPkgs, uRepo.debugRepo, release)
-		//if err != nil {
-		//	return fmt.Errorf("parsing debug package list: %s", err)
-		//}
+		// Get Packages.xz from debug repo
+		dbgRawPkgs, err := pkg.GetPackageList(ctx, uRepo.debugRepo, release, altArch)
+		if err != nil {
+			return fmt.Errorf("ddebs: %s", err)
+		}
+		// Get the list of kernel packages to download from debug repo
+		kernelDbgPkgs, err := pkg.ParseAPTPackages(dbgRawPkgs, uRepo.debugRepo, release)
+		if err != nil {
+			return fmt.Errorf("parsing debug package list: %s", err)
+		}
+		for _, p := range kernelDbgPkgs {
+			if dp, ok := kernelDbgPkgMap[p.Filename()]; ok {
+				log.Printf("DEBUG: duplicate %s filename from %s (other %s)", p.Filename(), p, dp)
+				continue
+			}
+			kernelDbgPkgMap[p.Filename()] = p
+		}
 
-		kernelDbgPkgs, err := getLaunchpadPackages(ctx, release, altArch)
+		lpDbgPkgs, err := getLaunchpadPackages(ctx, release, altArch)
 		if err != nil {
 			return fmt.Errorf("launchpad search: %s", err)
 		}
 
-		//f, err := os.Create(filepath.Join(os.TempDir(), fmt.Sprintf("ubuntu-%s-%s.packages", release, altArch)))
-		//if err != nil {
-		//	return err
-		//}
-		//defer f.Close()
-		//for _, p := range kernelDbgPkgs {
-		//	_, _ = f.WriteString(fmt.Sprintf("%s\n", p.Name))
-		//}
-		//fmt.Printf("%s\n", f.Name())
-		//return nil
+		// Check if debug package exists for each launchpad package and, if not,
+		// add launchpad package
+		for _, p := range lpDbgPkgs {
+			_, ok := kernelDbgPkgMap[p.Filename()]
+			if !ok {
+				kernelDbgPkgMap[p.Filename()] = p
+			}
+		}
 
 		for _, ktype := range []string{"unsigned", "signed"} {
 			re := regexp.MustCompile(fmt.Sprintf("%s-dbgsym", uRepo.kernelTypes[ktype]))
-
-			for _, p := range kernelDbgPkgs {
+			for _, p := range kernelDbgPkgMap {
 				match := re.FindStringSubmatch(p.Name)
 				if match == nil {
 					continue
@@ -136,51 +127,7 @@ func (uRepo *UbuntuRepo) GetKernelPackages(
 				}
 			}
 		}
-
-		//f, err := os.Create(filepath.Join(os.TempDir(), fmt.Sprintf("ubuntu-%s-%s-filtered.packages", release, altArch)))
-		//if err != nil {
-		//	return err
-		//}
-		//defer f.Close()
-		//for _, p := range filteredKernelDbgPkgMap {
-		//	_, _ = f.WriteString(fmt.Sprintf("%s\n", p.Name))
-		//}
-		//fmt.Printf("%s\n", f.Name())
-		//return nil
 	}
-
-	//var filteredKernelPkgs []*pkg.UbuntuPackage
-	//for _, restr := range uRepo.kernelTypes {
-	//	re := regexp.MustCompile(fmt.Sprintf("%s$", restr))
-	//	for _, p := range kernelPkgs {
-	//		match := re.FindStringSubmatch(p.Name)
-	//		if match == nil {
-	//			continue
-	//		}
-	//		// match = [filename = linux-image-{unsigned}-XXX, flavor = generic, gke, aws, ...]
-	//		p.Flavor = match[1]
-	//		filteredKernelPkgs = append(filteredKernelPkgs, p)
-	//	}
-	//}
-
-	// Check if debug package exists for each kernel package and, if not,
-	// add pseudo-packages for the missing entries (try pull-lp-ddebs later on)
-	//for _, p := range filteredKernelPkgs {
-	//	_, ok := filteredKernelDbgPkgMap[p.Filename()]
-	//	if !ok {
-	//		log.Printf("DEBUG: adding launchpad package for %s\n", p.Name)
-	//		filteredKernelDbgPkgMap[p.Filename()] = &pkg.UbuntuPackage{
-	//			// try unsigned first
-	//			Name:          fmt.Sprintf("linux-image-unsigned-%s-dbgsym", p.Filename()),
-	//			Architecture:  p.Architecture,
-	//			KernelVersion: p.KernelVersion,
-	//			NameOfFile:    p.NameOfFile,
-	//			Size:          math.MaxUint64,
-	//			Flavor:        p.Flavor,
-	//			URL:           "pull-lp-ddebs",
-	//		}
-	//	}
-	//}
 
 	log.Printf("DEBUG: %d %s packages\n", len(filteredKernelDbgPkgMap), arch)
 
