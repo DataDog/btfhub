@@ -114,6 +114,14 @@ func (uRepo *UbuntuRepo) GetKernelPackages(
 		}
 	}
 
+	if opts.Query != nil {
+		for k, p := range filteredKernelDbgPkgMap {
+			if !opts.Query.MatchString(p.Filename()) {
+				delete(filteredKernelDbgPkgMap, k)
+			}
+		}
+	}
+
 	log.Printf("DEBUG: %d %s packages\n", len(filteredKernelDbgPkgMap), arch)
 
 	// type: signed/unsigned

@@ -12,6 +12,7 @@ import (
 	"os/signal"
 	"path"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 
@@ -67,7 +68,7 @@ var repoCreators = map[string]repoFunc{
 	"opensuse-leap": repo.NewOpenSUSERepo,
 }
 
-var distroArg, releaseArg, archArg, fileArg string
+var distroArg, releaseArg, archArg, fileArg, queryArg string
 var numWorkers int
 var force, kernelModules, ordered, dryRun bool
 
@@ -79,6 +80,8 @@ func init() {
 	flag.StringVar(&archArg, "arch", "", "architecture to update (x86_64,arm64)")
 	flag.StringVar(&archArg, "a", "", "architecture to update (x86_64,arm64)")
 	flag.StringVar(&fileArg, "pkg-file", "", "file to use as list of packages rather than reading from repositories (requires distro, release, and arch)")
+	flag.StringVar(&queryArg, "query", "", "regexp query to filter kernel versions")
+	flag.StringVar(&queryArg, "q", "", "regexp query to filter kernel versions")
 	flag.IntVar(&numWorkers, "workers", 0, "number of concurrent workers (defaults to runtime.NumCPU() - 1)")
 	flag.IntVar(&numWorkers, "j", 0, "number of concurrent workers (defaults to runtime.NumCPU() - 1)")
 	flag.BoolVar(&force, "f", false, "force update regardless of existing files (defaults to false)")
@@ -322,6 +325,11 @@ func generate(ctx context.Context) error {
 		})
 	}
 
+	var qre *regexp.Regexp
+	if queryArg != "" {
+		qre = regexp.MustCompile(queryArg)
+	}
+
 	chans := &repo.JobChannels{BTF: btfChan, Default: jobChan}
 	// Workers: job producers (per distro, per release)
 	produce, prodCtx := errgroup.WithContext(ctx)
@@ -346,6 +354,7 @@ func generate(ctx context.Context) error {
 						Ordered:       ordered,
 						PackageFile:   fileArg,
 						DryRun:        dryRun,
+						Query:         qre,
 					}
 					return rep.GetKernelPackages(prodCtx, workDir, release, arch, opts, chans)
 				})

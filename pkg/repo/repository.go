@@ -2,6 +2,7 @@ package repo
 
 import (
 	"context"
+	"regexp"
 
 	"github.com/aquasecurity/btfhub/pkg/job"
 )
@@ -12,6 +13,7 @@ type RepoOptions struct {
 	Ordered       bool
 	PackageFile   string
 	DryRun        bool
+	Query         *regexp.Regexp
 }
 
 type JobChannels struct {
