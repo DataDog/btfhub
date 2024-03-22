@@ -125,11 +125,14 @@ func (d *suseRepo) getRepoAliases(ctx context.Context) error {
 		fields := strings.FieldsFunc(line, func(r rune) bool {
 			return unicode.IsSpace(r) || r == '|'
 		})
-		if len(fields) < 3 {
+		if len(fields) < 4 {
 			continue
 		}
 		// first field must be a number
 		if _, err := strconv.Atoi(fields[0]); err != nil {
+			continue
+		}
+		if fields[3] != "Yes" {
 			continue
 		}
 		alias, name := fields[1], fields[2]
