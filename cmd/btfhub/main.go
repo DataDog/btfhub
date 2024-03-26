@@ -170,6 +170,10 @@ func check(ctx context.Context) error {
 					if cerr := ctx.Err(); cerr != nil {
 						return cerr
 					}
+					if err != nil {
+						_, _ = fmt.Fprintf(os.Stderr, "walk error: %s\n", err)
+						return nil
+					}
 
 					if info.IsDir() {
 						return nil
