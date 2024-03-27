@@ -4,32 +4,31 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"slices"
 	"strings"
 )
 
-func processArgs(defDistros []string, defReleases map[string][]string) (distros, releases, archs []string, err error) {
+func processArgs(defDistros []string, defReleases map[string][]string) (distros []string, releases map[string][]string, archs []string, err error) {
+	releases = make(map[string][]string)
+	var rels []string
+	if releaseArg != "" {
+		rels = strings.Split(releaseArg, " ")
+	}
 	if distroArg != "" {
 		distros = strings.Split(distroArg, " ")
-		for i, d := range distros {
+		for _, d := range distros {
 			if _, ok := distroReleases[d]; !ok {
 				err = fmt.Errorf("invalid distribution %s", d)
 				return
 			}
-			if releaseArg != "" {
-				releases = strings.Split(releaseArg, " ")
-				found := false
-				for _, r := range distroReleases[d] {
-					found = r == releases[i]
-					if found {
-						break
-					}
+
+			for _, r := range rels {
+				if slices.Contains(distroReleases[d], r) {
+					releases[d] = append(releases[d], r)
 				}
-				if !found {
-					err = fmt.Errorf("invalid release %s for %s", releases[i], d)
-					return
-				}
-			} else {
-				releases = defReleases[d]
+			}
+			if len(rels) == 0 {
+				releases[d] = defReleases[d]
 			}
 		}
 	} else {

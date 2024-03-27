@@ -63,7 +63,7 @@ func Check(ctx context.Context) error {
 	}
 
 	for _, distro := range distros {
-		for _, release := range releases {
+		for _, release := range releases[distro] {
 			for _, arch := range archs {
 				btfdir := filepath.Join(archiveDir, distro, release, arch)
 				if !utils.Exists(btfdir) {

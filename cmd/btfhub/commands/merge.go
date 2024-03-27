@@ -45,7 +45,7 @@ func Merge(ctx context.Context) error {
 	produce, prodCtx := errgroup.WithContext(ctx)
 	for _, d := range distros {
 		distro := d
-		for _, r := range releases {
+		for _, r := range releases[d] {
 			release := r
 			for _, a := range archs {
 				arch := a
