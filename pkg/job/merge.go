@@ -48,8 +48,13 @@ func (job *BTFMergeJob) Do(ctx context.Context) error {
 	if err := utils.RunCMD(ctx, extractDir, "/bin/bash", "-O", "extglob", "-c", fmt.Sprintf(`bpftool -B vmlinux btf merge %s !(vmlinux)`, mergedFile)); err != nil {
 		return fmt.Errorf("merge %s: %s", job.SourceTarball, err)
 	}
-	if err := pkg.TarballBTF(ctx, mergeDir, job.SourceTarball); err != nil {
-		return fmt.Errorf("tarball %s: %s", job.SourceTarball, err)
+
+	tmpTarball := filepath.Join(extractDir, "tmp.tar.xz")
+	if err := pkg.TarballBTF(ctx, mergeDir, tmpTarball); err != nil {
+		return fmt.Errorf("tarball %s: %s", tmpTarball, err)
+	}
+	if err := os.Rename(tmpTarball, job.SourceTarball); err != nil {
+		return fmt.Errorf("rename %s: %s", tmpTarball, err)
 	}
 
 	log.Printf("DEBUG: finished merging BTF from %s in %s\n", job.SourceTarball, time.Since(start))

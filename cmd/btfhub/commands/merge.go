@@ -79,22 +79,25 @@ func Merge(ctx context.Context) error {
 							return nil
 						}
 
-						mergeJob := &job.BTFMergeJob{
-							SourceTarball: path,
-							ReplyChan:     make(chan any),
-						}
-						select {
-						case <-ctx.Done():
-							return ctx.Err()
-						case jobChan <- mergeJob: // send BTF merge job to worker
-						}
-						reply := <-mergeJob.ReplyChan // wait for reply
-						switch v := reply.(type) {
-						case error:
-							return v
-						default:
-							return nil
-						}
+						produce.Go(func() error {
+							mergeJob := &job.BTFMergeJob{
+								SourceTarball: path,
+								ReplyChan:     make(chan any),
+							}
+							select {
+							case <-ctx.Done():
+								return ctx.Err()
+							case jobChan <- mergeJob: // send BTF merge job to worker
+							}
+							reply := <-mergeJob.ReplyChan // wait for reply
+							switch v := reply.(type) {
+							case error:
+								return v
+							default:
+								return nil
+							}
+						})
+						return nil
 					})
 				})
 			}
