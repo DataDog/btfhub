@@ -76,7 +76,7 @@ func Merge(ctx context.Context) error {
 
 					unameName := strings.TrimSuffix(filepath.Base(path), ".tar.xz")
 					mergedFile := filepath.Join(mergeDir, unameName)
-					if err := utils.RunCMD(ctx, extractDir, "/bin/bash", "-O", "extglob", "-c", fmt.Sprintf(`bpftool -B vmlinux merge %s !(vmlinux)`, mergedFile)); err != nil {
+					if err := utils.RunCMD(ctx, extractDir, "/bin/bash", "-O", "extglob", "-c", fmt.Sprintf(`bpftool -B vmlinux btf merge %s !(vmlinux)`, mergedFile)); err != nil {
 						return fmt.Errorf("merge %s: %s", path, err)
 					}
 					if err := pkg.TarballBTF(ctx, mergeDir, path); err != nil {
