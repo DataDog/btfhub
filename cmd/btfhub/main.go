@@ -105,6 +105,8 @@ func run(ctx context.Context) error {
 		switch fa[0] {
 		case "check":
 			return check(ctx)
+		case "merge":
+			return merge(ctx)
 		default:
 			log.Fatalf("unknown command %s", fa[0])
 		}
