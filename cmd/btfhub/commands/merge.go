@@ -4,14 +4,16 @@ import (
 	"context"
 	"fmt"
 	"io/fs"
+	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
-	"github.com/mholt/archiver/v3"
 	"golang.org/x/exp/maps"
+	"golang.org/x/sync/errgroup"
 
-	"github.com/aquasecurity/btfhub/pkg/pkg"
+	"github.com/aquasecurity/btfhub/pkg/job"
 	"github.com/aquasecurity/btfhub/pkg/utils"
 )
 
@@ -26,70 +28,84 @@ func Merge(ctx context.Context) error {
 		return fmt.Errorf("pwd: %s", err)
 	}
 
-	for _, distro := range distros {
-		for _, release := range releases {
-			for _, arch := range archs {
+	if numWorkers == 0 {
+		numWorkers = runtime.NumCPU() - 1
+	}
+
+	jobChan := make(chan job.Job)
+	consume, consCtx := errgroup.WithContext(ctx)
+
+	log.Printf("Using %d workers\n", numWorkers)
+	for i := 0; i < numWorkers; i++ {
+		consume.Go(func() error {
+			return job.StartWorker(consCtx, jobChan, jobChan)
+		})
+	}
+
+	produce, prodCtx := errgroup.WithContext(ctx)
+	for _, d := range distros {
+		distro := d
+		for _, r := range releases {
+			release := r
+			for _, a := range archs {
+				arch := a
+
 				btfdir := filepath.Join(archiveDir, distro, release, arch)
 				if !utils.Exists(btfdir) {
 					continue
 				}
 
-				err = filepath.Walk(btfdir, func(path string, info fs.FileInfo, err error) error {
-					if cerr := ctx.Err(); cerr != nil {
-						return cerr
-					}
-					if err != nil {
-						_, _ = fmt.Fprintf(os.Stderr, "walk error: %s\n", err)
-						return nil
-					}
+				produce.Go(func() error {
+					return filepath.Walk(btfdir, func(path string, info fs.FileInfo, err error) error {
+						if cerr := prodCtx.Err(); cerr != nil {
+							return cerr
+						}
+						if err != nil {
+							_, _ = fmt.Fprintf(os.Stderr, "walk error: %s\n", err)
+							return nil
+						}
 
-					if info.IsDir() {
-						return nil
-					}
-					if !strings.HasSuffix(path, ".btf.tar.xz") {
-						return nil
-					}
-					hasKmod, err := utils.TarballHasKernelModules(path)
-					if err != nil {
-						return err
-					}
-					if !hasKmod {
-						return nil
-					}
+						if info.IsDir() {
+							return nil
+						}
+						if !strings.HasSuffix(path, ".btf.tar.xz") {
+							return nil
+						}
+						hasKmod, err := utils.TarballHasKernelModules(path)
+						if err != nil {
+							return err
+						}
+						if !hasKmod {
+							return nil
+						}
 
-					extractDir, err := os.MkdirTemp("", "btfhub-extract-*")
-					if err != nil {
-						return err
-					}
-					defer os.RemoveAll(extractDir)
-
-					mergeDir, err := os.MkdirTemp("", "btfhub-merge-*")
-					if err != nil {
-						return err
-					}
-					defer os.RemoveAll(mergeDir)
-
-					err = archiver.NewTarXz().Unarchive(path, extractDir)
-					if err != nil {
-						return fmt.Errorf("unarchive %s: %s", path, err)
-					}
-
-					unameName := strings.TrimSuffix(filepath.Base(path), ".tar.xz")
-					mergedFile := filepath.Join(mergeDir, unameName)
-					if err := utils.RunCMD(ctx, extractDir, "/bin/bash", "-O", "extglob", "-c", fmt.Sprintf(`bpftool -B vmlinux btf merge %s !(vmlinux)`, mergedFile)); err != nil {
-						return fmt.Errorf("merge %s: %s", path, err)
-					}
-					if err := pkg.TarballBTF(ctx, mergeDir, path); err != nil {
-						return fmt.Errorf("tarball %s: %s", path, err)
-					}
-					return nil
+						mergeJob := &job.BTFMergeJob{
+							SourceTarball: path,
+							ReplyChan:     make(chan any),
+						}
+						select {
+						case <-ctx.Done():
+							return ctx.Err()
+						case jobChan <- mergeJob: // send BTF merge job to worker
+						}
+						reply := <-mergeJob.ReplyChan // wait for reply
+						switch v := reply.(type) {
+						case error:
+							return v
+						default:
+							return nil
+						}
+					})
 				})
-				if err != nil {
-					return err
-				}
 			}
 		}
 	}
 
-	return nil
+	// Cleanup
+	err = produce.Wait()
+	close(jobChan)
+	if err != nil {
+		return err
+	}
+	return consume.Wait()
 }
