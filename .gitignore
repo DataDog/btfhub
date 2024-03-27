@@ -1,5 +1,6 @@
 # binary
-btfhub
+/btfhub
+!/cmd/btfhub
 # archives
 /archive
 # JetBrains
