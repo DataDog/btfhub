@@ -15,14 +15,14 @@ import (
 	"github.com/aquasecurity/btfhub/pkg/utils"
 )
 
-type BTFMergeJob struct {
+type InPlaceBTFMergeJob struct {
 	SourceTarball string
 	ReplyChan     chan any
 }
 
 // Do implements the Job interface, and is called by the worker. It generates a
 // BTF file from an object file with a .BTF section.
-func (job *BTFMergeJob) Do(ctx context.Context) error {
+func (job *InPlaceBTFMergeJob) Do(ctx context.Context) error {
 	log.Printf("DEBUG: merging BTF from %s\n", job.SourceTarball)
 	start := time.Now()
 
@@ -62,6 +62,6 @@ func (job *BTFMergeJob) Do(ctx context.Context) error {
 	return nil
 }
 
-func (job *BTFMergeJob) Reply() chan<- any {
+func (job *InPlaceBTFMergeJob) Reply() chan<- any {
 	return job.ReplyChan
 }

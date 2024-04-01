@@ -80,7 +80,7 @@ func Merge(ctx context.Context) error {
 						}
 
 						produce.Go(func() error {
-							mergeJob := &job.BTFMergeJob{
+							mergeJob := &job.InPlaceBTFMergeJob{
 								SourceTarball: path,
 								ReplyChan:     make(chan any),
 							}
