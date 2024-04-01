@@ -154,8 +154,37 @@ func processPackage(
 		return err
 	}
 
+	btfMergeDir := filepath.Join(tmpDir, "btfmerge")
+	if err := os.Mkdir(btfMergeDir, 0777); err != nil {
+		return err
+	}
+	btfPath := filepath.Join(btfMergeDir, fmt.Sprintf("%s.btf", p.BTFFilename()))
+	if len(extractReply.Paths) > 0 {
+		mergeJob := &job.BTFMergeJob{
+			SourceDir: btfGenDir,
+			BTFPath:   btfPath,
+			ReplyChan: make(chan any),
+		}
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case chans.BTF <- mergeJob: // send BTF merge job to worker
+		}
+		reply := <-mergeJob.ReplyChan // wait for reply
+		switch v := reply.(type) {
+		case error:
+			return v
+		default:
+			return nil
+		}
+	} else {
+		if err := os.Rename(vmlinuxBTF, btfPath); err != nil {
+			return fmt.Errorf("rename: %s", err)
+		}
+	}
+
 	compressJob := &job.BTFCompressionJob{
-		SourceDir:  btfGenDir,
+		SourceDir:  btfMergeDir,
 		BTFTarPath: btfTarPath,
 		ReplyChan:  make(chan any),
 	}
