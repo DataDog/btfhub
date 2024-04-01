@@ -37,19 +37,8 @@ func processPackage(
 		}
 
 		if pkg.PackageBTFExists(p, workDir) {
-			if opts.KernelModules {
-				hasmods, err := utils.TarballHasKernelModules(btfTarPath)
-				if err != nil {
-					return err
-				}
-				if hasmods {
-					log.Printf("SKIP: %s exists\n", btfTarName)
-					return nil
-				}
-			} else {
-				log.Printf("SKIP: %s exists\n", btfTarName)
-				return nil
-			}
+			log.Printf("SKIP: %s exists\n", btfTarName)
+			return nil
 		}
 	}
 
