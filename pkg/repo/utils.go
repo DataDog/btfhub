@@ -164,7 +164,6 @@ func processPackage(
 		case error:
 			return v
 		default:
-			return nil
 		}
 	} else {
 		if err := os.Rename(vmlinuxBTF, btfPath); err != nil {
