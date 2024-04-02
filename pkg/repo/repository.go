@@ -11,7 +11,6 @@ type RepoOptions struct {
 	Force         bool
 	KernelModules bool
 	Ordered       bool
-	PackageFile   string
 	DryRun        bool
 	Query         *regexp.Regexp
 }

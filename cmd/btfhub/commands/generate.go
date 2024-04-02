@@ -63,9 +63,6 @@ func Generate(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	if fileArg != "" && (len(archs) != 1 || len(distros) != 1 || len(releases) != 1) {
-		return fmt.Errorf("invalid use of pkg-file, requires specific distro+release+arch")
-	}
 
 	archiveDir, err := archivePath()
 	if err != nil {
@@ -115,7 +112,6 @@ func Generate(ctx context.Context) error {
 						Force:         force,
 						KernelModules: kernelModules,
 						Ordered:       ordered,
-						PackageFile:   fileArg,
 						DryRun:        dryRun,
 						Query:         qre,
 					}
