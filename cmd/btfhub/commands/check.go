@@ -17,12 +17,12 @@ import (
 )
 
 type checkResult struct {
-	time, mode, owner, group, kmod bool
+	time, mode, owner, group       bool
 	distro, release, arch, version string
 }
 
 func (r checkResult) Failed() bool {
-	return r.time || r.mode || r.owner || r.group || r.kmod
+	return r.time || r.mode || r.owner || r.group
 }
 
 func failedToEmoji(v bool) string {
@@ -55,11 +55,11 @@ func Check(ctx context.Context) error {
 	for _, arch := range archs {
 		maxArch = max(maxArch, len(arch))
 	}
-	fmt.Printf(fmt.Sprintf(" time | mode | owner | group | kmod | %%-%ds | %%-%ds | %%-%ds | version\n", maxDistro, maxRelease, maxArch), "distro", "release", "arch")
+	fmt.Printf(fmt.Sprintf(" time | mode | owner | group | %%-%ds | %%-%ds | %%-%ds | version\n", maxDistro, maxRelease, maxArch), "distro", "release", "arch")
 
 	var printResult = func(r checkResult) {
 		// widths are minus one because emoji is two chars wide
-		fmt.Printf(fmt.Sprintf(" %-3s | %-3s | %-4s | %-4s | %-3s | %%-%ds | %%-%ds | %%-%ds | %%s\n", failedToEmoji(r.time), failedToEmoji(r.mode), failedToEmoji(r.owner), failedToEmoji(r.group), failedToEmoji(r.kmod), maxDistro, maxRelease, maxArch), r.distro, r.release, r.arch, r.version)
+		fmt.Printf(fmt.Sprintf(" %-3s | %-3s | %-4s | %-4s | %%-%ds | %%-%ds | %%-%ds | %%s\n", failedToEmoji(r.time), failedToEmoji(r.mode), failedToEmoji(r.owner), failedToEmoji(r.group), maxDistro, maxRelease, maxArch), r.distro, r.release, r.arch, r.version)
 	}
 
 	for _, distro := range distros {
@@ -87,7 +87,6 @@ func Check(ctx context.Context) error {
 					}
 
 					unameName := strings.TrimSuffix(filepath.Base(path), ".tar.xz")
-					hasKernelModules := false
 
 					f, err := os.Open(path)
 					if err != nil {
@@ -129,19 +128,8 @@ func Check(ctx context.Context) error {
 							res.group = true
 							//fmt.Printf("%s: BTF file group is not GID 0. name=%s gid=%d\n", path, hdr.Name, hdr.Gid)
 						}
-
-						if hdr.Typeflag != tar.TypeReg {
-							continue
-						}
-						if hdr.Name != unameName && hdr.Name != "vmlinux" {
-							hasKernelModules = true
-						}
 					}
 
-					if !hasKernelModules {
-						//fmt.Printf("%s: does not have kernel module BTF\n", path)
-						res.kmod = true
-					}
 					if res.Failed() {
 						printResult(res)
 					}
