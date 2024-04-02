@@ -7,10 +7,10 @@ import (
 	"log"
 	"net/url"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 
-	"golang.org/x/exp/slices"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/aquasecurity/btfhub/pkg/kernel"
