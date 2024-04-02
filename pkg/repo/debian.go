@@ -29,11 +29,13 @@ type DebianRepo struct {
 }
 
 var archiveRepos = []string{
+	// prefer snapshot over apt
 	//"http://archive.debian.org/debian/dists/%s/main/binary-%s/Packages.gz",
 	//"http://archive.debian.org/debian-security/dists/%s/updates/main/binary-%s/Packages.gz",
 }
 
 var oldRepos = []string{
+	// prefer snapshot over apt
 	//"http://ftp.debian.org/debian/dists/%s/main/binary-%s/Packages.gz",
 	//"http://ftp.debian.org/debian/dists/%s-updates/main/binary-%s/Packages.gz",
 	//"http://security.debian.org/debian-security/dists/%s/updates/main/binary-%s/Packages.gz",
