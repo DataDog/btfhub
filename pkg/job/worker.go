@@ -16,19 +16,16 @@ func StartWorker(ctx context.Context, btfchan <-chan Job, jobchan <-chan Job) er
 			if !ok {
 				return nil
 			}
-			break
 		default:
 			select {
 			case job, ok = <-btfchan:
 				if !ok {
 					return nil
 				}
-				break
 			case job, ok = <-jobchan:
 				if !ok {
 					return nil
 				}
-				break
 			}
 		}
 

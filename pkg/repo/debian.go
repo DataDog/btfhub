@@ -232,7 +232,7 @@ type snapshotBinaryVersionInfo struct {
 	FileInfo map[string][]snapshotBinaryPackageFileInfo `json:"fileinfo"`
 }
 
-var retryError = errors.New("retry")
+var errRetry = errors.New("retry")
 
 func retryQueryJsonAPI[T any](ctx context.Context, url string, out *T, headers map[string]string, attempts int) error {
 	var err error
@@ -241,7 +241,7 @@ func retryQueryJsonAPI[T any](ctx context.Context, url string, out *T, headers m
 		if err == nil {
 			return nil
 		}
-		if !errors.Is(err, retryError) {
+		if !errors.Is(err, errRetry) {
 			return err
 		}
 	}
@@ -253,10 +253,8 @@ func queryJsonAPI[T any](ctx context.Context, url string, out *T, headers map[st
 	if err != nil {
 		return err
 	}
-	if headers != nil {
-		for k, v := range headers {
-			req.Header.Set(k, v)
-		}
+	for k, v := range headers {
+		req.Header.Set(k, v)
 	}
 
 	resp, err := http.DefaultClient.Do(req)
@@ -267,7 +265,7 @@ func queryJsonAPI[T any](ctx context.Context, url string, out *T, headers map[st
 
 	if resp.StatusCode != 200 {
 		if resp.StatusCode/100 == 5 {
-			return fmt.Errorf("%w: %s returned status code: %d", retryError, url, resp.StatusCode)
+			return fmt.Errorf("%w: %s returned status code: %d", errRetry, url, resp.StatusCode)
 		}
 		return fmt.Errorf("%s returned status code: %d", url, resp.StatusCode)
 	}
