@@ -5,3 +5,4 @@
 /archive
 # JetBrains
 .idea/
+.DS_Store
