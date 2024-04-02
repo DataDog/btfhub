@@ -178,11 +178,11 @@ func processPackages(
 			pos := i + 1
 			gp := p
 			g.Go(func() error {
-				log.Printf("DEBUG: start pkg %s (%d/%d)\n", p, pos, len(pkgs))
+				log.Printf("DEBUG: start pkg %s (%d/%d)\n", gp, pos, len(pkgs))
 				err := processPackage(ctx, gp, workDir, opts, chans)
 				if err != nil {
 					if errors.Is(err, utils.ErrKernelHasBTF) {
-						log.Printf("INFO: kernel %s has BTF already\n", p)
+						log.Printf("INFO: kernel %s has BTF already\n", gp)
 						return nil
 					}
 					if errors.Is(err, context.Canceled) {
@@ -190,7 +190,7 @@ func processPackages(
 					}
 					log.Printf("ERROR: %s: %s\n", gp, err)
 				}
-				log.Printf("DEBUG: end pkg %s (%d/%d)\n", p, pos, len(pkgs))
+				log.Printf("DEBUG: end pkg %s (%d/%d)\n", gp, pos, len(pkgs))
 				return nil
 			})
 		}
