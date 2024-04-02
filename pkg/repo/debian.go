@@ -65,7 +65,7 @@ func NewDebianRepo() Repository {
 // GetKernelPackages downloads Packages.xz from the main, updates and security,
 // from the official repos and parses the list of kernel packages to download.
 // It then filters out kernel packages that we already have or failed to
-// download. It then process the list of kernel packages: they will be
+// download. It then processes the list of kernel packages: they will be
 // downloaded and then the btf files will be extracted from them.
 func (d *DebianRepo) GetKernelPackages(
 	ctx context.Context,

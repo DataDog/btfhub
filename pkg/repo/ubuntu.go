@@ -1,12 +1,10 @@
 package repo
 
 import (
-	"bufio"
 	"context"
 	"errors"
 	"fmt"
 	"log"
-	"os"
 	"regexp"
 	"sort"
 
@@ -44,7 +42,7 @@ func NewUbuntuRepo() Repository {
 // GetKernelPackages downloads Packages.xz from the main, updates and universe,
 // from the debug repo and parses the list of kernel packages to download. It
 // then filters out kernel packages that we already have or failed to download.
-// It then process the list of kernel packages: they will be downloaded and then
+// It then processes the list of kernel packages: they will be downloaded and then
 // the btf files will be extracted from them.
 func (uRepo *UbuntuRepo) GetKernelPackages(
 	ctx context.Context,
@@ -195,22 +193,4 @@ func processPackages(
 		log.Printf("DEBUG: end pkg %s (%d/%d)\n", p, i+1, len(pkgs))
 	}
 	return nil
-}
-
-func readPackageFile(pkgFile string) ([]string, error) {
-	f, err := os.Open(pkgFile)
-	if err != nil {
-		return nil, fmt.Errorf("open pkg file: %s", err)
-	}
-	defer f.Close()
-
-	var lines []string
-	scan := bufio.NewScanner(f)
-	for scan.Scan() {
-		lines = append(lines, scan.Text())
-	}
-	if scan.Err() != nil {
-		return nil, fmt.Errorf("read pkg file: %s", scan.Err())
-	}
-	return lines, nil
 }
