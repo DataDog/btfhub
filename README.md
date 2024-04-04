@@ -1,4 +1,4 @@
-The [main BTFhub repository](https://github.com/aquasecurity/btfhub/) serves as a comprehensive resource, housing documentation, tools, and examples to guide users on how to leverage the BTF files effectively. However, the actual BTF files are stored separately in the [BTFhub-Archive repository](https://github.com/aquasecurity/btfhub-archive/). This separation ensures a clean and organized structure, with each repository focusing on its designated role.
+The [main BTFhub repository](https://github.com/DataDog/btfhub/) serves as a comprehensive resource, housing documentation, tools, and examples to guide users on how to leverage the BTF files effectively. However, the actual BTF files are stored separately in the [BTFhub-Archive repository](https://github.com/DataDog/btfhub-archive/). This separation ensures a clean and organized structure, with each repository focusing on its designated role.
 
 ## What is BTF ?
 

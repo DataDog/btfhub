@@ -7,7 +7,7 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/aquasecurity/btfhub/cmd/btfhub/commands"
+	"github.com/DataDog/btfhub/cmd/btfhub/commands"
 )
 
 func main() {

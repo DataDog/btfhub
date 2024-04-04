@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/aquasecurity/btfhub/pkg/kernel"
-	"github.com/aquasecurity/btfhub/pkg/pkg"
+	"github.com/DataDog/btfhub/pkg/kernel"
+	"github.com/DataDog/btfhub/pkg/pkg"
 )
 
 type RHELRepo struct {

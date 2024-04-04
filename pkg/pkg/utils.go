@@ -12,8 +12,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/aquasecurity/btfhub/pkg/kernel"
-	"github.com/aquasecurity/btfhub/pkg/utils"
+	"github.com/DataDog/btfhub/pkg/kernel"
+	"github.com/DataDog/btfhub/pkg/utils"
 )
 
 func TarballBTF(ctx context.Context, btfDir string, out string) error {

@@ -15,8 +15,8 @@ import (
 
 	"pault.ag/go/debian/deb"
 
-	"github.com/aquasecurity/btfhub/pkg/kernel"
-	"github.com/aquasecurity/btfhub/pkg/utils"
+	"github.com/DataDog/btfhub/pkg/kernel"
+	"github.com/DataDog/btfhub/pkg/utils"
 )
 
 // UbuntuPackage represents a package in Ubuntu
