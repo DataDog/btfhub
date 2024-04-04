@@ -25,8 +25,8 @@ type KernelExtractReply struct {
 }
 
 // Do implements the Job interface, and is called by the worker. It downloads
-// the kernel package, extracts the vmlinux file, and replies with the path to
-// the vmlinux file in the reply channel.
+// the kernel package, extracts the vmlinux file, and replies with a KernelExtractReply
+// structure containing the paths in the reply channel.
 func (job *KernelExtractionJob) Do(ctx context.Context) error {
 	// Download the kernel package
 	downloadStart := time.Now()
