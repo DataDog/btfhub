@@ -16,6 +16,7 @@ type CentOSPackage struct {
 	KernelVersion kernel.Version
 	NameOfFile    string
 	URL           string
+	IgnoredFiles  []string
 }
 
 func (pkg *CentOSPackage) Filename() string {
@@ -43,11 +44,11 @@ func (pkg *CentOSPackage) Download(ctx context.Context, dir string, force bool) 
 
 	if err := utils.DownloadFile(ctx, pkg.URL, rpmpath); err != nil {
 		os.Remove(rpmpath)
-		return "", fmt.Errorf("downloading rpm package: %s", err)
+		return "", fmt.Errorf("downloading rpm package: %w", err)
 	}
 	return rpmpath, nil
 }
 
-func (pkg *CentOSPackage) ExtractKernel(ctx context.Context, pkgpath string, vmlinuxPath string) error {
-	return utils.ExtractVmlinuxFromRPM(ctx, pkgpath, vmlinuxPath)
+func (pkg *CentOSPackage) ExtractKernel(ctx context.Context, pkgpath string, extractDir string, kernelModules bool) (string, []string, error) {
+	return utils.ExtractVmlinuxFromRPM(ctx, pkgpath, extractDir, kernelModules, pkg.IgnoredFiles)
 }

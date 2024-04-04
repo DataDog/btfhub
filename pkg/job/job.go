@@ -4,5 +4,5 @@ import "context"
 
 type Job interface {
 	Do(context.Context) error
-	Reply() chan<- interface{}
+	Reply() chan<- any
 }

@@ -37,9 +37,9 @@ func (pkg *SUSEPackage) String() string {
 	return fmt.Sprintf("%s-%s.%s", pkg.Name, pkg.KernelVersion.String(), pkg.Architecture)
 }
 
-func (pkg *SUSEPackage) ExtractKernel(ctx context.Context, pkgpath string, vmlinuxPath string) error {
+func (pkg *SUSEPackage) ExtractKernel(ctx context.Context, pkgpath string, extractDir string, kernelModules bool) (string, []string, error) {
 	// vmlinux at: /usr/lib/debug/boot/vmlinux-<ver>-<type>.debug
-	return utils.ExtractVmlinuxFromRPM(ctx, pkgpath, vmlinuxPath)
+	return utils.ExtractVmlinuxFromRPM(ctx, pkgpath, extractDir, kernelModules, nil)
 }
 
 func (pkg *SUSEPackage) Download(ctx context.Context, _ string, force bool) (string, error) {

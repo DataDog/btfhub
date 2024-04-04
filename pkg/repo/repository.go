@@ -2,9 +2,23 @@ package repo
 
 import (
 	"context"
+	"regexp"
 
 	"github.com/aquasecurity/btfhub/pkg/job"
 )
+
+type RepoOptions struct {
+	Force         bool
+	KernelModules bool
+	Ordered       bool
+	DryRun        bool
+	Query         *regexp.Regexp
+}
+
+type JobChannels struct {
+	BTF     chan<- job.Job
+	Default chan<- job.Job
+}
 
 type Repository interface {
 	GetKernelPackages(
@@ -12,7 +26,7 @@ type Repository interface {
 		workDir string,
 		release string,
 		arch string,
-		force bool,
-		jobChan chan<- job.Job,
+		opts RepoOptions,
+		chans *JobChannels,
 	) error
 }

@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -16,7 +15,6 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
-	"github.com/aquasecurity/btfhub/pkg/job"
 	"github.com/aquasecurity/btfhub/pkg/kernel"
 	"github.com/aquasecurity/btfhub/pkg/pkg"
 	"github.com/aquasecurity/btfhub/pkg/utils"
@@ -37,25 +35,32 @@ func NewSUSERepo() Repository {
 	}
 }
 
-func (d *suseRepo) GetKernelPackages(ctx context.Context, dir string, release string, arch string, force bool, jobchan chan<- job.Job) error {
+func (d *suseRepo) GetKernelPackages(ctx context.Context, dir string, release string, arch string, opts RepoOptions, chans *JobChannels) error {
 	var repos []string
+	altArch := d.archs[arch]
 
 	switch release {
 	case "12.3":
-		repos = append(repos, fmt.Sprintf("SUSE_Linux_Enterprise_Server_12_SP3_%s:SLES12-SP3-Debuginfo-Pool", arch))
-		repos = append(repos, fmt.Sprintf("SUSE_Linux_Enterprise_Server_12_SP3_%s:SLES12-SP3-Debuginfo-Updates", arch))
+		repos = append(repos, fmt.Sprintf("SUSE_Linux_Enterprise_Server_12_SP3_%s:SLES12-SP3-Debuginfo-Pool", altArch))
+		repos = append(repos, fmt.Sprintf("SUSE_Linux_Enterprise_Server_12_SP3_%s:SLES12-SP3-Debuginfo-Updates", altArch))
+	case "12.4":
+		repos = append(repos, fmt.Sprintf("SUSE_Linux_Enterprise_Server_12_SP4_%s:SLES12-SP4-Debuginfo-Pool", altArch))
+		repos = append(repos, fmt.Sprintf("SUSE_Linux_Enterprise_Server_12_SP4_%s:SLES12-SP4-Debuginfo-Updates", altArch))
 	case "12.5":
-		repos = append(repos, fmt.Sprintf("SUSE_Linux_Enterprise_Server_%s:SLES12-SP5-Debuginfo-Pool", arch))
-		repos = append(repos, fmt.Sprintf("SUSE_Linux_Enterprise_Server_%s:SLES12-SP5-Debuginfo-Updates", arch))
+		repos = append(repos, fmt.Sprintf("SUSE_Linux_Enterprise_Server_%s:SLES12-SP5-Debuginfo-Pool", altArch))
+		repos = append(repos, fmt.Sprintf("SUSE_Linux_Enterprise_Server_%s:SLES12-SP5-Debuginfo-Updates", altArch))
+	case "15.0":
+		repos = append(repos, fmt.Sprintf("Basesystem_Module_15_%s:SLE-Module-Basesystem15-Debuginfo-Pool", altArch))
+		repos = append(repos, fmt.Sprintf("Basesystem_Module_15_%s:SLE-Module-Basesystem15-Debuginfo-Updates", altArch))
 	case "15.1":
-		repos = append(repos, fmt.Sprintf("Basesystem_Module_15_SP1_%s:SLE-Module-Basesystem15-SP1-Debuginfo-Pool", arch))
-		repos = append(repos, fmt.Sprintf("Basesystem_Module_15_SP1_%s:SLE-Module-Basesystem15-SP1-Debuginfo-Updates", arch))
+		repos = append(repos, fmt.Sprintf("Basesystem_Module_15_SP1_%s:SLE-Module-Basesystem15-SP1-Debuginfo-Pool", altArch))
+		repos = append(repos, fmt.Sprintf("Basesystem_Module_15_SP1_%s:SLE-Module-Basesystem15-SP1-Debuginfo-Updates", altArch))
 	case "15.2":
-		repos = append(repos, fmt.Sprintf("Basesystem_Module_%s:SLE-Module-Basesystem15-SP2-Debuginfo-Pool", arch))
-		repos = append(repos, fmt.Sprintf("Basesystem_Module_%s:SLE-Module-Basesystem15-SP2-Debuginfo-Updates", arch))
+		repos = append(repos, fmt.Sprintf("Basesystem_Module_15_SP2_%s:SLE-Module-Basesystem15-SP2-Debuginfo-Pool", altArch))
+		repos = append(repos, fmt.Sprintf("Basesystem_Module_15_SP2_%s:SLE-Module-Basesystem15-SP2-Debuginfo-Updates", altArch))
 	case "15.3":
-		repos = append(repos, fmt.Sprintf("Basesystem_Module_%s:SLE-Module-Basesystem15-SP3-Debuginfo-Pool", arch))
-		repos = append(repos, fmt.Sprintf("Basesystem_Module_%s:SLE-Module-Basesystem15-SP3-Debuginfo-Updates", arch))
+		repos = append(repos, fmt.Sprintf("Basesystem_Module_15_SP3_%s:SLE-Module-Basesystem15-SP3-Debuginfo-Pool", altArch))
+		repos = append(repos, fmt.Sprintf("Basesystem_Module_15_SP3_%s:SLE-Module-Basesystem15-SP3-Debuginfo-Updates", altArch))
 	}
 	for _, r := range repos {
 		if _, err := utils.RunZypperCMD(ctx, "modifyrepo", "--enable", r); err != nil {
@@ -74,7 +79,7 @@ func (d *suseRepo) GetKernelPackages(ctx context.Context, dir string, release st
 		return err
 	}
 
-	pkgs, err := d.parseZypperPackages(searchOut, arch)
+	pkgs, err := d.parseZypperPackages(searchOut, altArch)
 	if err != nil {
 		return fmt.Errorf("parse package listing: %s", err)
 	}
@@ -100,7 +105,7 @@ func (d *suseRepo) GetKernelPackages(ctx context.Context, dir string, release st
 		cks := ks
 		g.Go(func() error {
 			log.Printf("DEBUG: start kernel type %s %s (%d pkgs)\n", ckt, arch, len(cks))
-			err := d.processPackages(ctx, dir, cks, force, jobchan)
+			err := processPackages(ctx, dir, cks, opts, chans)
 			log.Printf("DEBUG: end kernel type %s %s\n", ckt, arch)
 			return err
 		})
@@ -119,36 +124,20 @@ func (d *suseRepo) getRepoAliases(ctx context.Context) error {
 		fields := strings.FieldsFunc(line, func(r rune) bool {
 			return unicode.IsSpace(r) || r == '|'
 		})
-		if len(fields) < 3 {
+		if len(fields) < 4 {
 			continue
 		}
 		// first field must be a number
 		if _, err := strconv.Atoi(fields[0]); err != nil {
 			continue
 		}
+		if fields[3] != "Yes" {
+			continue
+		}
 		alias, name := fields[1], fields[2]
 		d.repoAliases[name] = alias
 	}
 	return bio.Err()
-}
-
-func (d *suseRepo) processPackages(ctx context.Context, dir string, pkgs []pkg.Package, force bool, jobchan chan<- job.Job) error {
-	for i, p := range pkgs {
-		log.Printf("DEBUG: start pkg %s (%d/%d)\n", p, i+1, len(pkgs))
-		if err := processPackage(ctx, p, dir, force, jobchan); err != nil {
-			if errors.Is(err, utils.ErrHasBTF) {
-				log.Printf("INFO: kernel %s has BTF already, skipping later kernels\n", p)
-				return nil
-			}
-			if errors.Is(err, context.Canceled) {
-				return nil
-			}
-			log.Printf("ERROR: %s: %s\n", p, err)
-			continue
-		}
-		log.Printf("DEBUG: end pkg %s (%d/%d)\n", p, i+1, len(pkgs))
-	}
-	return nil
 }
 
 func (d *suseRepo) parseZypperPackages(rdr io.Reader, arch string) ([]*pkg.SUSEPackage, error) {

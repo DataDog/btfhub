@@ -1,6 +1,8 @@
 # binary
-btfhub
+/btfhub
+!/cmd/btfhub
 # archives
 /archive
 # JetBrains
 .idea/
+.DS_Store

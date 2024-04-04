@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"archive/tar"
 	"bufio"
 	"bytes"
 	"context"
@@ -68,8 +69,12 @@ func (pkg *UbuntuPackage) Download(ctx context.Context, dir string, force bool) 
 
 	if pkg.URL == "pull-lp-ddebs" {
 		if err := pkg.pullLaunchpadDdeb(ctx, dir, ddebPath); err != nil {
-			os.Remove(ddebPath)
-			return "", fmt.Errorf("downloading ddeb package: %s", err)
+			// try signed variant
+			pkg.Name = fmt.Sprintf("linux-image-%s-dbgsym", pkg.Filename())
+			if err := pkg.pullLaunchpadDdeb(ctx, dir, ddebPath); err != nil {
+				os.Remove(ddebPath)
+				return "", fmt.Errorf("downloading ddeb package: %s", err)
+			}
 		}
 		return ddebPath, nil
 	}
@@ -85,24 +90,24 @@ func (pkg *UbuntuPackage) Download(ctx context.Context, dir string, force bool) 
 // ExtractKernel extracts the vmlinux file from the package and saves it to
 // vmlinuxPath. It returns an error if the package is not a ddeb or if the
 // vmlinux file is not found.
-func (pkg *UbuntuPackage) ExtractKernel(ctx context.Context, pkgPath string, vmlinuxPath string) error {
-
+func (pkg *UbuntuPackage) ExtractKernel(ctx context.Context, pkgPath string, extractDir string, kernelModules bool) (string, []string, error) {
 	vmlinuxName := fmt.Sprintf("vmlinux-%s", pkg.NameOfFile)
 	debpath := fmt.Sprintf("./usr/lib/debug/boot/%s", vmlinuxName)
 
 	ddeb, closer, err := deb.LoadFile(pkgPath)
 	if err != nil {
-		return fmt.Errorf("deb load: %s", err)
+		return "", nil, fmt.Errorf("deb load: %s", err)
 	}
-	defer closer()
+	defer func() { _ = closer() }()
 
 	rdr := ddeb.Data // tar reader for the deb package
 
 	// Iterate over the files in the deb package to find the vmlinux file
-
+	vmlinuxPath := ""
+	var paths []string
 	for {
 		if err := ctx.Err(); err != nil {
-			return err
+			return "", nil, err
 		}
 
 		hdr, err := rdr.Next()
@@ -110,45 +115,71 @@ func (pkg *UbuntuPackage) ExtractKernel(ctx context.Context, pkgPath string, vml
 			if errors.Is(err, io.EOF) {
 				break
 			}
-			return fmt.Errorf("deb reader next: %s", err)
+			return "", nil, fmt.Errorf("deb reader next: %s", err)
 		}
 
 		// Found the vmlinux file, extract it
-
 		if hdr.Name == debpath {
-			vmlinuxFile, err := os.Create(vmlinuxPath)
+			vmlinuxPath = filepath.Join(extractDir, "vmlinux")
+			err = extractFile(ctx, vmlinuxPath, hdr, rdr)
 			if err != nil {
-				return fmt.Errorf("create vmlinux file: %s", err)
+				return "", nil, err
 			}
-			counter := &utils.ProgressCounter{
-				Ctx:  ctx,
-				Op:   "Extract",
-				Name: hdr.Name,
-				Size: uint64(hdr.Size),
-			}
-			_, err = io.Copy(vmlinuxFile, io.TeeReader(rdr, counter))
+			hasBTF, err := utils.HasBTFSection(vmlinuxPath)
 			if err != nil {
-				vmlinuxFile.Close()
-				os.Remove(vmlinuxPath)
-				return fmt.Errorf("copy file: %s", err)
+				return "", nil, err
 			}
-			vmlinuxFile.Close()
-
-			return nil
+			if hasBTF {
+				return "", nil, utils.ErrKernelHasBTF
+			}
+			if !kernelModules {
+				return vmlinuxPath, nil, nil
+			}
+		} else if kernelModules && strings.HasSuffix(hdr.Name, ".ko") {
+			filename := strings.TrimSuffix(filepath.Base(hdr.Name), ".ko")
+			outfile := filepath.Join(extractDir, filename)
+			err = extractFile(ctx, outfile, hdr, rdr)
+			if err != nil {
+				return "", nil, err
+			}
+			paths = append(paths, outfile)
 		}
 	}
 
-	return fmt.Errorf("%s file not found in ddeb", debpath)
+	if vmlinuxPath == "" {
+		return "", nil, fmt.Errorf("%s file not found in ddeb", debpath)
+	}
+	return vmlinuxPath, paths, nil
+}
+
+func extractFile(ctx context.Context, filename string, hdr *tar.Header, rdr *tar.Reader) error {
+	outFile, err := os.Create(filename)
+	if err != nil {
+		return fmt.Errorf("create file %s: %s", filename, err)
+	}
+	counter := &utils.ProgressCounter{
+		Ctx:  ctx,
+		Op:   "Extracting " + filename,
+		Name: hdr.Name,
+		Size: uint64(hdr.Size),
+	}
+	_, err = io.Copy(outFile, io.TeeReader(rdr, counter))
+	if err != nil {
+		outFile.Close()
+		os.Remove(filename)
+		return fmt.Errorf("copy file: %s", err)
+	}
+	outFile.Close()
+	return nil
 }
 
 // pullLaunchpadDdeb downloads a ddeb package from launchpad using pull-lp-ddebs
 func (pkg *UbuntuPackage) pullLaunchpadDdeb(ctx context.Context, dir string, dest string) error {
-
 	fmt.Printf("Downloading %s from launchpad\n", pkg.Name)
 
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
-	cmd := exec.CommandContext(ctx, "pull-lp-ddebs", "--arch", pkg.Architecture, pkg.Name, pkg.Release)
+	cmd := exec.CommandContext(ctx, "pull-lp-ddebs", "-s", "Published", "-s", "Pending", "-s", "Deleted", "-s", "Superseded", "--arch", pkg.Architecture, pkg.Name, pkg.Release)
 	cmd.Dir = dir
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr

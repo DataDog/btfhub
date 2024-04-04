@@ -49,7 +49,7 @@ func Download(ctx context.Context, url string, dest io.Writer) error {
 
 	counter := &ProgressCounter{
 		Ctx:  ctx,
-		Op:   "Download",                 // operation
+		Op:   "Downloading",              // operation
 		Name: resp.Request.URL.String(),  // file name
 		Size: uint64(resp.ContentLength), // file length
 	}
@@ -59,13 +59,14 @@ func Download(ctx context.Context, url string, dest io.Writer) error {
 
 	var rdr io.Reader
 
-	switch resp.Header.Get("Content-Type") {
-	case "application/x-gzip":
+	contentType := resp.Header.Get("Content-Type")
+	switch {
+	case contentType == "application/x-gzip", strings.HasSuffix(url, ".gz"):
 		rdr, err = gzip.NewReader(brdr)
 		if err != nil {
 			return fmt.Errorf("gzip body read: %s", err)
 		}
-	case "application/x-xz":
+	case contentType == "application/x-xz", strings.HasSuffix(url, ".xz"):
 		rdr, err = fastxz.NewReader(brdr, 0)
 		if err != nil {
 			return fmt.Errorf("xz reader: %s", err)
@@ -118,7 +119,7 @@ func GetRelativeLinks(ctx context.Context, repoURL string, baseURL string) ([]st
 
 	counter := &ProgressCounter{
 		Ctx:  ctx,
-		Op:   "Download",
+		Op:   "Downloading",
 		Name: resp.Request.URL.String(),
 		Size: uint64(resp.ContentLength),
 	}

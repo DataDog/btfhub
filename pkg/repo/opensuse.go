@@ -2,18 +2,16 @@ package repo
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 	"net/url"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 
-	"golang.org/x/exp/slices"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/aquasecurity/btfhub/pkg/job"
 	"github.com/aquasecurity/btfhub/pkg/kernel"
 	"github.com/aquasecurity/btfhub/pkg/pkg"
 	"github.com/aquasecurity/btfhub/pkg/utils"
@@ -76,7 +74,7 @@ func NewOpenSUSERepo() Repository {
 	}
 }
 
-func (d *openSUSERepo) GetKernelPackages(ctx context.Context, workDir string, release string, arch string, force bool, jobChan chan<- job.Job) error {
+func (d *openSUSERepo) GetKernelPackages(ctx context.Context, workDir string, release string, arch string, opts RepoOptions, chans *JobChannels) error {
 	altArch := d.archs[arch]
 	repoURLs := d.repos[release][altArch]
 
@@ -155,29 +153,10 @@ func (d *openSUSERepo) GetKernelPackages(ctx context.Context, workDir string, re
 		cks := ks
 		g.Go(func() error {
 			log.Printf("DEBUG: start kernel type %s %s (%d pkgs)\n", ckt, arch, len(cks))
-			err := d.processPackages(ctx, workDir, cks, force, jobChan)
+			err := processPackages(ctx, workDir, cks, opts, chans)
 			log.Printf("DEBUG: end kernel type %s %s\n", ckt, arch)
 			return err
 		})
 	}
 	return g.Wait()
-}
-
-func (d *openSUSERepo) processPackages(ctx context.Context, dir string, pkgs []pkg.Package, force bool, jobchan chan<- job.Job) error {
-	for i, p := range pkgs {
-		log.Printf("DEBUG: start pkg %s (%d/%d)\n", p, i+1, len(pkgs))
-		if err := processPackage(ctx, p, dir, force, jobchan); err != nil {
-			if errors.Is(err, utils.ErrHasBTF) {
-				log.Printf("INFO: kernel %s has BTF already, skipping later kernels\n", p)
-				return nil
-			}
-			if errors.Is(err, context.Canceled) {
-				return nil
-			}
-			log.Printf("ERROR: %s: %s\n", p, err)
-			continue
-		}
-		log.Printf("DEBUG: end pkg %s (%d/%d)\n", p, i+1, len(pkgs))
-	}
-	return nil
 }

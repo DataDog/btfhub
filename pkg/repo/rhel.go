@@ -2,15 +2,11 @@ package repo
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"log"
 	"sort"
 
-	"github.com/aquasecurity/btfhub/pkg/job"
 	"github.com/aquasecurity/btfhub/pkg/kernel"
 	"github.com/aquasecurity/btfhub/pkg/pkg"
-	"github.com/aquasecurity/btfhub/pkg/utils"
 )
 
 type RHELRepo struct {
@@ -33,8 +29,8 @@ func (d *RHELRepo) GetKernelPackages(
 	workDir string,
 	_ string,
 	arch string,
-	force bool,
-	jobChan chan<- job.Job,
+	opts RepoOptions,
+	chans *JobChannels,
 ) error {
 	altArch := d.archs[arch]
 	searchOut, err := repoquery(ctx, "kernel-debuginfo", altArch)
@@ -47,16 +43,5 @@ func (d *RHELRepo) GetKernelPackages(
 	}
 	sort.Sort(pkg.ByVersion(pkgs))
 
-	for _, pkg := range pkgs {
-		err := processPackage(ctx, pkg, workDir, force, jobChan)
-		if err != nil {
-			if errors.Is(err, utils.ErrHasBTF) {
-				log.Printf("INFO: kernel %s has BTF already, skipping later kernels\n", pkg)
-				return nil
-			}
-			return err
-		}
-	}
-
-	return nil
+	return processPackages(ctx, workDir, pkgs, opts, chans)
 }

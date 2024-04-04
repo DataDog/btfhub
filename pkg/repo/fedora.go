@@ -2,14 +2,12 @@ package repo
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 	"regexp"
 	"sort"
 	"strings"
 
-	"github.com/aquasecurity/btfhub/pkg/job"
 	"github.com/aquasecurity/btfhub/pkg/kernel"
 	"github.com/aquasecurity/btfhub/pkg/pkg"
 	"github.com/aquasecurity/btfhub/pkg/utils"
@@ -32,7 +30,7 @@ var oldRepoOrganization = []string{
 
 var repoOrganization = []string{
 	"https://archives.fedoraproject.org/pub/archive/fedora/linux/releases/%s/Everything/%s/debug/tree/Packages/k/",
-	"https://archives.fedoraproject.org/pub/archive/fedora/linux/updates/%s/Everything/%s/debug/Packages/",
+	"https://archives.fedoraproject.org/pub/archive/fedora/linux/updates/%s/Everything/%s/debug/Packages/k/",
 }
 
 func NewFedoraRepo() Repository {
@@ -65,8 +63,8 @@ func (d *FedoraRepo) GetKernelPackages(
 	workDir string,
 	release string,
 	arch string,
-	force bool,
-	jobChan chan<- job.Job,
+	opts RepoOptions,
+	chans *JobChannels,
 ) error {
 
 	if release == "24" || release == "25" || release == "26" || release == "27" {
@@ -123,30 +121,5 @@ func (d *FedoraRepo) GetKernelPackages(
 
 	sort.Sort(pkg.ByVersion(pkgs)) // so kernels can be skipped if previous has BTF already
 
-	for i, pkg := range pkgs {
-		log.Printf("DEBUG: start pkg %s (%d/%d)\n", pkg, i+1, len(pkgs))
-
-		// Jobs about to be created:
-		//
-		// 1. Download package and extract vmlinux file
-		// 2. Extract BTF info from vmlinux file
-
-		err := processPackage(ctx, pkg, workDir, force, jobChan)
-		if err != nil {
-			if errors.Is(err, utils.ErrHasBTF) {
-				log.Printf("INFO: kernel %s has BTF already, skipping later kernels\n", pkg)
-				return nil
-			}
-			if errors.Is(err, context.Canceled) {
-				return nil
-			}
-
-			log.Printf("ERROR: %s: %s\n", pkg, err)
-			continue
-		}
-
-		log.Printf("DEBUG: end pkg %s (%d/%d)\n", pkg, i+1, len(pkgs))
-	}
-
-	return nil
+	return processPackages(ctx, workDir, pkgs, opts, chans)
 }

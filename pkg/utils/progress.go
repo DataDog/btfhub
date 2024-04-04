@@ -2,7 +2,7 @@ package utils
 
 import (
 	"context"
-	"fmt"
+	"log"
 	"time"
 
 	"github.com/dustin/go-humanize"
@@ -48,7 +48,7 @@ func (wc *ProgressCounter) printProgress() {
 
 	pct := uint64((float64(wc.written) / float64(wc.Size)) * 100)
 
-	fmt.Printf("%sing %s: %s / %s - %d%% complete\n",
+	log.Printf("TRACE: %s %s: %s / %s - %d%% complete\n",
 		wc.Op,
 		wc.Name,
 		humanize.Bytes(wc.written),

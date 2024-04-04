@@ -15,14 +15,16 @@ trap unregister EXIT
 rm -rf /etc/rhsm-host
 subscription-manager register --org="${DD_BTFHUB_RHEL_ORG_ID}" --activationkey="btfhub-ci"
 subscription-manager repos --enable="rhel-8-for-${REPO_ARCH}-baseos-debug-rpms"
+subscription-manager repos --enable="rhel-8-for-${REPO_ARCH}-baseos-eus-debug-rpms"
+subscription-manager release --set=8.1
 yum install -y yum-utils wget bzip2 zlib-devel m4 xz gzip cmake make clang-12.0.1 gcc
 
 # go
 mkdir -p ~/bin
 curl -sL -o ~/bin/gimme https://raw.githubusercontent.com/travis-ci/gimme/master/gimme
 chmod +x ~/bin/gimme
-~/bin/gimme 1.21.7
-source ~/.gimme/envs/go1.21.7.env
+~/bin/gimme 1.21.8
+source ~/.gimme/envs/go1.21.8.env
 
 # elfutils
 wget -nv https://sourceware.org/elfutils/ftp/0.190/elfutils-0.190.tar.bz2

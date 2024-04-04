@@ -16,7 +16,7 @@ type Package interface {
 	BTFFilename() string
 	Version() kernel.Version
 	Download(ctx context.Context, dir string, force bool) (string, error)
-	ExtractKernel(ctx context.Context, pkgpath string, vmlinuxPath string) error
+	ExtractKernel(ctx context.Context, pkgpath string, extractDir string, kernelModules bool) (string, []string, error)
 }
 
 func PackageBTFExists(p Package, workDir string) bool {
@@ -43,7 +43,7 @@ func MarkPackageHasBTF(p Package, workDir string) error {
 	return nil
 }
 
-func PackageHasBTF(p Package, workDir string) bool {
+func PackageKernelHasBTF(p Package, workDir string) bool {
 	fp := hasBTFPath(p, workDir)
 	return utils.Exists(fp)
 }

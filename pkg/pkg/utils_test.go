@@ -21,7 +21,7 @@ func writeTarball(t *testing.T, out string, perm os.FileMode) (os.FileInfo, erro
 	if err != nil {
 		return nil, err
 	}
-	err = TarballBTF(context.Background(), btf, out)
+	err = TarballBTF(context.Background(), dir, out)
 	if err != nil {
 		return nil, err
 	}
