@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -106,7 +105,7 @@ func (d *suseRepo) GetKernelPackages(ctx context.Context, dir string, release st
 		cks := ks
 		g.Go(func() error {
 			log.Printf("DEBUG: start kernel type %s %s (%d pkgs)\n", ckt, arch, len(cks))
-			err := d.processPackages(ctx, dir, cks, opts, chans)
+			err := processPackages(ctx, dir, cks, opts, chans)
 			log.Printf("DEBUG: end kernel type %s %s\n", ckt, arch)
 			return err
 		})
@@ -139,25 +138,6 @@ func (d *suseRepo) getRepoAliases(ctx context.Context) error {
 		d.repoAliases[name] = alias
 	}
 	return bio.Err()
-}
-
-func (d *suseRepo) processPackages(ctx context.Context, dir string, pkgs []pkg.Package, opts RepoOptions, chans *JobChannels) error {
-	for i, p := range pkgs {
-		log.Printf("DEBUG: start pkg %s (%d/%d)\n", p, i+1, len(pkgs))
-		if err := processPackage(ctx, p, dir, opts, chans); err != nil {
-			if errors.Is(err, utils.ErrKernelHasBTF) {
-				log.Printf("INFO: kernel %s has BTF already, skipping later kernels\n", p)
-				return nil
-			}
-			if errors.Is(err, context.Canceled) {
-				return nil
-			}
-			log.Printf("ERROR: %s: %s\n", p, err)
-			continue
-		}
-		log.Printf("DEBUG: end pkg %s (%d/%d)\n", p, i+1, len(pkgs))
-	}
-	return nil
 }
 
 func (d *suseRepo) parseZypperPackages(rdr io.Reader, arch string) ([]*pkg.SUSEPackage, error) {

@@ -2,7 +2,6 @@ package repo
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 	"regexp"
@@ -11,7 +10,6 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/aquasecurity/btfhub/pkg/pkg"
-	"github.com/aquasecurity/btfhub/pkg/utils"
 )
 
 type UbuntuRepo struct {
@@ -141,56 +139,4 @@ func (uRepo *UbuntuRepo) GetKernelPackages(
 	}
 
 	return g.Wait()
-}
-
-// processPackages processes a list of packages, sending jobs to the job channel.
-func processPackages(
-	ctx context.Context,
-	workDir string,
-	pkgs []pkg.Package,
-	opts RepoOptions,
-	chans *JobChannels,
-) error {
-	if !opts.Ordered {
-		g, ctx := errgroup.WithContext(ctx)
-		for i, p := range pkgs {
-			pos := i + 1
-			gp := p
-			g.Go(func() error {
-				log.Printf("DEBUG: start pkg %s (%d/%d)\n", gp, pos, len(pkgs))
-				err := processPackage(ctx, gp, workDir, opts, chans)
-				if err != nil {
-					if errors.Is(err, utils.ErrKernelHasBTF) {
-						log.Printf("INFO: kernel %s has BTF already\n", gp)
-						return nil
-					}
-					if errors.Is(err, context.Canceled) {
-						return nil
-					}
-					log.Printf("ERROR: %s: %s\n", gp, err)
-				}
-				log.Printf("DEBUG: end pkg %s (%d/%d)\n", gp, pos, len(pkgs))
-				return nil
-			})
-		}
-		return g.Wait()
-	}
-
-	for i, p := range pkgs {
-		log.Printf("DEBUG: start pkg %s (%d/%d)\n", p, i+1, len(pkgs))
-		err := processPackage(ctx, p, workDir, opts, chans)
-		if err != nil {
-			if errors.Is(err, utils.ErrKernelHasBTF) {
-				log.Printf("INFO: kernel %s has BTF already, skipping later kernels\n", p)
-				return nil
-			}
-			if errors.Is(err, context.Canceled) {
-				return nil
-			}
-			log.Printf("ERROR: %s: %s\n", p, err)
-			continue
-		}
-		log.Printf("DEBUG: end pkg %s (%d/%d)\n", p, i+1, len(pkgs))
-	}
-	return nil
 }

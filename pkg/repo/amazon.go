@@ -4,10 +4,8 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io"
-	"log"
 	"os/exec"
 	"sort"
 	"strings"
@@ -51,18 +49,7 @@ func (d *AmazonRepo) GetKernelPackages(
 	}
 	sort.Sort(pkg.ByVersion(pkgs))
 
-	for _, p := range pkgs {
-		err := processPackage(ctx, p, workDir, opts, chans)
-		if err != nil {
-			if errors.Is(err, utils.ErrKernelHasBTF) {
-				log.Printf("INFO: kernel %s has BTF already, skipping later kernels\n", p)
-				return nil
-			}
-			return err
-		}
-	}
-
-	return nil
+	return processPackages(ctx, workDir, pkgs, opts, chans)
 }
 
 func repoquery(ctx context.Context, pkg string, arch string) (*bytes.Buffer, error) {
