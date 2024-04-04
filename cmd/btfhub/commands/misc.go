@@ -39,6 +39,10 @@ func processArgs(defDistros []string, defReleases map[string][]string) (distros 
 	// Architectures
 	archs = possibleArchs
 	if archArg != "" {
+		if !slices.Contains(possibleArchs, archArg) {
+			err = fmt.Errorf("invalid arch %s", archArg)
+			return
+		}
 		archs = []string{archArg}
 	}
 	return
