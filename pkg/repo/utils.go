@@ -10,9 +10,9 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
-	"github.com/aquasecurity/btfhub/pkg/job"
-	"github.com/aquasecurity/btfhub/pkg/pkg"
-	"github.com/aquasecurity/btfhub/pkg/utils"
+	"github.com/DataDog/btfhub/pkg/job"
+	"github.com/DataDog/btfhub/pkg/pkg"
+	"github.com/DataDog/btfhub/pkg/utils"
 )
 
 // processPackages processes a list of packages, sending jobs to the job channel.

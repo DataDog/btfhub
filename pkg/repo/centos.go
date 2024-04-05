@@ -7,9 +7,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/aquasecurity/btfhub/pkg/kernel"
-	"github.com/aquasecurity/btfhub/pkg/pkg"
-	"github.com/aquasecurity/btfhub/pkg/utils"
+	"github.com/DataDog/btfhub/pkg/kernel"
+	"github.com/DataDog/btfhub/pkg/pkg"
+	"github.com/DataDog/btfhub/pkg/utils"
 )
 
 type CentosRepo struct {

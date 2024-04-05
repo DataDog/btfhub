@@ -13,8 +13,8 @@ import (
 	"golang.org/x/exp/maps"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/aquasecurity/btfhub/pkg/job"
-	"github.com/aquasecurity/btfhub/pkg/utils"
+	"github.com/DataDog/btfhub/pkg/job"
+	"github.com/DataDog/btfhub/pkg/utils"
 )
 
 func Merge(ctx context.Context) error {

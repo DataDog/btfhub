@@ -4,7 +4,7 @@ import (
 	"context"
 	"regexp"
 
-	"github.com/aquasecurity/btfhub/pkg/job"
+	"github.com/DataDog/btfhub/pkg/job"
 )
 
 type RepoOptions struct {

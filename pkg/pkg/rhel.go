@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/aquasecurity/btfhub/pkg/kernel"
-	"github.com/aquasecurity/btfhub/pkg/utils"
+	"github.com/DataDog/btfhub/pkg/kernel"
+	"github.com/DataDog/btfhub/pkg/utils"
 )
 
 type RHELPackage struct {

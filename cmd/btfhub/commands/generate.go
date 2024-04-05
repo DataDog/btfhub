@@ -11,8 +11,8 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
-	"github.com/aquasecurity/btfhub/pkg/job"
-	"github.com/aquasecurity/btfhub/pkg/repo"
+	"github.com/DataDog/btfhub/pkg/job"
+	"github.com/DataDog/btfhub/pkg/repo"
 )
 
 var possibleArchs = []string{"x86_64", "arm64"}

@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/aquasecurity/btfhub/pkg/kernel"
-	"github.com/aquasecurity/btfhub/pkg/utils"
+	"github.com/DataDog/btfhub/pkg/kernel"
+	"github.com/DataDog/btfhub/pkg/utils"
 )
 
 type Package interface {

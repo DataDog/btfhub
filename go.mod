@@ -1,4 +1,4 @@
-module github.com/aquasecurity/btfhub
+module github.com/DataDog/btfhub
 
 go 1.21
 

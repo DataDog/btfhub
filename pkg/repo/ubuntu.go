@@ -9,7 +9,7 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
-	"github.com/aquasecurity/btfhub/pkg/pkg"
+	"github.com/DataDog/btfhub/pkg/pkg"
 )
 
 type UbuntuRepo struct {
