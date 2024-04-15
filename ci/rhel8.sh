@@ -51,7 +51,7 @@ if [[ "${ARCH}" == "x86_64" ]]; then
   mv clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu- clang
 else
   wget -nv https://github.com/llvm/llvm-project/releases/download/llvmorg-12.0.1/clang+llvm-12.0.1-aarch64-linux-gnu.tar.xz
-  tar xf clang+llvm-12.0.1-aarch64-linux-gnu.tar.xz.tar.xz
+  tar xf clang+llvm-12.0.1-aarch64-linux-gnu.tar.xz
   mv clang+llvm-12.0.1-aarch64-linux-gnu clang
 fi
 PATH="$(pwd)/clang/bin:${PATH}"
