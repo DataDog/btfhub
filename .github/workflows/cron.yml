@@ -6,6 +6,7 @@ on:
 jobs:
   update-archive:
     strategy:
+      fail-fast: false
       matrix:
         distro: [ ubuntu, debian, centos, fedora, ol, opensuse-leap ]
     name: ${{ matrix.distro }}
