@@ -38,7 +38,6 @@ jobs:
           tar xf clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-16.04.tar.xz
           mv clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu- clang
           echo "$GITHUB_WORKSPACE/clang/bin" >> $GITHUB_PATH
-          echo $PATH
 
       - name: build pahole
         run: |
@@ -52,6 +51,7 @@ jobs:
 
       - name: build bpftool
         run: |
+          echo $PATH
           cd ./3rdparty/bpftool
           sudo make -C src/ V=1 install-bin
 
