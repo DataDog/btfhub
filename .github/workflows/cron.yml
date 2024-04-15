@@ -52,7 +52,7 @@ jobs:
       - name: build bpftool
         run: |
           cd ./3rdparty/bpftool
-          sudo make -C src/ V=1 install
+          sudo make -C src/ V=1 install-bin
 
       - name: build btfhub
         run: make
