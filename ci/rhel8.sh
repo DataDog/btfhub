@@ -17,7 +17,7 @@ subscription-manager register --org="${DD_BTFHUB_RHEL_ORG_ID}" --activationkey="
 subscription-manager repos --enable="rhel-8-for-${REPO_ARCH}-baseos-debug-rpms"
 subscription-manager repos --enable="rhel-8-for-${REPO_ARCH}-baseos-eus-debug-rpms"
 subscription-manager release --set=8.1
-yum install -y yum-utils wget bzip2 zlib-devel m4 xz gzip cmake make clang-12.0.1 gcc
+yum install -y yum-utils wget bzip2 zlib-devel m4 xz gzip cmake make gcc
 
 # go
 mkdir -p ~/bin
@@ -25,6 +25,19 @@ curl -sL -o ~/bin/gimme https://raw.githubusercontent.com/travis-ci/gimme/master
 chmod +x ~/bin/gimme
 ~/bin/gimme 1.21.8
 source ~/.gimme/envs/go1.21.8.env
+
+# clang
+if [[ "${ARCH}" == "x86_64" ]]; then
+  wget -nv https://github.com/llvm/llvm-project/releases/download/llvmorg-12.0.1/clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-16.04.tar.xz
+  tar xf clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-16.04.tar.xz
+  mv clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu- clang
+else
+  wget -nv https://github.com/llvm/llvm-project/releases/download/llvmorg-12.0.1/clang+llvm-12.0.1-aarch64-linux-gnu.tar.xz
+  tar xf clang+llvm-12.0.1-aarch64-linux-gnu.tar.xz.tar.xz
+  mv clang+llvm-12.0.1-aarch64-linux-gnu clang
+fi
+PATH="$(pwd)/clang/bin:${PATH}"
+export PATH
 
 # elfutils
 wget -nv https://sourceware.org/elfutils/ftp/0.190/elfutils-0.190.tar.bz2
