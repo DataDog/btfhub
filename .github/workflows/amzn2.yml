@@ -37,6 +37,14 @@ jobs:
         with:
           go-version-file: 'go.mod'
 
+      - name: install newer clang
+        run: |
+          yum remove -y clang
+          wget -nv https://github.com/llvm/llvm-project/releases/download/llvmorg-12.0.1/clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-16.04.tar.xz
+          tar xf clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-16.04.tar.xz
+          mv clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu- clang
+          echo "$GITHUB_WORKSPACE/clang/bin" >> $GITHUB_PATH 
+
       - name: build pahole
         run: |
           cd ./3rdparty/dwarves
