@@ -53,6 +53,11 @@ echo "/usr/local/lib" >> /etc/ld.so.conf.d/pahole.conf
 ldconfig
 popd
 
+# bpftool
+pushd ./3rdparty/bpftool
+make -C src/ V=1 install
+popd
+
 # build btfhub
 make
 

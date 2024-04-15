@@ -43,6 +43,11 @@ jobs:
           echo "/usr/local/lib" | sudo tee /etc/ld.so.conf.d/pahole.conf
           sudo ldconfig
 
+      - name: build bpftool
+        run: |
+          cd ./3rdparty/bpftool
+          make -C src/ V=1 install
+
       - name: build btfhub
         run: make
 

@@ -49,6 +49,12 @@ jobs:
           ldconfig
         shell: bash
 
+      - name: build bpftool
+        run: |
+          cd ./3rdparty/bpftool
+          make -C src/ V=1 install
+        shell: bash
+
       - name: build tar
         run: |
           wget https://ftpmirror.gnu.org/tar/tar-1.35.tar.xz

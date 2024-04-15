@@ -72,6 +72,12 @@ jobs:
           ldconfig
         shell: bash
 
+      - name: build bpftool
+        run: |
+          cd ./3rdparty/bpftool
+          make -C src/ V=1 install
+        shell: bash
+
       - name: Compile BTFHub Tool
         run: |
           make
