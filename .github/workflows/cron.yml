@@ -12,12 +12,23 @@ jobs:
     name: ${{ matrix.distro }}
     runs-on: ubuntu-latest
     steps:
+      - name: free up some disk space
+        run: |
+          sudo rm -rf /usr/local/lib/android || true
+          sudo rm -rf /usr/share/dotnet || true
+          sudo rm -rf /opt/ghc || true
+          sudo rm -rf /usr/local/.ghcup || true
+          sudo docker image prune --all --force || true
+          sudo apt-get remove -y --fix-missing '^aspnetcore-.*' '^dotnet-.*' 'php.*' '^mongodb-.*' '^mysql-.*' azure-cli google-chrome-stable firefox powershell mono-devel libgl1-mesa-dri google-cloud-sdk google-cloud-cli || true
+
       - name: install required packages
         run: |
           export DEBIAN_FRONTEND=noninteractive
           sudo dpkg --purge unattended-upgrades
           sudo apt-get update
           sudo apt-get install -y bsdutils build-essential pkgconf zlib1g-dev libdw-dev libdwarf-dev libelf-dev software-properties-common devscripts ubuntu-dev-tools
+          sudo apt-get autoremove -y || true
+          sudo apt-get clean || true
 
       - name: authenticate
         run: |
