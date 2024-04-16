@@ -61,7 +61,7 @@ func NewDebianRepo() Repository {
 	}
 }
 
-const debianSnapshotURL = "https://snapshot-sallinen.debian.org/"
+const debianSnapshotURL = "https://snapshot-sallinen.debian.org"
 
 // GetKernelPackages downloads Packages.xz from the main, updates and security,
 // from the official repos and parses the list of kernel packages to download.
