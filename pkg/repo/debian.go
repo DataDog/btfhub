@@ -61,7 +61,7 @@ func NewDebianRepo() Repository {
 	}
 }
 
-const debianSnapshotURL = "https://snapshot-sallinen.debian.org"
+const debianSnapshotURL = "https://snapshot.debian.org"
 
 // GetKernelPackages downloads Packages.xz from the main, updates and security,
 // from the official repos and parses the list of kernel packages to download.
@@ -149,7 +149,7 @@ func (d *DebianRepo) GetKernelPackages(
 				}
 
 				var binpkg snapshotBinaryPackage
-				if err := queryJsonAPI(ctx, fmt.Sprintf(debianSnapshotURL+"/mr/binary/%s/", name), &binpkg, nil); err != nil {
+				if err := retryQueryJsonAPI(ctx, fmt.Sprintf(debianSnapshotURL+"/mr/binary/%s/", name), &binpkg, nil, 3); err != nil {
 					return fmt.Errorf("snapshot package API error for %s: %s", name, err)
 				}
 				if len(binpkg.Result) == 0 {
@@ -157,7 +157,7 @@ func (d *DebianRepo) GetKernelPackages(
 				}
 
 				var verInfo snapshotBinaryVersionInfo
-				if err := queryJsonAPI(ctx, fmt.Sprintf(debianSnapshotURL+"/mr/binary/%s/%s/binfiles?fileinfo=1", name, binpkg.Result[0].BinaryVersion), &verInfo, nil); err != nil {
+				if err := retryQueryJsonAPI(ctx, fmt.Sprintf(debianSnapshotURL+"/mr/binary/%s/%s/binfiles?fileinfo=1", name, binpkg.Result[0].BinaryVersion), &verInfo, nil, 3); err != nil {
 					return fmt.Errorf("snapshot version API error for %s: %s", name, err)
 				}
 				for _, info := range verInfo.FileInfo {
