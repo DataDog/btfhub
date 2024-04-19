@@ -237,7 +237,7 @@ func queryJsonAPI[T any](ctx context.Context, url string, out *T, headers map[st
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		if errors.Is(err, syscall.ECONNRESET) {
+		if errors.Is(err, syscall.ECONNREFUSED) {
 			return fmt.Errorf("%w: %s", errRetry, err)
 		}
 		return err
