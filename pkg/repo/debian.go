@@ -14,6 +14,7 @@ import (
 	"slices"
 	"sort"
 	"strings"
+	"syscall"
 
 	"github.com/DataDog/btfhub/pkg/kernel"
 	"github.com/DataDog/btfhub/pkg/pkg"
@@ -236,6 +237,9 @@ func queryJsonAPI[T any](ctx context.Context, url string, out *T, headers map[st
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
+		if errors.Is(err, syscall.ECONNRESET) {
+			return fmt.Errorf("%w: %s", errRetry, err)
+		}
 		return err
 	}
 	defer resp.Body.Close()
