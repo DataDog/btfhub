@@ -50,7 +50,6 @@ jobs:
       - name: checkout btfhub
         uses: actions/checkout@v3
         with:
-          ref: no-kmod
           token: ${{ secrets.DD_BTFHUB_BOT_GITHUB_TOKEN }}
           submodules: 'recursive'
 
@@ -87,6 +86,11 @@ jobs:
           echo "/usr/local/lib" >> /etc/ld.so.conf.d/pahole.conf
           ldconfig
 
+      - name: build bpftool
+        run: |
+          cd ./3rdparty/bpftool
+          make -C src/ V=1 install
+
       - name: build btfhub
         run: |
           make
@@ -95,7 +99,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           repository: DataDog/btfhub-archive
-          ref: no-kmod
+          ref: main
           token: ${{ secrets.DD_BTFHUB_BOT_GITHUB_TOKEN }}
           path: archive
           sparse-checkout: |
