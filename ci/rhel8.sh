@@ -17,7 +17,7 @@ subscription-manager register --org="${DD_BTFHUB_RHEL_ORG_ID}" --activationkey="
 subscription-manager repos --enable="rhel-8-for-${REPO_ARCH}-baseos-debug-rpms"
 subscription-manager repos --enable="rhel-8-for-${REPO_ARCH}-baseos-eus-debug-rpms"
 subscription-manager release --set=8.1
-yum install -y yum-utils clang wget bzip2 zlib-devel m4 xz gzip cmake make gcc
+yum install -y yum-utils clang wget bzip2 zlib-devel m4 xz gzip cmake make gcc ncurses-compat-libs
 
 # go
 mkdir -p ~/bin
