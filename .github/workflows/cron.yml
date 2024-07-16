@@ -3,6 +3,8 @@ on:
   schedule:
     - cron: "0 1 * * *"
   workflow_dispatch: {}
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
 jobs:
   update-archive:
     strategy:
@@ -10,7 +12,7 @@ jobs:
       matrix:
         distro: [ ubuntu, debian, centos, fedora, ol, opensuse-leap ]
     name: ${{ matrix.distro }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: free up some disk space
         run: |

@@ -22,13 +22,15 @@ on:
 concurrency:
   group: ${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
 jobs:
   #
   # CODE VERIFICATION
   #
   verify-analyze-code:
     name: Verify and Analyze Code
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -62,7 +64,7 @@ jobs:
     name: Unit Tests
     needs:
       - verify-analyze-code
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3

@@ -3,6 +3,8 @@ on:
   schedule:
     - cron: "0 1 * * *"
   workflow_dispatch: {}
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
 jobs:
   rhel8-update:
     strategy:
@@ -16,7 +18,7 @@ jobs:
             btfhub_arch: "arm64"
             repo_arch: "aarch64"
     name: rhel 8 ${{ matrix.btfhub_arch }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: github authenticate
         run: |

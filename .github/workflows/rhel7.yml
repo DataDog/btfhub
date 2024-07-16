@@ -5,10 +5,11 @@ on:
   workflow_dispatch: {}
 env:
   BTFHUB_NO_SUDO: true
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
 jobs:
   rhel7-update:
     name: rhel 7 x86_64
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     container:
       image: registry.access.redhat.com/rhel7:latest
     steps:
