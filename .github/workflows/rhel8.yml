@@ -12,13 +12,15 @@ jobs:
         platform_arch: [ "amd64", "arm64" ]
         include:
           - platform_arch: "amd64"
+            os: "ubuntu-22.04"
             btfhub_arch: "x86_64"
             repo_arch: "x86_64"
           - platform_arch: "arm64"
+            os: "arm-4core-linux"
             btfhub_arch: "arm64"
             repo_arch: "aarch64"
     name: rhel 8 ${{ matrix.btfhub_arch }}
-    runs-on: ubuntu-22.04
+    runs-on: "${{ matrix.os }}"
     steps:
       - name: github authenticate
         run: |
@@ -39,11 +41,6 @@ jobs:
           path: archive
           sparse-checkout: |
             rhel/8/${{ matrix.btfhub_arch }}
-
-      - name: setup QEMU
-        uses: docker/setup-qemu-action@v1
-        with:
-          platforms: ${{ matrix.platform_arch }}
 
       - name: run in docker
         run: |
