@@ -16,7 +16,7 @@ jobs:
             btfhub_arch: "x86_64"
             repo_arch: "x86_64"
           - platform_arch: "arm64"
-            os: "arm-4core-linux"
+            os: "arm-4core-linux-arm-limited"
             btfhub_arch: "arm64"
             repo_arch: "aarch64"
     name: rhel 8 ${{ matrix.btfhub_arch }}
