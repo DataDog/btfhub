@@ -39,7 +39,7 @@ jobs:
       - name: install newer git
         run: |
           yum remove -y git
-          yum install -y https://repo.ius.io/ius-release-el7.rpm https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+          yum install -y https://repo.ius.io/ius-release-el7.rpm https://dl.fedoraproject.org/pub/archive/epel/7/x86_64/Packages/e/epel-release-7-14.noarch.rpm
           yum install -y git236
           yum-config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo
           yum install -y gh
