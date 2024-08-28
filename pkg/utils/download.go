@@ -98,7 +98,7 @@ func GetRelativeLinks(ctx context.Context, repoURL string, baseURL string) ([]st
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("url %s returned %d", repoURL, resp.StatusCode)
+		return nil, fmt.Errorf("url %s returned %d: %+v", repoURL, resp.StatusCode, resp.Header)
 	}
 
 	var reader io.ReadCloser
