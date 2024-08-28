@@ -208,7 +208,7 @@ func (pkg *UbuntuPackage) pullLaunchpadDdeb(ctx context.Context, dir string, des
 
 	errline := stderr.String()
 	if len(errline) > 0 {
-		return fmt.Errorf(strings.TrimSpace(errline))
+		return errors.New(strings.TrimSpace(errline))
 	}
 
 	return fmt.Errorf("download path not found in pull-lp-ddebs output")
