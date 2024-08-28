@@ -6,6 +6,7 @@ require (
 	github.com/DataDog/zstd v1.5.5
 	github.com/cavaliergopher/cpio v1.0.1
 	github.com/cavaliergopher/rpm v1.2.0
+	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/mholt/archiver/v3 v3.5.1
 	github.com/therootcompany/xz v1.0.1
 	golang.org/x/exp v0.0.0-20240222234643-814bf88cf225
