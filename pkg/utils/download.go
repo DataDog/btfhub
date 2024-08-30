@@ -89,6 +89,7 @@ func GetLinks(ctx context.Context, repoURL string) ([]string, error) {
 
 var linksClient = http.Client{
 	CheckRedirect: func(req *http.Request, via []*http.Request) error {
+		fmt.Printf("redirect to %s\n", req.URL)
 		if req.Host == "provo-mirror.opensuse.org" {
 			return errors.New("provo-mirror.opensuse.org does not have all content, try again")
 		}
@@ -102,7 +103,7 @@ func GetRelativeLinks(ctx context.Context, repoURL string, baseURL string) (urls
 		urls, innerErr = getRelativeLinks(ctx, repoURL, baseURL)
 		return innerErr
 	}, backoff.NewExponentialBackOff())
-	return
+	return urls, err
 }
 
 func getRelativeLinks(ctx context.Context, repoURL string, baseURL string) ([]string, error) {
