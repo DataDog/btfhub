@@ -102,7 +102,7 @@ func GetRelativeLinks(ctx context.Context, repoURL string, baseURL string) (urls
 		var innerErr error
 		urls, innerErr = getRelativeLinks(ctx, repoURL, baseURL)
 		return innerErr
-	}, backoff.NewExponentialBackOff())
+	}, backoff.WithContext(backoff.NewExponentialBackOff(), ctx))
 	return urls, err
 }
 

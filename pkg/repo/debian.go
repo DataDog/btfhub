@@ -213,7 +213,7 @@ type snapshotBinaryVersionInfo struct {
 func retryQueryJsonAPI[T any](ctx context.Context, url string, out *T, headers map[string]string) error {
 	return backoff.Retry(func() error {
 		return queryJsonAPI(ctx, url, out, headers)
-	}, backoff.NewExponentialBackOff())
+	}, backoff.WithContext(backoff.NewExponentialBackOff(), ctx))
 }
 
 func queryJsonAPI[T any](ctx context.Context, url string, out *T, headers map[string]string) error {
