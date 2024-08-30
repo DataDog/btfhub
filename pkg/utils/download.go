@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"compress/gzip"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -90,8 +89,10 @@ func GetLinks(ctx context.Context, repoURL string) ([]string, error) {
 var linksClient = http.Client{
 	CheckRedirect: func(req *http.Request, via []*http.Request) error {
 		fmt.Printf("redirect to %s\n", req.URL)
-		if req.Host == "provo-mirror.opensuse.org" {
-			return errors.New("provo-mirror.opensuse.org does not have all content, try again")
+		// this URL 404s
+		if req.URL.String() == "https://provo-mirror.opensuse.org/debug/distribution/leap/15.3/repo/oss/repodata/c226efa34dd8ad30dbfd4d3067e7ad65dc71b7e0f761e2f578d067f82816f9e0-primary.xml.gz" {
+			req.URL.Host = "mirror.fcix.net"
+			req.URL.Path = "/opensuse/debug/distribution/leap/15.3/repo/oss/repodata/c226efa34dd8ad30dbfd4d3067e7ad65dc71b7e0f761e2f578d067f82816f9e0-primary.xml.gz"
 		}
 		return nil
 	},
