@@ -12,6 +12,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/cenkalti/backoff/v4"
 	fastxz "github.com/therootcompany/xz"
 )
 
@@ -85,20 +86,41 @@ func GetLinks(ctx context.Context, repoURL string) ([]string, error) {
 	return GetRelativeLinks(ctx, repoURL, repoURL)
 }
 
-func GetRelativeLinks(ctx context.Context, repoURL string, baseURL string) ([]string, error) {
+var linksClient = http.Client{
+	CheckRedirect: func(req *http.Request, via []*http.Request) error {
+		fmt.Printf("redirect to %s\n", req.URL)
+		// this URL 404s
+		if req.URL.String() == "https://provo-mirror.opensuse.org/debug/distribution/leap/15.3/repo/oss/repodata/c226efa34dd8ad30dbfd4d3067e7ad65dc71b7e0f761e2f578d067f82816f9e0-primary.xml.gz" {
+			req.URL.Host = "mirror.fcix.net"
+			req.URL.Path = "/opensuse/debug/distribution/leap/15.3/repo/oss/repodata/c226efa34dd8ad30dbfd4d3067e7ad65dc71b7e0f761e2f578d067f82816f9e0-primary.xml.gz"
+		}
+		return nil
+	},
+}
+
+func GetRelativeLinks(ctx context.Context, repoURL string, baseURL string) (urls []string, err error) {
+	err = backoff.Retry(func() error {
+		var innerErr error
+		urls, innerErr = getRelativeLinks(ctx, repoURL, baseURL)
+		return innerErr
+	}, backoff.WithContext(backoff.NewExponentialBackOff(), ctx))
+	return urls, err
+}
+
+func getRelativeLinks(ctx context.Context, repoURL string, baseURL string) ([]string, error) {
 	// Read the repo URL
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, repoURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("http request: %s", err)
 	}
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := linksClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("get links from %s: %s", repoURL, err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("url %s returned %d", repoURL, resp.StatusCode)
+		return nil, backoff.Permanent(fmt.Errorf("url %s returned %d: %+v", repoURL, resp.StatusCode, resp.Header))
 	}
 
 	var reader io.ReadCloser
@@ -106,7 +128,7 @@ func GetRelativeLinks(ctx context.Context, repoURL string, baseURL string) ([]st
 	if strings.HasSuffix(repoURL, ".gz") {
 		reader, err = gzip.NewReader(resp.Body)
 		if err != nil {
-			return nil, fmt.Errorf("gzip reader: %s", err)
+			return nil, backoff.Permanent(fmt.Errorf("gzip reader: %s", err))
 		}
 		defer reader.Close()
 	}
@@ -146,7 +168,7 @@ func GetRelativeLinks(ctx context.Context, repoURL string, baseURL string) ([]st
 	}
 
 	if err := scan.Err(); err != nil {
-		return nil, fmt.Errorf("error reading response: %s", err)
+		return nil, backoff.Permanent(fmt.Errorf("error reading response: %s", err))
 	}
 
 	return links, nil
