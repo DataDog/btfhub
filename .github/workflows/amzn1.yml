@@ -25,7 +25,7 @@ jobs:
           gh auth login --with-token <<<'${{ secrets.DD_BTFHUB_BOT_GITHUB_TOKEN }}'
 
       - name: Check out BTFHub
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           token: ${{ secrets.DD_BTFHUB_BOT_GITHUB_TOKEN }}
           submodules: 'recursive'
@@ -60,7 +60,7 @@ jobs:
           wget -nv https://github.com/llvm/llvm-project/releases/download/llvmorg-12.0.1/clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-16.04.tar.xz
           tar xf clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-16.04.tar.xz
           mv clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu- clang
-          echo "$GITHUB_WORKSPACE/clang/bin" >> $GITHUB_PATH      
+          echo "$GITHUB_WORKSPACE/clang/bin" >> $GITHUB_PATH
 
       - name: build pahole
         run: |
@@ -85,7 +85,7 @@ jobs:
         shell: bash
 
       - name: Checkout BTFHub Archive
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: DataDog/btfhub-archive
           ref: main
