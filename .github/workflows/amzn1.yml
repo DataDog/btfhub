@@ -101,7 +101,8 @@ jobs:
 
       - name: Compile BTFHub Tool
         env:
-          SCRIPT: |            
+          SCRIPT: |
+            git config --system --add safe.directory /workspace
             CMD_GO=/root/go/bin/go$GO_VERSION make
         run: docker exec -w /workspace build-container bash -c "$SCRIPT"
 
