@@ -35,7 +35,7 @@ jobs:
       - name: Start Docker Container
         run: |
           docker pull $CONTAINER
-          docker run --name build-container -d -v ${{ github.workspace }}:/workspace $CONTAINER tail -f /dev/null
+          docker run --name build-container -d -e GO_VERSION -v ${{ github.workspace }}:/workspace $CONTAINER tail -f /dev/null
 
       - name: Install needed amazon packages
         env:
