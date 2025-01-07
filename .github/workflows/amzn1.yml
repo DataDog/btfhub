@@ -35,7 +35,7 @@ jobs:
       - name: Start Docker Container
         run: |
           docker pull $CONTAINER
-          docker run --name build-container -d -e GO_VERSION -v ${{ github.workspace }}:/workspace $CONTAINER tail -f /dev/null
+          docker run --name build-container -d -v ${{ github.workspace }}:/workspace $CONTAINER tail -f /dev/null
 
       - name: Install needed amazon packages
         env:
@@ -49,7 +49,7 @@ jobs:
           SCRIPT: |
             go install golang.org/dl/go$GO_VERSION@latest
             go$GO_VERSION download
-        run: docker exec -w /workspace build-container bash -c "$SCRIPT"
+        run: docker exec -w /workspace -e GO_VERSION=$GO_VERSION build-container bash -c "$SCRIPT"
 
       - name: build elfutils
         env:
@@ -103,7 +103,7 @@ jobs:
         env:
           SCRIPT: |            
             CMD_GO=go$GO_VERSION make
-        run: docker exec -w /workspace build-container bash -c "$SCRIPT"
+        run: docker exec -w /workspace -e GO_VERSION=$GO_VERSION build-container bash -c "$SCRIPT"
 
       - name: Checkout BTFHub Archive
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
