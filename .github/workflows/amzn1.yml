@@ -79,7 +79,6 @@ jobs:
             wget -nv https://github.com/llvm/llvm-project/releases/download/llvmorg-12.0.1/clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-16.04.tar.xz
             tar xf clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-16.04.tar.xz
             mv clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu- clang
-            export PATH="/workspace/clang/bin:$PATH"
         run: docker exec -w /workspace build-container bash -c "$SCRIPT"
 
       - name: build pahole
@@ -103,7 +102,7 @@ jobs:
         env:
           SCRIPT: |
             git config --system --add safe.directory /workspace
-            CMD_GO=/root/go/bin/go$GO_VERSION make
+            CMD_GO=/root/go/bin/go$GO_VERSION CMD_CLANG=/workspace/clang/bin/clang make
         run: docker exec -w /workspace build-container bash -c "$SCRIPT"
 
       - name: Checkout BTFHub Archive
