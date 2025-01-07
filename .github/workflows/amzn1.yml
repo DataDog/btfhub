@@ -5,87 +5,112 @@ on:
   workflow_dispatch: {}
 env:
   ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+  CONTAINER: amazonlinux:1
 jobs:
   amazon-update:
     name: update amazon linux 1 btfhub-archive
     runs-on: ubuntu-22.04
-    container:
-      image: amazonlinux:1
     steps:
-      - name: Install needed amazon packages
-        run: |
-          yum install -y yum-utils clang wget bzip2 zlib-devel m4 xz gzip cmake find git
-          yum-config-manager -y --enable amzn-main-debuginfo amzn-updates-debuginfo
-          yum-config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo
-          yum install -y gh
-        shell: bash
-
       - name: Authenticate
         run: |
           gh auth login --with-token <<<'${{ secrets.DD_BTFHUB_BOT_GITHUB_TOKEN }}'
 
       - name: Check out BTFHub
-        uses: actions/checkout@v3
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           token: ${{ secrets.DD_BTFHUB_BOT_GITHUB_TOKEN }}
           submodules: 'recursive'
 
-      - run: git config --system --add safe.directory $(pwd)
-        shell: bash
+      # We manually start a container and execute scripts in it instead of using `jobs.build.container`,
+      # otherwise we couldn't use GitHub-provided actions (checkout, cache, etc.) as they rely on Node20
+      # which would not necessarily be available on some containers (e.g., Ubuntu 18.04).
+      #
+      # See: https://github.com/actions/checkout/issues/1590
+      #
+      # If you need to pass environment variables from the GitHub host runner to the Docker container,
+      # you can do so by adding `-e MY_VAR` to the docker run command, for example:
+      #
+      #    docker run --name build-container -d -e GITHUB_REPOSITORY -v ...
+      #
+      - name: Start Docker Container
+        run: |
+          docker pull $CONTAINER
+          docker run --name build-container -d -v ${{ github.workspace }}:/workspace $CONTAINER tail -f /dev/null
 
-      - uses: actions/setup-go@v4
-        with:
-          go-version-file: 'go.mod'
+      - name: Install needed amazon packages
+        env:
+          SCRIPT: |
+            yum install -y yum-utils clang wget bzip2 zlib-devel m4 xz gzip cmake find git
+            yum-config-manager -y --enable amzn-main-debuginfo amzn-updates-debuginfo
+        run: docker exec build-container bash -c "$SCRIPT"
+
+      - name: Install Go
+        env:
+          SCRIPT: |
+            mkdir -p ~/bin
+            curl -sL -o ~/bin/gimme https://raw.githubusercontent.com/travis-ci/gimme/master/gimme
+            chmod +x ~/bin/gimme
+            export PATH="~/bin:$PATH"
+            gimme 1.21
+        run: docker exec -w /workspace build-container bash -c "$SCRIPT"
 
       - name: build elfutils
-        run: |
-          wget -nv https://sourceware.org/elfutils/ftp/0.190/elfutils-0.190.tar.bz2
-          tar xf elfutils-0.190.tar.bz2
-          cd elfutils-0.190
-          ./configure --disable-libdebuginfod --disable-debuginfod --disable-demangler
-          make install
-          ldconfig
+        env:
+          SCRIPT: |
+            wget -nv https://sourceware.org/elfutils/ftp/0.190/elfutils-0.190.tar.bz2
+            tar xf elfutils-0.190.tar.bz2
+            cd elfutils-0.190
+            ./configure --disable-libdebuginfod --disable-debuginfod --disable-demangler
+            make install
+            ldconfig
+        run: docker exec -w /workspace build-container bash -c "$SCRIPT"
 
       - name: build tar
-        run: |
-          wget -nv https://ftpmirror.gnu.org/tar/tar-1.35.tar.xz
-          tar xf tar-1.35.tar.xz
-          cd tar-1.35
-          FORCE_UNSAFE_CONFIGURE=1 ./configure --prefix=/
-          make install
+        env:
+          SCRIPT: |
+            wget -nv https://ftpmirror.gnu.org/tar/tar-1.35.tar.xz
+            tar xf tar-1.35.tar.xz
+            cd tar-1.35
+            FORCE_UNSAFE_CONFIGURE=1 ./configure --prefix=/
+            make install
+        run: docker exec -w /workspace build-container bash -c "$SCRIPT"
 
       - name: install newer clang
-        run: |
-          yum remove -y clang
-          wget -nv https://github.com/llvm/llvm-project/releases/download/llvmorg-12.0.1/clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-16.04.tar.xz
-          tar xf clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-16.04.tar.xz
-          mv clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu- clang
-          echo "$GITHUB_WORKSPACE/clang/bin" >> $GITHUB_PATH      
+        env:
+          SCRIPT: |
+            yum remove -y clang
+            wget -nv https://github.com/llvm/llvm-project/releases/download/llvmorg-12.0.1/clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-16.04.tar.xz
+            tar xf clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-16.04.tar.xz
+            mv clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu- clang
+            export PATH="/workspace/clang/bin:$PATH"
+        run: docker exec -w /workspace build-container bash -c "$SCRIPT"
 
       - name: build pahole
-        run: |
-          cd ./3rdparty/dwarves
-          mkdir build
-          cd build
-          cmake -D__LIB=lib -DDWARF_INCLUDE_DIR=/usr/include ..
-          make install
-          echo "/usr/local/lib" >> /etc/ld.so.conf.d/pahole.conf
-          ldconfig
-        shell: bash
+        env:
+          SCRIPT: |
+            mkdir build
+            cd build
+            cmake -D__LIB=lib -DDWARF_INCLUDE_DIR=/usr/include ..
+            make install
+            echo "/usr/local/lib" >> /etc/ld.so.conf.d/pahole.conf
+            ldconfig
+        run: docker exec -w /workspace/3rdparty/dwarves build-container bash -c "$SCRIPT"
 
       - name: build bpftool
-        run: |
-          cd ./3rdparty/bpftool
-          make -C src/ V=1 install
-        shell: bash
+        env:
+          SCRIPT: |
+            make -C src/ V=1 install
+        run: docker exec -w /workspace/3rdparty/bpftool build-container bash -c "$SCRIPT"
 
       - name: Compile BTFHub Tool
-        run: |
-          make
-        shell: bash
+        env:
+          SCRIPT: |
+            source ~/.gimme/envs/go1.21.env
+            make
+        run: docker exec -w /workspace build-container bash -c "$SCRIPT"
 
       - name: Checkout BTFHub Archive
-        uses: actions/checkout@v3
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           repository: DataDog/btfhub-archive
           ref: main
@@ -96,8 +121,10 @@ jobs:
             amzn/2018
 
       - name: Fetch and Generate new BTFs (AMAZON 1)
-        run: |
-          ./btfhub -workers 6 -d amzn -r 1 -a x86_64
+        env:
+          SCRIPT: |
+            ./btfhub -workers 6 -d amzn -r 1 -a x86_64
+        run: docker exec -w /workspace build-container bash -c "$SCRIPT"
 
       - name: Check Status
         run: |
