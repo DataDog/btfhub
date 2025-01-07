@@ -47,9 +47,8 @@ jobs:
       - name: Install Go
         env:
           SCRIPT: |
-            go env
             go install golang.org/dl/go$GO_VERSION@latest
-            $GOPATH/bin/go$GO_VERSION download
+            /root/go/bin/go$GO_VERSION download
         run: docker exec -w /workspace build-container bash -c "$SCRIPT"
 
       - name: build elfutils
@@ -103,7 +102,7 @@ jobs:
       - name: Compile BTFHub Tool
         env:
           SCRIPT: |            
-            CMD_GO=$GOPATH/bin/go$GO_VERSION make
+            CMD_GO=/root/go/bin/go$GO_VERSION make
         run: docker exec -w /workspace build-container bash -c "$SCRIPT"
 
       - name: Checkout BTFHub Archive
