@@ -4,8 +4,8 @@ on:
     - cron: "0 1 * * *"
   workflow_dispatch: {}
 env:
-  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
   CONTAINER: amazonlinux:1
+  GO_VERSION: 1.21.13
 jobs:
   amazon-update:
     name: update amazon linux 1 btfhub-archive
@@ -40,18 +40,15 @@ jobs:
       - name: Install needed amazon packages
         env:
           SCRIPT: |
-            yum install -y yum-utils clang wget bzip2 zlib-devel m4 xz gzip cmake find git
+            yum install -y yum-utils clang wget bzip2 zlib-devel m4 xz gzip cmake find git golang
             yum-config-manager -y --enable amzn-main-debuginfo amzn-updates-debuginfo
         run: docker exec build-container bash -c "$SCRIPT"
 
       - name: Install Go
         env:
           SCRIPT: |
-            mkdir -p ~/bin
-            curl -sL -o ~/bin/gimme https://raw.githubusercontent.com/travis-ci/gimme/master/gimme
-            chmod +x ~/bin/gimme
-            export PATH="~/bin:$PATH"
-            gimme 1.21
+            go install golang.org/dl/go$GO_VERSION@latest
+            go$GO_VERSION download
         run: docker exec -w /workspace build-container bash -c "$SCRIPT"
 
       - name: build elfutils
@@ -104,9 +101,8 @@ jobs:
 
       - name: Compile BTFHub Tool
         env:
-          SCRIPT: |
-            source ~/.gimme/envs/go1.21.env
-            make
+          SCRIPT: |            
+            CMD_GO=go$GO_VERSION make
         run: docker exec -w /workspace build-container bash -c "$SCRIPT"
 
       - name: Checkout BTFHub Archive
