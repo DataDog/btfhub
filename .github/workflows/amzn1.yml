@@ -42,14 +42,14 @@ jobs:
           SCRIPT: |
             yum install -y yum-utils clang wget bzip2 zlib-devel m4 xz gzip cmake find git golang
             yum-config-manager -y --enable amzn-main-debuginfo amzn-updates-debuginfo
-        run: docker exec build-container bash -c "$SCRIPT"
+        run: docker exec -it build-container bash -c "$SCRIPT"
 
       - name: Install Go
         env:
           SCRIPT: |
             go install golang.org/dl/go$GO_VERSION@latest
             /root/go/bin/go$GO_VERSION download
-        run: docker exec -w /workspace build-container bash -c "$SCRIPT"
+        run: docker exec -it -w /workspace build-container bash -c "$SCRIPT"
 
       - env:
           SCRIPT: |
@@ -65,7 +65,7 @@ jobs:
             ./configure --disable-libdebuginfod --disable-debuginfod --disable-demangler
             make install
             ldconfig
-        run: docker exec -w /workspace build-container bash -c "$SCRIPT"
+        run: docker exec -it -w /workspace build-container bash -c "$SCRIPT"
 
       - name: build tar
         env:
@@ -75,7 +75,7 @@ jobs:
             cd tar-1.35
             FORCE_UNSAFE_CONFIGURE=1 ./configure --prefix=/
             make install
-        run: docker exec -w /workspace build-container bash -c "$SCRIPT"
+        run: docker exec -it -w /workspace build-container bash -c "$SCRIPT"
 
       - name: install newer clang
         env:
@@ -84,7 +84,7 @@ jobs:
             wget -nv https://github.com/llvm/llvm-project/releases/download/llvmorg-12.0.1/clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-16.04.tar.xz
             tar xf clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-16.04.tar.xz
             mv clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu- clang
-        run: docker exec -w /workspace build-container bash -c "$SCRIPT"
+        run: docker exec -it -w /workspace build-container bash -c "$SCRIPT"
 
       - name: build pahole
         env:
@@ -95,19 +95,19 @@ jobs:
             make install
             echo "/usr/local/lib" >> /etc/ld.so.conf.d/pahole.conf
             ldconfig
-        run: docker exec -w /workspace/3rdparty/dwarves build-container bash -c "$SCRIPT"
+        run: docker exec -it -w /workspace/3rdparty/dwarves build-container bash -c "$SCRIPT"
 
       - name: build bpftool
         env:
           SCRIPT: |
             make -C src/ V=1 install
-        run: docker exec -w /workspace/3rdparty/bpftool build-container bash -c "$SCRIPT"
+        run: docker exec -it -w /workspace/3rdparty/bpftool build-container bash -c "$SCRIPT"
 
       - name: Compile BTFHub Tool
         env:
           SCRIPT: |
             CMD_GO=/root/go/bin/go$GO_VERSION CMD_CLANG=/workspace/clang/bin/clang make
-        run: docker exec -w /workspace build-container bash -c "$SCRIPT"
+        run: docker exec -it -w /workspace build-container bash -c "$SCRIPT"
 
       - name: Checkout BTFHub Archive
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -124,7 +124,7 @@ jobs:
         env:
           SCRIPT: |
             ./btfhub -workers 6 -d amzn -r 1 -a x86_64
-        run: docker exec -w /workspace build-container bash -c "$SCRIPT"
+        run: docker exec -it -w /workspace build-container bash -c "$SCRIPT"
 
       - name: Check Status
         run: |
