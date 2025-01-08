@@ -15,5 +15,7 @@ runs:
 
     - name: build pahole (container)
       if: ${{ inputs.container-name != '' }}
-      run: docker exec -w /workspace ${{ inputs.container-name }} bash -l -c "$(cat build.sh)"
+      run: |
+        docker container cp build.sh ${{ inputs.container-name }}:/workspace/pahole-build.sh
+        docker exec -w /workspace ${{ inputs.container-name }} bash -l pahole-build.sh
       shell: bash

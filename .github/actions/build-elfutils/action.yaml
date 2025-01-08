@@ -21,5 +21,7 @@ runs:
 
     - name: build elfutils (container)
       if: ${{ inputs.container-name != '' }}
-      run: docker exec -e VERSION=${{ inputs.version }} -w /workspace ${{ inputs.container-name }} bash -l -c "$(cat build.sh)"
+      run: |
+        docker container cp build.sh ${{ inputs.container-name }}:/workspace/elfutils-build.sh
+        docker exec -e VERSION=${{ inputs.version }} -w /workspace ${{ inputs.container-name }} bash -l elfutils-build.sh
       shell: bash
