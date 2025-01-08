@@ -1,0 +1,23 @@
+name: 'build elfutils'
+description: 'Build and install elfutils'
+inputs:
+  version:
+    description: 'elfutils version'
+    required: false
+    default: '0.190'
+  container-name:
+    description: 'name of container used to build in'
+    required: false
+    default: ''
+runs:
+  using: composite
+  steps:
+    - name: build elfutils (runner)
+      if: ${{ inputs.container-name == '' }}
+      env:
+        VERSION: ${{ inputs.version }}
+      run: build.sh
+
+    - name: build elfutils (container)
+      if: ${{ inputs.container-name != '' }}
+      run: docker exec -e VERSION=${{ inputs.version }} -w /workspace ${{ inputs.container-name }} bash -l -c "$(cat build.sh)"
