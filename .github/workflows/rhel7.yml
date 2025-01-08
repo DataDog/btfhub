@@ -64,9 +64,9 @@ jobs:
             wget -O RPM-GPG-KEY-redhat-devel https://www.redhat.com/security/data/a5787476.txt
             rpm --import RPM-GPG-KEY-redhat-devel
             yum install -y devtoolset-7 llvm-toolset-7
-            echo "export PATH=\"/opt/rh/devtoolset-7/root/usr/bin:${{ '$PATH' }}\"" >> /etc/profile
-            echo "export PATH=\"/opt/rh/llvm-toolset-7/root/usr/sbin:${{ '$PATH' }}\"" >> /etc/profile
-            echo "export PATH=\"/opt/rh/llvm-toolset-7/root/usr/bin:${{ '$PATH' }}\"" >> /etc/profile
+            echo "export PATH=\"/opt/rh/devtoolset-7/root/usr/bin:${{ '\\$PATH' }}\"" >> /etc/profile
+            echo "export PATH=\"/opt/rh/llvm-toolset-7/root/usr/sbin:${{ '\\$PATH' }}\"" >> /etc/profile
+            echo "export PATH=\"/opt/rh/llvm-toolset-7/root/usr/bin:${{ '\\$PATH' }}\"" >> /etc/profile
             cat /etc/profile
             subscription-manager repos --disable rhel-7-server-optional-rpms --disable rhel-server-rhscl-7-rpms --disable rhel-7-server-devtools-rpms
         run: docker exec build-container bash -c "$SCRIPT"
