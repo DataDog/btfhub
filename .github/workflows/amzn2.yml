@@ -41,7 +41,7 @@ jobs:
         env:
           SCRIPT: |
             set -e
-            yum install -y yum-utils wget tar gzip xz clang make cmake git libdwarf-devel elfutils-libelf-devel elfutils-devel
+            yum install -y yum-utils wget tar gzip xz clang make cmake git libdwarf-devel elfutils-libelf-devel elfutils-devel golang
             yum-config-manager -y --enable amzn2-core-debuginfo
             echo "[amzn2-core-debuginfo-alt]" >> /etc/yum.repos.d/amzn2-core.repo
             awk '/^\[/{found=""} /^\[amzn2-core-debuginfo]$/{found=1;next} found && NF' /etc/yum.repos.d/amzn2-core.repo | sed 's/\$basearch/aarch64/g' >> /etc/yum.repos.d/amzn2-core.repo
