@@ -1,0 +1,19 @@
+name: 'build pahole'
+description: 'Build and install pahole'
+inputs:
+  container-name:
+    description: 'name of container used to build in'
+    required: false
+    default: ''
+runs:
+  using: composite
+  steps:
+    - name: build pahole (runner)
+      if: ${{ inputs.container-name == '' }}
+      run: build.sh
+      shell: bash
+
+    - name: build pahole (container)
+      if: ${{ inputs.container-name != '' }}
+      run: docker exec -w /workspace ${{ inputs.container-name }} bash -l -c "$(cat build.sh)"
+      shell: bash

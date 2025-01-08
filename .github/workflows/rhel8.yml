@@ -126,16 +126,9 @@ jobs:
         run: docker exec -w /workspace $CONTAINER_NAME bash -l -c "$SCRIPT"
 
       - name: build pahole
-        env:
-          SCRIPT: |
-            set -ex
-            mkdir build
-            cd build
-            cmake -D__LIB=lib -DDWARF_INCLUDE_DIR=/usr/include ..
-            make -j "$(nproc)" install
-            echo "/usr/local/lib" >> /etc/ld.so.conf.d/pahole.conf
-            ldconfig
-        run: docker exec -w /workspace/3rdparty/dwarves $CONTAINER_NAME bash -l -c "$SCRIPT"
+        uses: ./.github/actions/build-pahole
+        with:
+          container-name: $CONTAINER_NAME
 
       - name: build bpftool
         env:
