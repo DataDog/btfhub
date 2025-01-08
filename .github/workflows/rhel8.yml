@@ -97,15 +97,9 @@ jobs:
           container-name: $CONTAINER_NAME
 
       - name: build tar
-        env:
-          SCRIPT: |
-            set -ex
-            wget -nv https://ftpmirror.gnu.org/tar/tar-1.35.tar.xz
-            tar xf tar-1.35.tar.xz
-            cd tar-1.35
-            FORCE_UNSAFE_CONFIGURE=1 ./configure --prefix=/usr
-            make -j "$(nproc)" install
-        run: docker exec -w /workspace $CONTAINER_NAME bash -l -c "$SCRIPT"
+        uses: ./.github/actions/build-tar
+        with:
+          container-name: $CONTAINER_NAME
 
       - name: install clang
         env:
