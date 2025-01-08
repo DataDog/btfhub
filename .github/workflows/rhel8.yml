@@ -124,11 +124,9 @@ jobs:
           container-name: $CONTAINER_NAME
 
       - name: build bpftool
-        env:
-          SCRIPT: |
-            set -ex
-            make -j "$(nproc)" -C src/ V=1 install
-        run: docker exec -w /workspace/3rdparty/bpftool $CONTAINER_NAME bash -l -c "$SCRIPT"
+        uses: ./.github/actions/build-bpftool
+        with:
+          container-name: $CONTAINER_NAME
 
       - name: build btfhub
         uses: ./.github/actions/build-btfhub
