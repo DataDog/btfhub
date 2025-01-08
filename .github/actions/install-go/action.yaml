@@ -1,0 +1,32 @@
+name: 'install go'
+description: 'install go'
+inputs:
+  version:
+    description: 'go version'
+    required: false
+    default: '1.21.13'
+  arch:
+    description: 'go arch'
+    required: false
+    default: 'amd64'
+  container-name:
+    description: 'name of container used to install in'
+    required: false
+    default: ''
+runs:
+  using: composite
+  steps:
+    - name: build tar (runner)
+      if: ${{ inputs.container-name == '' }}
+      env:
+        VERSION: ${{ inputs.version }}
+        ARCH: ${{ inputs.arch }}
+      run: ${{ github.action_path }}/install.sh
+      shell: bash
+
+    - name: build tar (container)
+      if: ${{ inputs.container-name != '' }}
+      run: |
+        docker container cp ${{ github.action_path }}/install.sh ${{ inputs.container-name }}:/workspace/go-install.sh
+        docker exec -e VERSION=${{ inputs.version }} -e ARCH=${{ inputs.arch }} -w /workspace ${{ inputs.container-name }} bash -l go-install.sh
+      shell: bash

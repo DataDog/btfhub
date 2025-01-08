@@ -85,12 +85,11 @@ jobs:
         run: docker exec -w /workspace $CONTAINER_NAME bash -c "$SCRIPT"
 
       - name: install go
-        env:
-          script: |
-            set -ex
-            wget -nv https://go.dev/dl/go$GO_VERSION.linux-${{ matrix.platform_arch }}.tar.gz
-            tar -C /root -xzf go$GO_VERSION.linux-${{ matrix.platform_arch }}.tar.gz
-        run: docker exec -w /workspace $CONTAINER_NAME bash -c "$SCRIPT"
+        uses: ./.github/actions/install-go
+        with:
+          version: $GO_VERSION
+          arch: ${{ matrix.platform_arch }}
+          container-name: $CONTAINER_NAME
 
       - name: build elfutils
         uses: ./.github/actions/build-elfutils
