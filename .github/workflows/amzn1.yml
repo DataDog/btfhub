@@ -53,10 +53,11 @@ jobs:
             /root/go/bin/go$GO_VERSION download
         run: docker exec -w /workspace build-container bash -c "$SCRIPT"
 
-      - env:
+      - name: Fix git safe directory
+        env:
           SCRIPT: |
             set -e
-            git config --system --add safe.directory $(pwd)
+            git config --system --add safe.directory /workspace
         run: docker exec -w /workspace build-container bash -c "$SCRIPT"
 
       - name: build elfutils
