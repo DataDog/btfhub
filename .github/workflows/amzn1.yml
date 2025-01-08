@@ -51,6 +51,11 @@ jobs:
             /root/go/bin/go$GO_VERSION download
         run: docker exec -w /workspace build-container bash -c "$SCRIPT"
 
+      - env:
+          SCRIPT: |
+            git config --system --add safe.directory $(pwd)
+        run: docker exec -it -w /workspace build-container bash -c "$SCRIPT"
+
       - name: build elfutils
         env:
           SCRIPT: |
@@ -101,7 +106,6 @@ jobs:
       - name: Compile BTFHub Tool
         env:
           SCRIPT: |
-            git config --system --add safe.directory /workspace
             CMD_GO=/root/go/bin/go$GO_VERSION CMD_CLANG=/workspace/clang/bin/clang make
         run: docker exec -w /workspace build-container bash -c "$SCRIPT"
 
