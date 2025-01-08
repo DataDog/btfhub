@@ -72,7 +72,7 @@ jobs:
             subscription-manager repos --enable="rhel-8-for-${{ matrix.repo_arch }}-baseos-debug-rpms"
             subscription-manager repos --enable="rhel-8-for-${{ matrix.repo_arch }}-baseos-eus-debug-rpms"
             subscription-manager release --set=8.1
-            yum install -y yum-utils clang wget bzip2 zlib-devel m4 xz gzip cmake make gcc ncurses-compat-libs
+            yum install -y yum-utils clang wget bzip2 zlib-devel m4 xz gzip cmake make gcc ncurses-compat-libs git
         run: docker exec $CONTAINER_NAME bash -c "$SCRIPT"
 
       - name: setup safe git directories
