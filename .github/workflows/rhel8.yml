@@ -66,7 +66,7 @@ jobs:
       - name: install packages
         env:
           SCRIPT: |
-            set -e
+            set -ex
             rm -rf /etc/rhsm-host
             subscription-manager register --org=${{ secrets.DD_BTFHUB_RHEL_ORG_ID }} --activationkey="btfhub-ci"
             subscription-manager repos --enable="rhel-8-for-${{ matrix.repo_arch }}-baseos-debug-rpms"
@@ -78,7 +78,7 @@ jobs:
       - name: setup safe git directories
         env:
           SCRIPT: |
-            set -e
+            set -ex
             git config --system --add safe.directory /workspace
             git config --system --add safe.directory /workspace/3rdparty/dwarves
             git config --system --add safe.directory /workspace/3rdparty/bpftool
@@ -87,19 +87,20 @@ jobs:
       - name: install go
         env:
           script: |
-            set -e
+            set -ex
             wget -nv https://go.dev/dl/go$GO_VERSION.linux-${{ matrix.platform_arch }}.tar.gz
             tar -C /root -xzf go$GO_VERSION.linux-${{ matrix.platform_arch }}.tar.gz
         run: docker exec -w /workspace $CONTAINER_NAME bash -c "$SCRIPT"
 
-      - uses: ./.github/actions/build-elfutils
+      - name: build elfutils
+        uses: ./.github/actions/build-elfutils
         with:
           container-name: $CONTAINER_NAME
 
       - name: build tar
         env:
           SCRIPT: |
-            set -e
+            set -ex
             wget -nv https://ftpmirror.gnu.org/tar/tar-1.35.tar.xz
             tar xf tar-1.35.tar.xz
             cd tar-1.35
@@ -110,7 +111,7 @@ jobs:
       - name: install clang
         env:
           SCRIPT: |
-            set -e
+            set -ex
             yum remove -y clang
             if [[ "${{ matrix.btfhub_arch }}" == "x86_64" ]]; then
               wget -nv https://github.com/llvm/llvm-project/releases/download/llvmorg-12.0.1/clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-16.04.tar.xz
@@ -127,7 +128,7 @@ jobs:
       - name: build pahole
         env:
           SCRIPT: |
-            set -e
+            set -ex
             mkdir build
             cd build
             cmake -D__LIB=lib -DDWARF_INCLUDE_DIR=/usr/include ..
@@ -139,21 +140,21 @@ jobs:
       - name: build bpftool
         env:
           SCRIPT: |
-            set -e
+            set -ex
             make -j "$(nproc)" -C src/ V=1 install
         run: docker exec -w /workspace/3rdparty/bpftool $CONTAINER_NAME bash -l -c "$SCRIPT"
 
       - name: build btfhub
         env:
           SCRIPT: |
-            set -e
+            set -ex
             CMD_GO=/root/go/bin/go make
         run: docker exec -w /workspace $CONTAINER_NAME bash -l -c "$SCRIPT"
 
       - name: generate BTFs
         env:
           SCRIPT: |
-            set -e
+            set -ex
             ./btfhub -workers 6 -d rhel -r 8 -a ${{ matrix.btfhub_arch }}
         run: docker exec -w /workspace $CONTAINER_NAME bash -c "$SCRIPT"
 
@@ -175,7 +176,7 @@ jobs:
         if: always()
         env:
           SCRIPT: |
-            set -e
+            set -ex
             subscription-manager remove --all
             subscription-manager unregister
             subscription-manager clean
