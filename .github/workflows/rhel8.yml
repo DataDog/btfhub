@@ -141,19 +141,10 @@ jobs:
             ./btfhub -workers 6 -d rhel -r 8 -a ${{ matrix.btfhub_arch }}
         run: docker exec -w /workspace $CONTAINER_NAME bash -c "$SCRIPT"
 
-      - name: check status
-        run: |
-          cd archive
-          git status
-
       - name: commit and push to btfhub-archive
-        run: |
-          cd archive
-          git config --local user.name "Bryce Kahle"
-          git config --local user.email "bryce.kahle@datadoghq.com"
-          git add -A
-          git diff-index --quiet HEAD || git commit -m "rhel 8 ${{ matrix.btfhub_arch }} update on $(date -u +%Y-%m-%d)"
-          git push || (git pull --rebase && git push)
+        uses: ./.github/actions/commit-btfs
+        with:
+          platform: "rhel 8 ${{ matrix.btfhub_arch }}"
 
       - name: unregister from RHEL
         if: always()
