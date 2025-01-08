@@ -52,7 +52,7 @@ jobs:
         env:
           SCRIPT: |
             set -e
-            yum install -y yum-utils wget bzip2 zlib-devel m4 xz gzip cmake find make golang
+            yum install -y yum-utils wget bzip2 zlib-devel m4 xz gzip cmake find make
         run: docker exec build-container bash -c "$SCRIPT"
 
       - name: install clang 5 and gcc 7
@@ -92,8 +92,8 @@ jobs:
         env:
           SCRIPT: |
             set -e
-            go install golang.org/dl/go$GO_VERSION@latest
-            /root/go/bin/go$GO_VERSION download
+            wget -nv https://go.dev/dl/go$GO_VERSION.linux-amd64.tar.gz
+            tar -C /root -xzf go$GO_VERSION.linux-amd64.tar.gz
         run: docker exec -w /workspace build-container bash -c "$SCRIPT"
 
       - name: build elfutils
@@ -142,7 +142,7 @@ jobs:
         env:
           SCRIPT: |
             set -e
-            CMD_GO=/root/go/bin/go$GO_VERSION make
+            CMD_GO=/root/go/bin/go make
         run: docker exec -w /workspace build-container bash -l -c "$SCRIPT"
 
       - name: checkout btfhub-archive
