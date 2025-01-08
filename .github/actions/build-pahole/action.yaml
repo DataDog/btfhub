@@ -10,12 +10,12 @@ runs:
   steps:
     - name: build pahole (runner)
       if: ${{ inputs.container-name == '' }}
-      run: build.sh
+      run: ${{ github.action_path }}/build.sh
       shell: bash
 
     - name: build pahole (container)
       if: ${{ inputs.container-name != '' }}
       run: |
-        docker container cp build.sh ${{ inputs.container-name }}:/workspace/pahole-build.sh
+        docker container cp ${{ github.action_path }}/build.sh ${{ inputs.container-name }}:/workspace/pahole-build.sh
         docker exec -w /workspace ${{ inputs.container-name }} bash -l pahole-build.sh
       shell: bash
