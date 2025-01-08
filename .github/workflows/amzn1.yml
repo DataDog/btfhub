@@ -54,7 +54,7 @@ jobs:
       - env:
           SCRIPT: |
             git config --system --add safe.directory $(pwd)
-        run: docker exec -it -w /workspace build-container bash -c "$SCRIPT"
+        run: docker exec -w /workspace build-container bash -c "$SCRIPT"
 
       - name: build elfutils
         env:
