@@ -9,7 +9,7 @@ env:
 jobs:
   amazon-update:
     name: update amazon linux 1 btfhub-archive
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Authenticate
         run: |
