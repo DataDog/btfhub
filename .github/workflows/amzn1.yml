@@ -40,6 +40,7 @@ jobs:
       - name: Install needed amazon packages
         env:
           SCRIPT: |
+            set -e
             yum install -y yum-utils clang wget bzip2 zlib-devel m4 xz gzip cmake find git golang
             yum-config-manager -y --enable amzn-main-debuginfo amzn-updates-debuginfo
         run: docker exec build-container bash -c "$SCRIPT"
@@ -47,18 +48,21 @@ jobs:
       - name: Install Go
         env:
           SCRIPT: |
+            set -e
             go install golang.org/dl/go$GO_VERSION@latest
             /root/go/bin/go$GO_VERSION download
         run: docker exec -w /workspace build-container bash -c "$SCRIPT"
 
       - env:
           SCRIPT: |
+            set -e
             git config --system --add safe.directory $(pwd)
         run: docker exec -w /workspace build-container bash -c "$SCRIPT"
 
       - name: build elfutils
         env:
           SCRIPT: |
+            set -e
             wget -nv https://sourceware.org/elfutils/ftp/0.190/elfutils-0.190.tar.bz2
             tar xf elfutils-0.190.tar.bz2
             cd elfutils-0.190
@@ -70,6 +74,7 @@ jobs:
       - name: build tar
         env:
           SCRIPT: |
+            set -e
             wget -nv https://ftpmirror.gnu.org/tar/tar-1.35.tar.xz
             tar xf tar-1.35.tar.xz
             cd tar-1.35
@@ -80,6 +85,7 @@ jobs:
       - name: install newer clang
         env:
           SCRIPT: |
+            set -e
             yum remove -y clang
             wget -nv https://github.com/llvm/llvm-project/releases/download/llvmorg-12.0.1/clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-16.04.tar.xz
             tar xf clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-16.04.tar.xz
@@ -89,6 +95,7 @@ jobs:
       - name: build pahole
         env:
           SCRIPT: |
+            set -e
             mkdir build
             cd build
             cmake -D__LIB=lib -DDWARF_INCLUDE_DIR=/usr/include ..
@@ -100,12 +107,14 @@ jobs:
       - name: build bpftool
         env:
           SCRIPT: |
+            set -e
             make -C src/ V=1 install
         run: docker exec -w /workspace/3rdparty/bpftool build-container bash -c "$SCRIPT"
 
       - name: Compile BTFHub Tool
         env:
           SCRIPT: |
+            set -e
             CMD_GO=/root/go/bin/go$GO_VERSION CMD_CLANG=/workspace/clang/bin/clang make
         run: docker exec -w /workspace build-container bash -c "$SCRIPT"
 
@@ -123,6 +132,7 @@ jobs:
       - name: Fetch and Generate new BTFs (AMAZON 1)
         env:
           SCRIPT: |
+            set -e
             ./btfhub -workers 6 -d amzn -r 1 -a x86_64
         run: docker exec -w /workspace build-container bash -c "$SCRIPT"
 
