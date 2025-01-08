@@ -137,11 +137,10 @@ jobs:
         run: docker exec -w /workspace/3rdparty/bpftool $CONTAINER_NAME bash -l -c "$SCRIPT"
 
       - name: build btfhub
-        env:
-          SCRIPT: |
-            set -ex
-            CMD_GO=/root/go/bin/go make
-        run: docker exec -w /workspace $CONTAINER_NAME bash -l -c "$SCRIPT"
+        uses: ./.github/actions/build-btfhub
+        with:
+          container-name: $CONTAINER_NAME
+          go-path: /workspace/go/bin/go
 
       - name: generate BTFs
         env:
