@@ -4,81 +4,115 @@ on:
     - cron: "0 1 * * *"
   workflow_dispatch: {}
 env:
-  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+  CONTAINER: amazonlinux:2
+  GO_VERSION: 1.21.13
 jobs:
   amazon-update:
     name: update amazon linux 2 btfhub-archive
-    runs-on: ubuntu-22.04
-    container:
-      image: amazonlinux:2
+    runs-on: ubuntu-24.04
     steps:
-      - name: Install needed amazon packages
-        run: |
-          yum install -y yum-utils wget tar gzip xz clang make cmake git libdwarf-devel elfutils-libelf-devel elfutils-devel
-          yum-config-manager -y --enable amzn2-core-debuginfo
-          yum-config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo
-          yum install -y gh
-          echo "[amzn2-core-debuginfo-alt]" >> /etc/yum.repos.d/amzn2-core.repo
-          awk '/^\[/{found=""} /^\[amzn2-core-debuginfo]$/{found=1;next} found && NF' /etc/yum.repos.d/amzn2-core.repo | sed 's/\$basearch/aarch64/g' >> /etc/yum.repos.d/amzn2-core.repo
-        shell: bash
-
       - name: Authenticate
         run: |
           gh auth login --with-token <<<'${{ secrets.DD_BTFHUB_BOT_GITHUB_TOKEN }}'
 
       - name: Check out BTFHub
-        uses: actions/checkout@v3
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           token: ${{ secrets.DD_BTFHUB_BOT_GITHUB_TOKEN }}
           submodules: 'recursive'
 
-      - run: git config --system --add safe.directory $(pwd)
-        shell: bash
-
-      - uses: actions/setup-go@v4
-        with:
-          go-version-file: 'go.mod'
-
-      - name: install newer clang
+      # We manually start a container and execute scripts in it instead of using `jobs.build.container`,
+      # otherwise we couldn't use GitHub-provided actions (checkout, cache, etc.) as they rely on Node20
+      # which would not necessarily be available on some containers (e.g., Ubuntu 18.04).
+      #
+      # See: https://github.com/actions/checkout/issues/1590
+      #
+      # If you need to pass environment variables from the GitHub host runner to the Docker container,
+      # you can do so by adding `-e MY_VAR` to the docker run command, for example:
+      #
+      #    docker run --name build-container -d -e GITHUB_REPOSITORY -v ...
+      #
+      - name: Start Docker Container
         run: |
-          yum remove -y clang
-          wget -nv https://github.com/llvm/llvm-project/releases/download/llvmorg-12.0.1/clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-16.04.tar.xz
-          tar xf clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-16.04.tar.xz
-          mv clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu- clang
-          echo "$GITHUB_WORKSPACE/clang/bin" >> $GITHUB_PATH
+          docker pull $CONTAINER
+          docker run --name build-container -d -e GO_VERSION -v ${{ github.workspace }}:/workspace $CONTAINER tail -f /dev/null
 
-      - name: build pahole
-        run: |
-          cd ./3rdparty/dwarves
-          mkdir build
-          cd build
-          cmake -D__LIB=lib -DDWARF_INCLUDE_DIR=/usr/include ..
-          make install
-          echo "/usr/local/lib" >> /etc/ld.so.conf.d/pahole.conf
-          ldconfig
-        shell: bash
+      - name: Install needed amazon packages
+        env:
+          SCRIPT: |
+            set -e
+            yum install -y yum-utils wget tar gzip xz clang make cmake git libdwarf-devel elfutils-libelf-devel elfutils-devel
+            yum-config-manager -y --enable amzn2-core-debuginfo
+            echo "[amzn2-core-debuginfo-alt]" >> /etc/yum.repos.d/amzn2-core.repo
+            awk '/^\[/{found=""} /^\[amzn2-core-debuginfo]$/{found=1;next} found && NF' /etc/yum.repos.d/amzn2-core.repo | sed 's/\$basearch/aarch64/g' >> /etc/yum.repos.d/amzn2-core.repo
+        run: docker exec build-container bash -c "$SCRIPT"
 
-      - name: build bpftool
-        run: |
-          cd ./3rdparty/bpftool
-          make -C src/ V=1 install
-        shell: bash
+      - name: Install Go
+        env:
+          SCRIPT: |
+            set -e
+            go install golang.org/dl/go$GO_VERSION@latest
+            /root/go/bin/go$GO_VERSION download
+        run: docker exec -w /workspace build-container bash -c "$SCRIPT"
+
+      - name: setup safe git directories
+        env:
+          SCRIPT: |
+            set -e
+            git config --system --add safe.directory /workspace
+            git config --system --add safe.directory /workspace/3rdparty/dwarves
+            git config --system --add safe.directory /workspace/3rdparty/bpftool
+        run: docker exec -w /workspace build-container bash -c "$SCRIPT"
 
       - name: build tar
-        run: |
-          wget https://ftpmirror.gnu.org/tar/tar-1.35.tar.xz
-          tar xf tar-1.35.tar.xz
-          cd tar-1.35
-          FORCE_UNSAFE_CONFIGURE=1 ./configure --prefix=/usr
-          make install
+        env:
+          SCRIPT: |
+            set -e
+            wget -nv https://ftpmirror.gnu.org/tar/tar-1.35.tar.xz
+            tar xf tar-1.35.tar.xz
+            cd tar-1.35
+            FORCE_UNSAFE_CONFIGURE=1 ./configure --prefix=/usr
+            make install
+        run: docker exec -w /workspace build-container bash -c "$SCRIPT"
+
+      - name: install newer clang
+        env:
+          SCRIPT: |
+            set -e
+            yum remove -y clang
+            wget -nv https://github.com/llvm/llvm-project/releases/download/llvmorg-12.0.1/clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-16.04.tar.xz
+            tar xf clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-16.04.tar.xz
+            mv clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu- clang
+        run: docker exec -w /workspace build-container bash -c "$SCRIPT"
+
+      - name: build pahole
+        env:
+          SCRIPT: |
+            set -e
+            mkdir build
+            cd build
+            cmake -D__LIB=lib -DDWARF_INCLUDE_DIR=/usr/include ..
+            make install
+            echo "/usr/local/lib" >> /etc/ld.so.conf.d/pahole.conf
+            ldconfig
+        run: docker exec -w /workspace/3rdparty/dwarves build-container bash -c "$SCRIPT"
+
+      - name: build bpftool
+        env:
+          SCRIPT: |
+            set -e
+            make -C src/ V=1 install
+        run: docker exec -w /workspace/3rdparty/bpftool build-container bash -c "$SCRIPT"
 
       - name: Compile BTFHub Tool
-        run: |
-          make
-        shell: bash
+        env:
+          SCRIPT: |
+            set -e
+            CMD_GO=/root/go/bin/go$GO_VERSION CMD_CLANG=/workspace/clang/bin/clang make
+        run: docker exec -w /workspace build-container bash -c "$SCRIPT"
 
       - name: Checkout BTFHub Archive
-        uses: actions/checkout@v3
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           repository: DataDog/btfhub-archive
           ref: main
@@ -88,9 +122,12 @@ jobs:
             amzn/2
 
       - name: Fetch and Generate new BTFs (AMAZON 2)
-        run: |
-          ./btfhub -workers 6 -d amzn -r 2 -a x86_64
-          ./btfhub -workers 6 -d amzn -r 2 -a arm64
+        env:
+          SCRIPT: |
+            set -e
+            ./btfhub -workers 6 -d amzn -r 2 -a x86_64
+            ./btfhub -workers 6 -d amzn -r 2 -a arm64
+        run: docker exec -w /workspace build-container bash -c "$SCRIPT"
 
       - name: Check Status
         run: |

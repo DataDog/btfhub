@@ -53,11 +53,13 @@ jobs:
             /root/go/bin/go$GO_VERSION download
         run: docker exec -w /workspace build-container bash -c "$SCRIPT"
 
-      - name: Fix git safe directory
+      - name: setup safe git directories
         env:
           SCRIPT: |
             set -e
             git config --system --add safe.directory /workspace
+            git config --system --add safe.directory /workspace/3rdparty/dwarves
+            git config --system --add safe.directory /workspace/3rdparty/bpftool
         run: docker exec -w /workspace build-container bash -c "$SCRIPT"
 
       - name: build elfutils
@@ -97,7 +99,6 @@ jobs:
         env:
           SCRIPT: |
             set -e
-            git config --global --add safe.directory /workspace/3rdparty/dwarves
             mkdir build
             cd build
             cmake -D__LIB=lib -DDWARF_INCLUDE_DIR=/usr/include ..
@@ -110,7 +111,6 @@ jobs:
         env:
           SCRIPT: |
             set -e
-            git config --global --add safe.directory /workspace/3rdparty/bpftool
             make -C src/ V=1 install
         run: docker exec -w /workspace/3rdparty/bpftool build-container bash -c "$SCRIPT"
 
