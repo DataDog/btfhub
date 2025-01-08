@@ -97,6 +97,7 @@ jobs:
         env:
           SCRIPT: |
             set -e
+            git config --global --add safe.directory /workspace/3rdparty/dwarves
             mkdir build
             cd build
             cmake -D__LIB=lib -DDWARF_INCLUDE_DIR=/usr/include ..
@@ -109,6 +110,7 @@ jobs:
         env:
           SCRIPT: |
             set -e
+            git config --global --add safe.directory /workspace/3rdparty/bpftool
             make -C src/ V=1 install
         run: docker exec -w /workspace/3rdparty/bpftool build-container bash -c "$SCRIPT"
 
