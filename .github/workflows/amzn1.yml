@@ -123,7 +123,6 @@ jobs:
       - name: Fetch and Generate new BTFs (AMAZON 1)
         env:
           SCRIPT: |
-            export PATH="/usr/local/bin:${{ '$PATH' }}"
             ./btfhub -workers 6 -d amzn -r 1 -a x86_64
         run: docker exec -w /workspace build-container bash -c "$SCRIPT"
 
