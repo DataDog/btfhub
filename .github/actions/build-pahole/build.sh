@@ -1,5 +1,5 @@
 #!/bin/bash
-set -euxo pipefail
+set -exo pipefail
 
 cd ./3rdparty/dwarves
 mkdir build
