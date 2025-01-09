@@ -37,10 +37,10 @@ jobs:
       # which would not necessarily be available on some containers (e.g., Ubuntu 18.04).
       #
       # See: https://github.com/actions/checkout/issues/1590
-      - name: Start Docker Container
+      - name: start docker container
         run: |
           docker pull $CONTAINER
-          docker run --name $CONTAINER_NAME -d -e GO_VERSION -v ${{ github.workspace }}:/workspace $CONTAINER tail -f /dev/null
+          docker run --name $CONTAINER_NAME -d -v ${{ github.workspace }}:/workspace $CONTAINER tail -f /dev/null
 
       - name: install required packages
         env:

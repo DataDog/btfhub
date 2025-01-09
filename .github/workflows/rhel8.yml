@@ -50,13 +50,12 @@ jobs:
       #
       # See: https://github.com/actions/checkout/issues/1590
       #
-      - name: Start Docker Container
+      - name: start docker container
         run: |
           docker pull $CONTAINER
           docker run \
             --name $CONTAINER_NAME \
             -d \
-            -e GO_VERSION \
             -v ${{ github.workspace }}:/workspace \
             --platform linux/${{ matrix.platform_arch }} \
             $CONTAINER \
