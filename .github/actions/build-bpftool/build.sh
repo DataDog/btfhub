@@ -2,4 +2,4 @@
 set -euxo pipefail
 
 cd ./3rdparty/bpftool
-make -j "$(nproc)" -C src/ V=1 install
+sudo -E PATH="$PATH" make -j "$(nproc)" -C src/ V=1 install-bin

@@ -3,8 +3,6 @@ on:
   schedule:
     - cron: "0 1 * * *"
   workflow_dispatch: {}
-env:
-  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
 jobs:
   update-archive:
     strategy:
@@ -12,7 +10,7 @@ jobs:
       matrix:
         distro: [ ubuntu, debian, centos, fedora, ol, opensuse-leap ]
     name: ${{ matrix.distro }}
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: free up some disk space
         run: |
@@ -37,12 +35,22 @@ jobs:
           gh auth login --with-token <<<'${{ secrets.DD_BTFHUB_BOT_GITHUB_TOKEN }}'
 
       - name: checkout btfhub
-        uses: actions/checkout@v3
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           token: ${{ secrets.DD_BTFHUB_BOT_GITHUB_TOKEN }}
           submodules: 'recursive'
 
-      - uses: actions/setup-go@v4
+      - name: checkout btfhub-archive
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: DataDog/btfhub-archive
+          ref: main
+          token: ${{ secrets.DD_BTFHUB_BOT_GITHUB_TOKEN }}
+          path: archive
+          sparse-checkout: |
+            ${{ matrix.distro }}
+
+      - uses: actions/setup-go@3041bf56c941b39c61721a86cd11f3bb1338122a
         with:
           go-version-file: 'go.mod'
 
@@ -54,51 +62,19 @@ jobs:
           echo "$GITHUB_WORKSPACE/clang/bin" >> $GITHUB_PATH
 
       - name: build pahole
-        run: |
-          cd ./3rdparty/dwarves
-          mkdir build
-          cd build
-          cmake -D__LIB=lib ..
-          sudo make install
-          echo "/usr/local/lib" | sudo tee /etc/ld.so.conf.d/pahole.conf
-          sudo ldconfig
+        uses: ./.github/actions/build-pahole
 
       - name: build bpftool
-        run: |
-          cd ./3rdparty/bpftool
-          sudo -E PATH="$PATH" make -C src/ V=1 install-bin
+        uses: ./.github/actions/build-bpftool
 
       - name: build btfhub
-        run: make
-
-      - name: checkout btfhub-archive
-        uses: actions/checkout@v3
-        with:
-          repository: DataDog/btfhub-archive
-          ref: main
-          token: ${{ secrets.DD_BTFHUB_BOT_GITHUB_TOKEN }}
-          path: archive
-          sparse-checkout: |
-            ${{ matrix.distro }}
-
-      - name: setup git config
-        run: |
-          cd archive
-          git config --local user.name "Bryce Kahle"
-          git config --local user.email "bryce.kahle@datadoghq.com"
+        uses: ./.github/actions/build-btfhub
 
       - name: generate BTFs
         run: |
           ./btfhub -workers 6 -d ${{ matrix.distro }}
 
-      - name: check git status
-        run: |
-          cd archive
-          git status
-
       - name: commit and push to btfhub-archive
-        run: |
-          cd archive
-          git add -A
-          git diff-index --quiet HEAD || git commit -m "update ${{ matrix.distro }} btfhub-archive on $(date -u +%Y-%m-%d)"
-          git push || (git pull --rebase && git push)
+        uses: ./.github/actions/commit-btfs
+        with:
+          platform: "update ${{ matrix.distro }}"
