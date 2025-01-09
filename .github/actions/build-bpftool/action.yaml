@@ -10,6 +10,8 @@ runs:
   steps:
     - name: build bpftool (runner)
       if: ${{ inputs.container-name == '' }}
+      env:
+        SUDO: sudo -E
       run: ${{ github.action_path }}/build.sh
       shell: bash
 
