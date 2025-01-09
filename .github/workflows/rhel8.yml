@@ -4,10 +4,9 @@ on:
     - cron: "0 1 * * *"
   workflow_dispatch: {}
 env:
+  BTFHUB_NO_SUDO: true
   CONTAINER: registry.access.redhat.com/ubi8/ubi:latest
   CONTAINER_NAME: build-container
-  GO_VERSION: 1.21.13
-  BTFHUB_NO_SUDO: true
 jobs:
   rhel8-update:
     strategy:
@@ -87,7 +86,6 @@ jobs:
       - name: install go
         uses: ./.github/actions/install-go
         with:
-          version: $GO_VERSION
           arch: ${{ matrix.platform_arch }}
           container-name: $CONTAINER_NAME
 

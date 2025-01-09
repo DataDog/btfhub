@@ -6,7 +6,7 @@ on:
 env:
   BTFHUB_NO_SUDO: true
   CONTAINER: registry.access.redhat.com/rhel7:latest
-  GO_VERSION: 1.21.13
+  CONTAINER_NAME: build-container
 jobs:
   rhel7-update:
     name: rhel 7 x86_64
@@ -22,129 +22,6 @@ jobs:
           token: ${{ secrets.DD_BTFHUB_BOT_GITHUB_TOKEN }}
           submodules: 'recursive'
 
-      # We manually start a container and execute scripts in it instead of using `jobs.build.container`,
-      # otherwise we couldn't use GitHub-provided actions (checkout, cache, etc.) as they rely on Node20
-      # which would not necessarily be available on some containers (e.g., Ubuntu 18.04).
-      #
-      # See: https://github.com/actions/checkout/issues/1590
-      #
-      # If you need to pass environment variables from the GitHub host runner to the Docker container,
-      # you can do so by adding `-e MY_VAR` to the docker run command, for example:
-      #
-      #    docker run --name build-container -d -e GITHUB_REPOSITORY -v ...
-      #
-      - name: Start Docker Container
-        run: |
-          docker pull $CONTAINER
-          docker run --name build-container -d -e GO_VERSION -v ${{ github.workspace }}:/workspace $CONTAINER tail -f /dev/null
-
-      - name: setup subscription
-        env:
-          SCRIPT: |
-            set -e
-            rm /etc/rhsm-host
-            yum repolist --disablerepo=*
-            subscription-manager register --org=${{ secrets.DD_BTFHUB_RHEL_ORG_ID }} --activationkey="btfhub-ci"
-            subscription-manager repos --enable=rhel-7-server-debug-rpms --enable=rhel-7-server-rpms
-        run: docker exec build-container bash -c "$SCRIPT"
-
-      - name: install required packages
-        env:
-          SCRIPT: |
-            set -e
-            yum install -y yum-utils wget bzip2 zlib-devel m4 xz gzip cmake find make
-        run: docker exec build-container bash -c "$SCRIPT"
-
-      - name: install clang 5 and gcc 7
-        env:
-          SCRIPT: |
-            set -e
-            subscription-manager repos --enable rhel-7-server-optional-rpms --enable rhel-server-rhscl-7-rpms --enable rhel-7-server-devtools-rpms
-            cd /etc/pki/rpm-gpg
-            wget -O RPM-GPG-KEY-redhat-devel https://www.redhat.com/security/data/a5787476.txt
-            rpm --import RPM-GPG-KEY-redhat-devel
-            yum install -y devtoolset-7 llvm-toolset-7
-            echo 'export PATH=/opt/rh/devtoolset-7/root/usr/bin:${{ '$PATH' }}' >> /etc/profile
-            echo 'export PATH=/opt/rh/llvm-toolset-7/root/usr/sbin:${{ '$PATH' }}' >> /etc/profile
-            echo 'export PATH=/opt/rh/llvm-toolset-7/root/usr/bin:${{ '$PATH' }}' >> /etc/profile
-            subscription-manager repos --disable rhel-7-server-optional-rpms --disable rhel-server-rhscl-7-rpms --disable rhel-7-server-devtools-rpms
-        run: docker exec build-container bash -c "$SCRIPT"
-
-      - name: install newer git
-        env:
-          SCRIPT: |
-            set -e
-            yum remove -y git
-            yum install -y https://repo.ius.io/ius-release-el7.rpm https://dl.fedoraproject.org/pub/archive/epel/7/x86_64/Packages/e/epel-release-7-14.noarch.rpm
-            yum install -y git236
-        run: docker exec build-container bash -c "$SCRIPT"
-
-      - name: setup safe git directories
-        env:
-          SCRIPT: |
-            set -e
-            git config --system --add safe.directory /workspace
-            git config --system --add safe.directory /workspace/3rdparty/dwarves
-            git config --system --add safe.directory /workspace/3rdparty/bpftool
-        run: docker exec -w /workspace build-container bash -c "$SCRIPT"
-
-      - name: Install Go
-        env:
-          SCRIPT: |
-            set -e
-            wget -nv https://go.dev/dl/go$GO_VERSION.linux-amd64.tar.gz
-            tar -C /root -xzf go$GO_VERSION.linux-amd64.tar.gz
-        run: docker exec -w /workspace build-container bash -c "$SCRIPT"
-
-      - name: build elfutils
-        env:
-          SCRIPT: |
-            set -e
-            wget -nv https://sourceware.org/elfutils/ftp/0.190/elfutils-0.190.tar.bz2
-            tar xf elfutils-0.190.tar.bz2
-            cd elfutils-0.190
-            ./configure --disable-libdebuginfod --disable-debuginfod --disable-demangler
-            make install
-            ldconfig
-        run: docker exec -w /workspace build-container bash -l -c "$SCRIPT"
-
-      - name: build tar
-        env:
-          SCRIPT: |
-            set -e
-            wget -nv https://ftpmirror.gnu.org/tar/tar-1.35.tar.xz
-            tar xf tar-1.35.tar.xz
-            cd tar-1.35
-            FORCE_UNSAFE_CONFIGURE=1 ./configure --prefix=/usr
-            make install
-        run: docker exec -w /workspace build-container bash -l -c "$SCRIPT"
-
-      - name: build pahole
-        env:
-          SCRIPT: |
-            set -e
-            mkdir build
-            cd build
-            cmake -D__LIB=lib -DDWARF_INCLUDE_DIR=/usr/include ..
-            make install
-            echo "/usr/local/lib" >> /etc/ld.so.conf.d/pahole.conf
-            ldconfig
-        run: docker exec -w /workspace/3rdparty/dwarves build-container bash -l -c "$SCRIPT"
-
-      - name: build bpftool
-        env:
-          SCRIPT: |
-            set -e
-            make -C src/ V=1 install
-        run: docker exec -w /workspace/3rdparty/bpftool build-container bash -l -c "$SCRIPT"
-
-      - name: build btfhub
-        env:
-          SCRIPT: |
-            set -e
-            CMD_GO=/root/go/bin/go make
-        run: docker exec -w /workspace build-container bash -l -c "$SCRIPT"
-
       - name: checkout btfhub-archive
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
@@ -155,33 +32,109 @@ jobs:
           sparse-checkout: |
             rhel/7/x86_64
 
+      # We manually start a container and execute scripts in it instead of using `jobs.build.container`,
+      # otherwise we couldn't use GitHub-provided actions (checkout, cache, etc.) as they rely on Node20
+      # which would not necessarily be available on some containers (e.g., Ubuntu 18.04).
+      #
+      # See: https://github.com/actions/checkout/issues/1590
+      - name: Start Docker Container
+        run: |
+          docker pull $CONTAINER
+          docker run --name $CONTAINER_NAME -d -e GO_VERSION -v ${{ github.workspace }}:/workspace $CONTAINER tail -f /dev/null
+
+      - name: install required packages
+        env:
+          SCRIPT: |
+            set -ex
+            rm /etc/rhsm-host
+            yum repolist --disablerepo=*
+            subscription-manager register --org=${{ secrets.DD_BTFHUB_RHEL_ORG_ID }} --activationkey="btfhub-ci"
+            subscription-manager repos --enable=rhel-7-server-debug-rpms --enable=rhel-7-server-rpms
+            yum install -y yum-utils wget bzip2 zlib-devel m4 xz gzip cmake find make
+        run: docker exec $CONTAINER_NAME bash -c "$SCRIPT"
+
+      - name: install clang 5 and gcc 7
+        env:
+          SCRIPT: |
+            set -ex
+            subscription-manager repos --enable rhel-7-server-optional-rpms --enable rhel-server-rhscl-7-rpms --enable rhel-7-server-devtools-rpms
+            cd /etc/pki/rpm-gpg
+            wget -O RPM-GPG-KEY-redhat-devel https://www.redhat.com/security/data/a5787476.txt
+            rpm --import RPM-GPG-KEY-redhat-devel
+            yum install -y devtoolset-7 llvm-toolset-7
+            echo 'export PATH=/opt/rh/devtoolset-7/root/usr/bin:${{ '$PATH' }}' >> /etc/profile
+            echo 'export PATH=/opt/rh/llvm-toolset-7/root/usr/sbin:${{ '$PATH' }}' >> /etc/profile
+            echo 'export PATH=/opt/rh/llvm-toolset-7/root/usr/bin:${{ '$PATH' }}' >> /etc/profile
+            subscription-manager repos --disable rhel-7-server-optional-rpms --disable rhel-server-rhscl-7-rpms --disable rhel-7-server-devtools-rpms
+        run: docker exec $CONTAINER_NAME bash -c "$SCRIPT"
+
+      - name: install newer git
+        env:
+          SCRIPT: |
+            set -ex
+            yum remove -y git
+            yum install -y https://repo.ius.io/ius-release-el7.rpm https://dl.fedoraproject.org/pub/archive/epel/7/x86_64/Packages/e/epel-release-7-14.noarch.rpm
+            yum install -y git236
+        run: docker exec $CONTAINER_NAME bash -c "$SCRIPT"
+
+      - name: setup safe git directories
+        env:
+          SCRIPT: |
+            set -ex
+            git config --system --add safe.directory /workspace
+            git config --system --add safe.directory /workspace/3rdparty/dwarves
+            git config --system --add safe.directory /workspace/3rdparty/bpftool
+        run: docker exec -w /workspace $CONTAINER_NAME bash -c "$SCRIPT"
+
+      - name: install go
+        uses: ./.github/actions/install-go
+        with:
+          container-name: $CONTAINER_NAME
+
+      - name: build elfutils
+        uses: ./.github/actions/build-elfutils
+        with:
+          container-name: $CONTAINER_NAME
+
+      - name: build tar
+        uses: ./.github/actions/build-tar
+        with:
+          container-name: $CONTAINER_NAME
+
+      - name: build pahole
+        uses: ./.github/actions/build-pahole
+        with:
+          container-name: $CONTAINER_NAME
+
+      - name: build bpftool
+        uses: ./.github/actions/build-bpftool
+        with:
+          container-name: $CONTAINER_NAME
+
+      - name: build btfhub
+        uses: ./.github/actions/build-btfhub
+        with:
+          container-name: $CONTAINER_NAME
+          go-path: /workspace/go/bin/go
+
       - name: generate BTFs
         env:
           SCRIPT: |
-            set -e
+            set -ex
             ./btfhub -workers 6 -d rhel -r 7 -a x86_64
-        run: docker exec -w /workspace build-container bash -c "$SCRIPT"
-
-      - name: check status
-        run: |
-          cd archive
-          git status
+        run: docker exec -w /workspace $CONTAINER_NAME bash -c "$SCRIPT"
 
       - name: commit and push to btfhub-archive
-        run: |
-          cd archive
-          git config --local user.name "Bryce Kahle"
-          git config --local user.email "bryce.kahle@datadoghq.com"
-          git add -A
-          git diff-index --quiet HEAD || git commit -m "rhel 7 x86_64 update on $(date -u +%Y-%m-%d)"
-          git push || (git pull --rebase && git push)
+        uses: ./.github/actions/commit-btfs
+        with:
+          platform: "rhel 7 x86_64"
 
       - name: unregister from RHEL
         if: always()
         env:
           SCRIPT: |
-            set -e
+            set -ex
             subscription-manager remove --all
             subscription-manager unregister
             subscription-manager clean
-        run: docker exec -w /workspace build-container bash -c "$SCRIPT"
+        run: docker exec -w /workspace $CONTAINER_NAME bash -c "$SCRIPT"
