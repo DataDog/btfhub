@@ -26,7 +26,7 @@ jobs:
           export DEBIAN_FRONTEND=noninteractive
           sudo dpkg --purge unattended-upgrades
           sudo apt-get update
-          sudo apt-get install -y bsdutils build-essential pkgconf zlib1g-dev libdw-dev libdwarf-dev libelf-dev software-properties-common devscripts ubuntu-dev-tools
+          sudo apt-get install -y bsdutils build-essential pkgconf zlib1g-dev libdw-dev libdwarf-dev libelf-dev software-properties-common devscripts ubuntu-dev-tools clang llvm
           sudo apt-get autoremove -y || true
           sudo apt-get clean || true
 
@@ -53,13 +53,6 @@ jobs:
       - uses: actions/setup-go@3041bf56c941b39c61721a86cd11f3bb1338122a
         with:
           go-version-file: 'go.mod'
-
-      - name: install newer clang
-        run: |
-          wget -nv https://github.com/llvm/llvm-project/releases/download/llvmorg-12.0.1/clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-16.04.tar.xz
-          tar xf clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-16.04.tar.xz
-          mv clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu- clang
-          echo "$GITHUB_WORKSPACE/clang/bin" >> $GITHUB_PATH
 
       - name: build pahole
         uses: ./.github/actions/build-pahole
