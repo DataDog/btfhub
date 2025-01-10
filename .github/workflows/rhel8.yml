@@ -4,7 +4,9 @@ on:
     - cron: "0 1 * * *"
   workflow_dispatch: {}
 env:
-  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+  BTFHUB_NO_SUDO: true
+  CONTAINER: registry.access.redhat.com/ubi8/ubi:latest
+  CONTAINER_NAME: build-container
 jobs:
   rhel8-update:
     strategy:
@@ -12,11 +14,11 @@ jobs:
         platform_arch: [ "amd64", "arm64" ]
         include:
           - platform_arch: "amd64"
-            os: "ubuntu-22.04"
+            os: "ubuntu-24.04"
             btfhub_arch: "x86_64"
             repo_arch: "x86_64"
           - platform_arch: "arm64"
-            os: "arm-4core-linux-arm-limited"
+            os: "arm-4core-linux-ubuntu24.04"
             btfhub_arch: "arm64"
             repo_arch: "aarch64"
     name: rhel 8 ${{ matrix.btfhub_arch }}
@@ -27,13 +29,13 @@ jobs:
           gh auth login --with-token <<<'${{ secrets.DD_BTFHUB_BOT_GITHUB_TOKEN }}'
 
       - name: checkout btfhub
-        uses: actions/checkout@v3
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           token: ${{ secrets.DD_BTFHUB_BOT_GITHUB_TOKEN }}
           submodules: 'recursive'
 
       - name: checkout btfhub-archive
-        uses: actions/checkout@v3
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           repository: DataDog/btfhub-archive
           ref: main
@@ -42,26 +44,111 @@ jobs:
           sparse-checkout: |
             rhel/8/${{ matrix.btfhub_arch }}
 
-      - name: run in docker
+      # We manually start a container and execute scripts in it instead of using `jobs.build.container`,
+      # otherwise we couldn't use GitHub-provided actions (checkout, cache, etc.) as they rely on Node20
+      # which would not necessarily be available on some containers (e.g., Ubuntu 18.04).
+      #
+      # See: https://github.com/actions/checkout/issues/1590
+      #
+      - name: start docker container
         run: |
+          docker pull $CONTAINER
           docker run \
-            --rm \
-            -v $(pwd):/${{ github.workspace }} \
-            -w ${{ github.workspace }} \
+            --name $CONTAINER_NAME \
+            -d \
+            -v ${{ github.workspace }}:/workspace \
             --platform linux/${{ matrix.platform_arch }} \
-            registry.access.redhat.com/ubi8/ubi:latest \
-            ci/rhel8.sh ${{ matrix.btfhub_arch }} ${{ matrix.repo_arch }} ${{ secrets.DD_BTFHUB_RHEL_ORG_ID }}
+            $CONTAINER \
+            tail -f /dev/null
 
-      - name: check status
-        run: |
-          cd archive
-          git status
+      - name: install packages
+        env:
+          SCRIPT: |
+            set -ex
+            rm -rf /etc/rhsm-host
+            subscription-manager register --org=${{ secrets.DD_BTFHUB_RHEL_ORG_ID }} --activationkey="btfhub-ci"
+            subscription-manager repos --enable="rhel-8-for-${{ matrix.repo_arch }}-baseos-debug-rpms"
+            subscription-manager repos --enable="rhel-8-for-${{ matrix.repo_arch }}-baseos-eus-debug-rpms"
+            subscription-manager release --set=8.1
+            yum install -y yum-utils clang wget bzip2 zlib-devel m4 xz gzip cmake make gcc ncurses-compat-libs git
+        run: docker exec $CONTAINER_NAME bash -c "$SCRIPT"
+
+      - name: setup safe git directories
+        env:
+          SCRIPT: |
+            set -ex
+            git config --system --add safe.directory /workspace
+            git config --system --add safe.directory /workspace/3rdparty/dwarves
+            git config --system --add safe.directory /workspace/3rdparty/bpftool
+        run: docker exec -w /workspace $CONTAINER_NAME bash -c "$SCRIPT"
+
+      - name: install go
+        uses: ./.github/actions/install-go
+        with:
+          arch: ${{ matrix.platform_arch }}
+          container-name: $CONTAINER_NAME
+
+      - name: build elfutils
+        uses: ./.github/actions/build-elfutils
+        with:
+          container-name: $CONTAINER_NAME
+
+      - name: build tar
+        uses: ./.github/actions/build-tar
+        with:
+          container-name: $CONTAINER_NAME
+
+      - name: install clang
+        env:
+          SCRIPT: |
+            set -ex
+            yum remove -y clang
+            if [[ "${{ matrix.btfhub_arch }}" == "x86_64" ]]; then
+              wget -nv https://github.com/llvm/llvm-project/releases/download/llvmorg-12.0.1/clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-16.04.tar.xz
+              tar xf clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-16.04.tar.xz
+              mv clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu- clang
+            else
+              wget -nv https://github.com/llvm/llvm-project/releases/download/llvmorg-12.0.1/clang+llvm-12.0.1-aarch64-linux-gnu.tar.xz
+              tar xf clang+llvm-12.0.1-aarch64-linux-gnu.tar.xz
+              mv clang+llvm-12.0.1-aarch64-linux-gnu clang
+            fi
+            echo 'export PATH=/workspace/clang/bin:${{ '$PATH' }}' >> /etc/profile
+        run: docker exec -w /workspace $CONTAINER_NAME bash -l -c "$SCRIPT"
+
+      - name: build pahole
+        uses: ./.github/actions/build-pahole
+        with:
+          container-name: $CONTAINER_NAME
+
+      - name: build bpftool
+        uses: ./.github/actions/build-bpftool
+        with:
+          container-name: $CONTAINER_NAME
+
+      - name: build btfhub
+        uses: ./.github/actions/build-btfhub
+        with:
+          container-name: $CONTAINER_NAME
+          go-path: /workspace/go/bin/go
+
+      - name: generate BTFs
+        env:
+          SCRIPT: |
+            set -ex
+            ./btfhub -workers 6 -d rhel -r 8 -a ${{ matrix.btfhub_arch }}
+        run: docker exec -w /workspace $CONTAINER_NAME bash -c "$SCRIPT"
 
       - name: commit and push to btfhub-archive
-        run: |
-          cd archive
-          git config --local user.name "Bryce Kahle"
-          git config --local user.email "bryce.kahle@datadoghq.com"
-          git add -A
-          git diff-index --quiet HEAD || git commit -m "rhel 8 ${{ matrix.btfhub_arch }} update on $(date -u +%Y-%m-%d)"
-          git push || (git pull --rebase && git push)
+        uses: ./.github/actions/commit-btfs
+        with:
+          platform: "rhel 8 ${{ matrix.btfhub_arch }}"
+
+      - name: unregister from RHEL
+        if: always()
+        env:
+          SCRIPT: |
+            set -ex
+            subscription-manager remove --all
+            subscription-manager unregister
+            subscription-manager clean
+        run: docker exec -w /workspace $CONTAINER_NAME bash -c "$SCRIPT"

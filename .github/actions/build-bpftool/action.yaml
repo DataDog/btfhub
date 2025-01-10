@@ -1,0 +1,23 @@
+name: 'build bpftool'
+description: 'Build and install bpftool'
+inputs:
+  container-name:
+    description: 'name of container used to build in'
+    required: false
+    default: ''
+runs:
+  using: composite
+  steps:
+    - name: build bpftool (runner)
+      if: ${{ inputs.container-name == '' }}
+      env:
+        SUDO: sudo -E
+      run: ${{ github.action_path }}/build.sh
+      shell: bash
+
+    - name: build bpftool (container)
+      if: ${{ inputs.container-name != '' }}
+      run: |
+        docker container cp ${{ github.action_path }}/build.sh ${{ inputs.container-name }}:/workspace/bpftool-build.sh
+        docker exec -w /workspace ${{ inputs.container-name }} bash -l bpftool-build.sh
+      shell: bash
