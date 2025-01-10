@@ -4,7 +4,7 @@ inputs:
   version:
     description: 'go version'
     required: false
-    default: '1.21.13'
+    default: '1.22.10'
   arch:
     description: 'go arch'
     required: false

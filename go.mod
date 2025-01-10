@@ -1,6 +1,6 @@
 module github.com/DataDog/btfhub
 
-go 1.21
+go 1.22
 
 require (
 	github.com/DataDog/zstd v1.5.5
