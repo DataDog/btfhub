@@ -5,11 +5,8 @@ on:
     branches:
       - main
     paths:
-      - "!docs/**"
-      - "!archive/**"
-      - "!custom-archive/**"
-      - "!tools/bin/**"
       - "!**.yaml"
+      - "!**.yml"
       - "!**.md"
       - "!**.txt"
       - "!**.conf"
@@ -18,22 +15,21 @@ on:
       - "**.h"
       - "**.go"
       - "**.sh"
-      - ".github/workflows/pr.yaml"
+      - ".github/workflows/pr.yml"
+      - ".github/actions/build-dependencies/**"
 concurrency:
   group: ${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
-env:
-  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
 jobs:
   #
   # CODE VERIFICATION
   #
   verify-analyze-code:
     name: Verify and Analyze Code
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           submodules: true
 
@@ -64,10 +60,10 @@ jobs:
     name: Unit Tests
     needs:
       - verify-analyze-code
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           submodules: true
 
