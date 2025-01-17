@@ -4,19 +4,7 @@ on:
   pull_request:
     branches:
       - main
-    paths:
-      - "!**.yaml"
-      - "!**.yml"
-      - "!**.md"
-      - "!**.txt"
-      - "!**.conf"
-      # override previous rules:
-      - "**.c"
-      - "**.h"
-      - "**.go"
-      - "**.sh"
-      - ".github/workflows/pr.yml"
-      - ".github/actions/build-dependencies/**"
+
 concurrency:
   group: ${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
