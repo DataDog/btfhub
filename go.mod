@@ -11,7 +11,7 @@ require (
 	github.com/therootcompany/xz v1.0.1
 	golang.org/x/exp v0.0.0-20240222234643-814bf88cf225
 	golang.org/x/sync v0.11.0
-	pault.ag/go/debian v0.16.0
+	pault.ag/go/debian v0.18.0
 )
 
 require (
