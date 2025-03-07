@@ -1,0 +1,78 @@
+---
+.ci-subscribe-rhel:
+  rules:
+    - !reference [ .on_image_changes_or_manual ]
+    - !reference [ .on_btf_changes_or_scheduled ]
+  stage: setup
+  tags:
+    - "arch:$ARCH"
+  script:
+    - RH_ORG=$(vault kv get -field=rh_org kv/k8s/gitlab-runner/btfhub/rh-org)
+    - rm -rf /etc/rhsm-host
+    - subscription-manager register "--org=${RH_ORG}" --activationkey=btfhub-ci "--name=btfhub-${CI_JOB_ID}"
+    - mkdir -p ".tmp/${ARCH}"
+    - cp -R /etc/pki/consumer ".tmp/${ARCH}"
+    - cp -R /etc/pki/entitlement ".tmp/${ARCH}"
+  artifacts:
+    expire_in: 1 hrs
+    paths:
+      - ".tmp/$ARCH/consumer"
+      - ".tmp/$ARCH/entitlement"
+
+ci-subscribe-rhel7:
+  extends: .ci-subscribe-rhel
+  image: "registry.ddbuild.io/$CI_IMAGE_REPO/rhel7-sub:$SUB_IMAGE_VERSION"
+  variables:
+    ARCH: amd64
+
+ci-subscribe-rhel8:
+  extends: .ci-subscribe-rhel
+  image: "registry.ddbuild.io/$CI_IMAGE_REPO/rhel8-sub:$SUB_IMAGE_VERSION"
+  parallel:
+    matrix:
+      - ARCH: [amd64, arm64]
+
+.ci-unsubscribe-rhel:
+  rules:
+    - !reference [ .on_image_changes_or_manual ]
+    - !reference [ .on_btf_changes_or_scheduled ]
+  when: always
+  stage: cleanup
+  tags:
+    - "arch:$ARCH"
+  allow_failure: true
+  script:
+    - rm -rf /etc/rhsm-host
+    - mkdir -p /etc/pki
+    - cp -R ".tmp/${ARCH}/consumer" /etc/pki
+    - cp -R ".tmp/${ARCH}/entitlement" /etc/pki
+    - subscription-manager remove --all
+    - subscription-manager unregister
+    - subscription-manager clean
+
+ci-unsubscribe-rhel7:
+  extends: .ci-unsubscribe-rhel
+  image: "registry.ddbuild.io/$CI_IMAGE_REPO/rhel7-sub:$SUB_IMAGE_VERSION"
+  variables:
+    ARCH: amd64
+  needs:
+    - ci-subscribe-rhel7
+    - job: btf-generate-rhel-7
+      optional: true
+    - job: ci-image-rhel7
+      optional: true
+
+ci-unsubscribe-rhel8:
+  extends: .ci-unsubscribe-rhel
+  image: "registry.ddbuild.io/$CI_IMAGE_REPO/rhel8-sub:$SUB_IMAGE_VERSION"
+  needs:
+    - ci-subscribe-rhel8
+    - job: btf-generate-rhel-8-arm64
+      optional: true
+    - job: btf-generate-rhel-8-x64
+      optional: true
+    - job: ci-image-rhel8
+      optional: true
+  parallel:
+    matrix:
+      - ARCH: [amd64, arm64]
