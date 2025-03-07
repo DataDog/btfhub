@@ -1,0 +1,114 @@
+---
+.btf-generate:
+  rules: !reference [ .on_btf_changes_or_scheduled ]
+  stage: btf
+  needs: []
+  image: "registry.ddbuild.io/$CI_IMAGE_REPO/$IMAGE:$IMAGE_VERSION"
+  variables:
+    KUBERNETES_MEMORY_REQUEST: 12Gi
+    KUBERNETES_MEMORY_LIMIT: 16Gi
+    KUBERNETES_CPU_REQUEST: 8
+  script:
+    - make
+    # TODO github auth
+    - mkdir archive
+    - cd archive
+    - git init
+    - git remote add origin https://github.com/DataDog/btfhub-archive
+    - git fetch --filter=blob:none --no-tags --progress --depth=1 origin main
+    - git sparse-checkout set --cone "${DISTRO}/${RELEASE}/${BTF_ARCH}"
+    - git checkout --progress --force main
+    - cd ..
+    - ./btfhub -d "${DISTRO}" -r "${RELEASE}" -a "${BTF_ARCH}"
+    - cd archive
+    - git status
+    # TODO only commit if on scheduled main
+    #- git config --local user.name ""
+    #- git config --local user.email ""
+    #- git add -A
+    #- git diff-index --quiet HEAD || git commit -m "${DISTRO}/${RELEASE}/${BTF_ARCH} update on $(date -u +%Y-%m-%d)"
+    #- git push || (git pull --rebase && git push)
+
+btf-generate-direct-x64:
+  extends: .btf-generate
+  tags:
+    - "arch:amd64"
+  variables:
+    IMAGE: ubuntu
+  parallel:
+    matrix:
+      - DISTRO: centos
+        RELEASE: [ "7", "8" ]
+        BTF_ARCH: [ x86_64, arm64 ]
+      - DISTRO: debian
+        RELEASE: "10"
+        BTF_ARCH: [ x86_64, arm64 ]
+      - DISTRO: fedora
+        RELEASE: [ "24", "25", "26", "27", "28", "29", "30", "31" ]
+        BTF_ARCH: [ x86_64, arm64 ]
+      - DISTRO: ol
+        RELEASE: [ "7", "8" ]
+        BTF_ARCH: [ x86_64, arm64 ]
+      - DISTRO: opensuse-leap
+        RELEASE: [ "15.0", "15.1", "15.2", "15.3" ]
+        BTF_ARCH: [ x86_64, arm64 ]
+      - DISTRO: ubuntu
+        RELEASE: [ "16.04", "18.04", "20.04" ]
+        BTF_ARCH: [ x86_64, arm64 ]
+
+btf-generate-amzn-x64:
+  extends: .btf-generate
+  tags:
+    - "arch:amd64"
+  variables:
+    DISTRO: amzn
+  parallel:
+    matrix:
+      - IMAGE: amzn1
+        RELEASE: "2018" # 1 is a symlink to the 2018 directory
+        BTF_ARCH: x86_64
+      - IMAGE: amzn2
+        RELEASE: "2"
+        BTF_ARCH: [ x86_64, arm64 ]
+
+.btf-generate-rhel:
+  extends: .btf-generate
+  tags:
+    - "arch:$ARCH"
+  variables:
+    DISTRO: rhel
+    BTFHUB_NO_SUDO: true
+  before_script:
+    - cp -R ".tmp/${ARCH}/consumer" /etc/pki
+    - cp -R ".tmp/${ARCH}/entitlement" /etc/pki
+
+btf-generate-rhel-7:
+  extends: .btf-generate-rhel
+  needs:
+    - ci-subscribe-rhel7
+  variables:
+    ARCH: amd64
+    IMAGE: rhel7
+    RELEASE: "7"
+    BTF_ARCH: x86_64
+
+.btf-generate-rhel-8:
+  extends: .btf-generate-rhel
+  needs:
+    - ci-subscribe-rhel8
+  variables:
+    IMAGE: rhel8
+    RELEASE: "8"
+
+btf-generate-rhel-8-x64:
+  extends: .btf-generate-rhel-8
+  variables:
+    ARCH: amd64
+    BTF_ARCH: x86_64
+
+# rhel8 is the only distro that must be run from an arm64 container
+btf-generate-rhel-8-arm64:
+  extends: .btf-generate-rhel-8
+  variables:
+    ARCH: arm64
+    BTF_ARCH: arm64

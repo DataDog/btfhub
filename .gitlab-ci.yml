@@ -1,0 +1,44 @@
+---
+include:
+  - .gitlab/btf.yml
+  - .gitlab/image.yml
+  - .gitlab/rhel.yml
+
+variables:
+  CI_IMAGE_REPO: "ci/${CI_PROJECT_NAME}"
+  IMAGE_VERSION: "v59833096-235be727"
+  SUB_IMAGE_VERSION: "v59502123-970bf756"
+  VAULT_VERSION: "1.17.2"
+  VAULT_SHA256_LINUX_AMD64: a0c0449e640c8be5dcf7b7b093d5884f6a85406dbb86bbad0ea06becad5aaab8
+  FF_TIMESTAMPS: "true"
+
+stages:
+  - setup
+  - build_image
+  - btf
+  - cleanup
+
+default:
+  retry:
+    max: 1
+    when:
+      - unknown_failure
+      - data_integrity_failure
+      - runner_system_failure
+      - scheduler_failure
+      - api_failure
+
+.on_image_changes_or_manual:
+  - changes:
+      paths:
+        - ci-images/**
+        - .gitlab/image.yml
+        - .gitlab/rhel.yml
+      compare_to: main
+  - when: manual
+
+.on_btf_changes_or_scheduled:
+  - changes:
+      paths:
+        - .gitlab/btf.yml
+  - when: manual
