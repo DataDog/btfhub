@@ -1,6 +1,8 @@
 module github.com/DataDog/btfhub
 
-go 1.23
+go 1.23.0
+
+toolchain go1.23.7
 
 require (
 	github.com/DataDog/zstd v1.5.6
@@ -10,7 +12,7 @@ require (
 	github.com/mholt/archiver/v3 v3.5.1
 	github.com/therootcompany/xz v1.0.1
 	golang.org/x/exp v0.0.0-20240222234643-814bf88cf225
-	golang.org/x/sync v0.11.0
+	golang.org/x/sync v0.12.0
 	pault.ag/go/debian v0.18.0
 )
 
