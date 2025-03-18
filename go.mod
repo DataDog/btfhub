@@ -1,27 +1,18 @@
 module github.com/DataDog/btfhub
 
-go 1.23
+go 1.23.0
+
+toolchain go1.23.7
 
 require (
 	github.com/DataDog/zstd v1.5.6
 	github.com/cavaliergopher/cpio v1.0.1
 	github.com/cavaliergopher/rpm v1.2.0
 	github.com/cenkalti/backoff/v4 v4.3.0
-	github.com/mholt/archiver/v3 v3.5.1
 	github.com/therootcompany/xz v1.0.1
-	golang.org/x/exp v0.0.0-20240222234643-814bf88cf225
-	golang.org/x/sync v0.11.0
+	golang.org/x/exp v0.0.0-20250305212735-054e65f0b394
+	golang.org/x/sync v0.12.0
 	pault.ag/go/debian v0.18.0
-)
-
-require (
-	github.com/andybalholm/brotli v1.0.1 // indirect
-	github.com/dsnet/compress v0.0.2-0.20210315054119-f66993602bf5 // indirect
-	github.com/golang/snappy v0.0.2 // indirect
-	github.com/klauspost/pgzip v1.2.5 // indirect
-	github.com/nwaples/rardecode v1.1.0 // indirect
-	github.com/pierrec/lz4/v4 v4.1.2 // indirect
-	github.com/ulikunitz/xz v0.5.9 // indirect
 )
 
 require (
