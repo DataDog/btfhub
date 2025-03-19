@@ -25,8 +25,6 @@ func run(ctx context.Context) error {
 		switch fa[0] {
 		case "check":
 			return commands.Check(ctx)
-		case "merge":
-			return commands.Merge(ctx)
 		default:
 			log.Fatalf("unknown command %s", fa[0])
 		}
