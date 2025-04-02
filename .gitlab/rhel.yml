@@ -55,14 +55,24 @@ ci-unsubscribe-rhel7:
   image: "registry.ddbuild.io/$CI_IMAGE_REPO/rhel7-sub:$SUB_IMAGE_VERSION"
   variables:
     ARCH: amd64
-  dependencies:
+  needs:
     - ci-subscribe-rhel7
+    - job: btf-generate-rhel-7
+      optional: true
+    - job: ci-image-rhel7
+      optional: true
 
 ci-unsubscribe-rhel8:
   extends: .ci-unsubscribe-rhel
   image: "registry.ddbuild.io/$CI_IMAGE_REPO/rhel8-sub:$SUB_IMAGE_VERSION"
-  dependencies:
+  needs:
     - ci-subscribe-rhel8
+    - job: btf-generate-rhel-8-arm64
+      optional: true
+    - job: btf-generate-rhel-8-x64
+      optional: true
+    - job: ci-image-rhel8
+      optional: true
   parallel:
     matrix:
       - ARCH: [amd64, arm64]
