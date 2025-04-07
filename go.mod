@@ -7,7 +7,7 @@ toolchain go1.23.7
 require (
 	github.com/DataDog/zstd v1.5.6
 	github.com/cavaliergopher/cpio v1.0.1
-	github.com/cavaliergopher/rpm v1.2.0
+	github.com/cavaliergopher/rpm v1.3.0
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/therootcompany/xz v1.0.1
 	golang.org/x/exp v0.0.0-20250305212735-054e65f0b394
