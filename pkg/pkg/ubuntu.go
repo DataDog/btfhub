@@ -28,6 +28,7 @@ type UbuntuPackage struct {
 	URL           string
 	Size          uint64
 	Release       string
+	ReleaseName   string
 	Flavor        string // generic, gcp, aws, azure
 }
 
@@ -179,7 +180,7 @@ func (pkg *UbuntuPackage) pullLaunchpadDdeb(ctx context.Context, dir string, des
 
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
-	cmd := exec.CommandContext(ctx, "pull-lp-ddebs", "-s", "Published", "-s", "Pending", "-s", "Deleted", "-s", "Superseded", "--arch", pkg.Architecture, pkg.Name, pkg.Release)
+	cmd := exec.CommandContext(ctx, "pull-lp-ddebs", "-s", "Published", "-s", "Pending", "-s", "Deleted", "-s", "Superseded", "--arch", pkg.Architecture, pkg.Name, pkg.ReleaseName)
 	cmd.Dir = dir
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr

@@ -65,15 +65,15 @@ func yumDownload(ctx context.Context, pkg string, arch string, destdir string) e
 //
 
 // GetPackageList downloads the Packages.xz file from the given repo and release
-func GetPackageList(ctx context.Context, repo string, release string, arch string) (
+func GetPackageList(ctx context.Context, repo string, releaseName string, arch string) (
 	*bytes.Buffer, error,
 ) {
 	var err error
 	rawPkgs := &bytes.Buffer{}
 
-	main := fmt.Sprintf("%s/dists/%s/main/binary-%s/Packages.xz", repo, release, arch)
-	updates := fmt.Sprintf("%s/dists/%s-updates/main/binary-%s/Packages.xz", repo, release, arch)
-	universe := fmt.Sprintf("%s/dists/%s-updates/universe/binary-%s/Packages.xz", repo, release, arch)
+	main := fmt.Sprintf("%s/dists/%s/main/binary-%s/Packages.xz", repo, releaseName, arch)
+	updates := fmt.Sprintf("%s/dists/%s-updates/main/binary-%s/Packages.xz", repo, releaseName, arch)
+	universe := fmt.Sprintf("%s/dists/%s-updates/universe/binary-%s/Packages.xz", repo, releaseName, arch)
 
 	if err = utils.Download(ctx, main, rawPkgs); err != nil {
 		return nil, fmt.Errorf("download base package list: %s", err)
@@ -88,12 +88,12 @@ func GetPackageList(ctx context.Context, repo string, release string, arch strin
 	return rawPkgs, nil
 }
 
-func ParseAPTPackages(rawPkgs io.Reader, repoURL string, release string) (
+func ParseAPTPackages(rawPkgs io.Reader, repoURL string, release string, releaseName string) (
 	[]*UbuntuPackage, error,
 ) {
 	var kernelPkgs []*UbuntuPackage
 
-	pkg := &UbuntuPackage{Release: release}
+	pkg := &UbuntuPackage{Release: release, ReleaseName: releaseName}
 
 	bio := bufio.NewScanner(rawPkgs)
 	bio.Buffer(make([]byte, 4096), 128*1024)
@@ -107,7 +107,7 @@ func ParseAPTPackages(rawPkgs io.Reader, repoURL string, release string) (
 			if strings.HasPrefix(pkg.Name, "linux-image-") && pkg.isValid() {
 				kernelPkgs = append(kernelPkgs, pkg) // save the previous kernel package
 			}
-			pkg = &UbuntuPackage{Release: release}
+			pkg = &UbuntuPackage{Release: release, ReleaseName: releaseName}
 			continue
 		}
 		if line[0] == ' ' {
