@@ -18,13 +18,13 @@ import (
 var possibleArchs = []string{"x86_64", "arm64"}
 
 var distroReleases = map[string][]string{
-	"ubuntu":        {"xenial", "bionic", "focal"},
-	"debian":        {"stretch", "buster"},
+	"ubuntu":        {"16.04", "18.04", "20.04"},
+	"debian":        {"9", "10"},
 	"fedora":        {"24", "25", "26", "27", "28", "29", "30", "31"},
 	"centos":        {"7", "8"},
 	"ol":            {"7", "8"},
 	"rhel":          {"7", "8"},
-	"amzn":          {"1", "2"},
+	"amzn":          {"2018", "2"},
 	"sles":          {"12.3", "12.4", "12.5", "15.0", "15.1", "15.2", "15.3"},
 	"opensuse-leap": {"15.0", "15.1", "15.2", "15.3"},
 }
@@ -32,14 +32,14 @@ var distroReleases = map[string][]string{
 var defaultDistros = []string{"ubuntu", "debian", "fedora", "centos", "ol"}
 
 var defaultReleases = map[string][]string{
-	"ubuntu": {"xenial", "bionic", "focal"},
-	// no stretch for debian
-	"debian":        {"buster"},
+	"ubuntu": {"16.04", "18.04", "20.04"},
+	// no 9/stretch for debian
+	"debian":        {"10"},
 	"fedora":        {"24", "25", "26", "27", "28", "29", "30", "31"},
 	"centos":        {"7", "8"},
 	"ol":            {"7", "8"},
 	"rhel":          {"7", "8"},
-	"amzn":          {"1", "2"},
+	"amzn":          {"2018", "2"},
 	"sles":          {"12.3", "12.4", "12.5", "15.0", "15.1", "15.2", "15.3"},
 	"opensuse-leap": {"15.0", "15.1", "15.2", "15.3"},
 }
@@ -100,7 +100,7 @@ func Generate(ctx context.Context) error {
 				arch := a
 				distro := d
 				produce.Go(func() error {
-					// workDir example: ./archive/ubuntu/focal/x86_64
+					// workDir example: ./archive/ubuntu/20.04/x86_64
 					workDir := filepath.Join(archiveDir, distro, release, arch)
 					if err := os.MkdirAll(workDir, 0775); err != nil {
 						return fmt.Errorf("arch dir: %s", err)

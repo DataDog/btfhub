@@ -64,9 +64,9 @@ type lpPublishedBinary struct {
 	BuildLink            string    `json:"build_link"`
 }
 
-func getLaunchpadPackages(ctx context.Context, release string, arch string) ([]*pkg.UbuntuPackage, error) {
+func getLaunchpadPackages(ctx context.Context, release string, releaseName string, arch string) ([]*pkg.UbuntuPackage, error) {
 	name := "linux-image-"
-	distroArchSeries := fmt.Sprintf("https://api.launchpad.net/devel/ubuntu/%s/%s", release, arch)
+	distroArchSeries := fmt.Sprintf("https://api.launchpad.net/devel/ubuntu/%s/%s", releaseName, arch)
 	url := fmt.Sprintf("https://api.launchpad.net/devel/ubuntu/+archive/primary?ws.op=getPublishedBinaries&binary_name=%s&distro_arch_series=%s&ws.size=300", name, distroArchSeries)
 
 	pkgMap := make(map[string]lpPublishedBinary)
@@ -119,6 +119,7 @@ func getLaunchpadPackages(ctx context.Context, release string, arch string) ([]*
 			URL:           url,
 			Size:          math.MaxUint64, // no idea on real size
 			Release:       release,
+			ReleaseName:   releaseName,
 			Flavor:        "",
 		}
 		pkgs = append(pkgs, up)

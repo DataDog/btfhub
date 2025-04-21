@@ -24,8 +24,8 @@ import (
 type DebianRepo struct {
 	archs            map[string]string
 	repos            map[string][]string
-	releaseNumbers   map[string]string
 	snapshotVersions map[string][]string
+	releaseNames     map[string]string
 }
 
 var archiveRepos = []string{
@@ -48,16 +48,16 @@ func NewDebianRepo() Repository {
 			"arm64":  "arm64",
 		},
 		repos: map[string][]string{
-			"stretch": archiveRepos,
-			"buster":  oldRepos,
-		},
-		releaseNumbers: map[string]string{
-			"stretch": "9",
-			"buster":  "10",
+			"9":  archiveRepos,
+			"10": oldRepos,
 		},
 		snapshotVersions: map[string][]string{
-			"stretch": {`4\.9\.0`, `4\.19\.0-0\.bpo.\d+`},
-			"buster":  {`4\.19\.0-\d+`},
+			"9":  {`4\.9\.0`, `4\.19\.0-0\.bpo.\d+`},
+			"10": {`4\.19\.0-\d+`},
+		},
+		releaseNames: map[string]string{
+			"9":  "stretch",
+			"10": "buster",
 		},
 	}
 }
@@ -78,6 +78,7 @@ func (d *DebianRepo) GetKernelPackages(
 	chans *JobChannels,
 ) error {
 	altArch := d.archs[arch]
+	releaseName := d.releaseNames[release]
 
 	var pkgs []pkg.Package
 
@@ -86,7 +87,7 @@ func (d *DebianRepo) GetKernelPackages(
 
 		// Get Packages.xz from main, updates and security
 
-		repo := fmt.Sprintf(r, release, altArch) // ..debian/dists/%s/%s/main.../Packages.gz
+		repo := fmt.Sprintf(r, releaseName, altArch) // ..debian/dists/%s/%s/main.../Packages.gz
 
 		if err := utils.Download(ctx, repo, rawPkgs); err != nil {
 			return fmt.Errorf("download package list %s: %s", repo, err)
@@ -100,7 +101,7 @@ func (d *DebianRepo) GetKernelPackages(
 
 		// Get the list of kernel packages to download from debug repo
 		repoURL.Path = strings.Split(repoURL.Path, "/dists")[0]
-		kernelDbgPkgs, err := pkg.ParseAPTPackages(rawPkgs, repoURL.String(), release)
+		kernelDbgPkgs, err := pkg.ParseAPTPackages(rawPkgs, repoURL.String(), release, releaseName)
 		if err != nil {
 			return fmt.Errorf("parsing package list: %s", err)
 		}
@@ -147,6 +148,8 @@ func (d *DebianRepo) GetKernelPackages(
 					Architecture:  altArch,
 					KernelVersion: kernel.NewKernelVersion(match[1]),
 					Flavor:        flavor,
+					Release:       release,
+					ReleaseName:   releaseName,
 				}
 
 				var binpkg snapshotBinaryPackage

@@ -13,10 +13,11 @@ import (
 )
 
 type UbuntuRepo struct {
-	repo        map[string]string // map[altArch]url
-	debugRepo   string            // url
-	kernelTypes map[string]string // map[signed,unsigned]regex
-	archs       map[string]string // map[arch]altArch
+	repo         map[string]string // map[altArch]url
+	debugRepo    string            // url
+	kernelTypes  map[string]string // map[signed,unsigned]regex
+	archs        map[string]string // map[arch]altArch
+	releaseNames map[string]string // map[number]name
 }
 
 func NewUbuntuRepo() Repository {
@@ -33,6 +34,11 @@ func NewUbuntuRepo() Repository {
 		archs: map[string]string{
 			"x86_64": "amd64",
 			"arm64":  "arm64",
+		},
+		releaseNames: map[string]string{
+			"16.04": "xenial",
+			"18.04": "bionic",
+			"20.04": "focal",
 		},
 	}
 }
@@ -51,20 +57,21 @@ func (uRepo *UbuntuRepo) GetKernelPackages(
 	chans *JobChannels,
 ) error {
 	altArch := uRepo.archs[arch]
+	releaseName := uRepo.releaseNames[release]
 	filteredKernelDbgPkgMap := make(map[string]*pkg.UbuntuPackage) // map[filename]package
 
 	// Get Packages.xz from debug repo
-	dbgRawPkgs, err := pkg.GetPackageList(ctx, uRepo.debugRepo, release, altArch)
+	dbgRawPkgs, err := pkg.GetPackageList(ctx, uRepo.debugRepo, releaseName, altArch)
 	if err != nil {
 		return fmt.Errorf("ddebs: %s", err)
 	}
 	// Get the list of kernel packages to download from debug repo
-	kernelDbgPkgs, err := pkg.ParseAPTPackages(dbgRawPkgs, uRepo.debugRepo, release)
+	kernelDbgPkgs, err := pkg.ParseAPTPackages(dbgRawPkgs, uRepo.debugRepo, release, releaseName)
 	if err != nil {
 		return fmt.Errorf("parsing debug package list: %s", err)
 	}
 
-	lpDbgPkgs, err := getLaunchpadPackages(ctx, release, altArch)
+	lpDbgPkgs, err := getLaunchpadPackages(ctx, release, releaseName, altArch)
 	if err != nil {
 		return fmt.Errorf("launchpad search: %s", err)
 	}
