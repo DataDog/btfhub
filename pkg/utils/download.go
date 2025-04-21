@@ -88,12 +88,11 @@ func GetLinks(ctx context.Context, repoURL string) ([]string, error) {
 
 var linksClient = http.Client{
 	CheckRedirect: func(req *http.Request, via []*http.Request) error {
-		fmt.Printf("redirect to %s\n", req.URL)
-		// this URL 404s
-		if req.URL.String() == "https://provo-mirror.opensuse.org/debug/distribution/leap/15.3/repo/oss/repodata/c226efa34dd8ad30dbfd4d3067e7ad65dc71b7e0f761e2f578d067f82816f9e0-primary.xml.gz" {
-			req.URL.Host = "mirror.fcix.net"
-			req.URL.Path = "/opensuse/debug/distribution/leap/15.3/repo/oss/repodata/c226efa34dd8ad30dbfd4d3067e7ad65dc71b7e0f761e2f578d067f82816f9e0-primary.xml.gz"
+		// these hosts have URL 404s
+		if strings.HasPrefix(req.URL.String(), "https://slc-mirror.opensuse.org") || strings.HasPrefix(req.URL.String(), "https://provo-mirror.opensuse.org") {
+			req.URL.Host = "mirror-br.opensuse.org"
 		}
+		fmt.Printf("redirect to %s\n", req.URL)
 		return nil
 	},
 }
