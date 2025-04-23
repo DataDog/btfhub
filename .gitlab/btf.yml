@@ -8,9 +8,20 @@
     KUBERNETES_MEMORY_REQUEST: 12Gi
     KUBERNETES_MEMORY_LIMIT: 16Gi
     KUBERNETES_CPU_REQUEST: 8
+    GITHUB_PEM_PATH: "${CI_PROJECT_DIR}/github_app_key.pem"
   script:
     - make
-    # TODO github auth
+    - export GITHUB_INSTALLATION_ID=$(vault kv get -field=installation_id kv/k8s/gitlab-runner/btfhub/github-app)
+    - export GITHUB_CLIENT_ID=$(vault kv get -field=client_id kv/k8s/gitlab-runner/btfhub/github-app)
+    - vault kv get -field=key_b64 kv/k8s/gitlab-runner/btfhub/github-app | base64 -d > "${GITHUB_PEM_PATH}"
+    - GH_TOKEN=$(go run ./cmd/github-auth)
+    - echo '[credential "https://github.com"]' >> ~/.gitconfig
+    - echo -e '\tusername = x-access-token' >> ~/.gitconfig
+    - echo -e '\thelper = "cache --timeout=3600"' >> ~/.gitconfig
+    - |
+      set +x
+      echo -e 'protocol=https\nhost=github.com\nusername=x-access-token\npassword=${GH_TOKEN}' | git credential approve
+      set -x
     - mkdir archive
     - cd archive
     - git init
@@ -23,8 +34,9 @@
     - cd archive
     - git status
     # TODO only commit if on scheduled main
-    #- git config --local user.name ""
-    #- git config --local user.email ""
+    - git config --local user.name "dd-btfhub-ebpf-platform[bot]"
+    - git config --local user.email "205981682+dd-btfhub-ebpf-platform[bot]@users.noreply.github.com"
+    - git status
     #- git add -A
     #- git diff-index --quiet HEAD || git commit -m "${DISTRO}/${RELEASE}/${BTF_ARCH} update on $(date -u +%Y-%m-%d)"
     #- git push || (git pull --rebase && git push)
