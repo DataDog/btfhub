@@ -28,17 +28,25 @@ default:
       - scheduler_failure
       - api_failure
 
-.on_image_changes_or_manual:
+.if_scheduled_main: &if_scheduled_main
+  if: $CI_PIPELINE_SOURCE == "schedule" && $CI_COMMIT_BRANCH == "main"
+
+.on_image_changes:
   - changes:
       paths:
         - ci-images/**
         - .gitlab/image.yml
         - .gitlab/rhel.yml
       compare_to: main
-  - when: manual
 
-.on_btf_changes_or_scheduled:
+.on_btf_changes:
   - changes:
       paths:
         - .gitlab/btf.yml
+
+.on_scheduled_main:
+  - <<: *if_scheduled_main
+    when: always
+
+.manual:
   - when: manual

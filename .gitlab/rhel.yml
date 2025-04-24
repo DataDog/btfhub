@@ -1,8 +1,10 @@
 ---
 .ci-subscribe-rhel:
   rules:
-    - !reference [ .on_image_changes_or_manual ]
-    - !reference [ .on_btf_changes_or_scheduled ]
+    - !reference [ .on_image_changes ]
+    - !reference [ .on_btf_changes ]
+    - !reference [ .on_scheduled_main ]
+    - !reference [ .manual ]
   stage: setup
   tags:
     - "arch:$ARCH"
@@ -34,8 +36,10 @@ ci-subscribe-rhel8:
 
 .ci-unsubscribe-rhel:
   rules:
-    - !reference [ .on_image_changes_or_manual ]
-    - !reference [ .on_btf_changes_or_scheduled ]
+    - !reference [ .on_image_changes ]
+    - !reference [ .on_btf_changes ]
+    - !reference [ .on_scheduled_main ]
+    - !reference [ .manual ]
   when: always
   stage: cleanup
   tags:

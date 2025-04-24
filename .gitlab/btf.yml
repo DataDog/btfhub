@@ -1,6 +1,9 @@
 ---
 .btf-generate:
-  rules: !reference [ .on_btf_changes_or_scheduled ]
+  rules:
+    - !reference [ .on_btf_changes ]
+    - !reference [ .on_scheduled_main ]
+    - !reference [ .manual ]
   stage: btf
   needs: []
   image: "registry.ddbuild.io/$CI_IMAGE_REPO/$IMAGE:$IMAGE_VERSION"
@@ -21,7 +24,6 @@
     - |
       set +x
       echo -e 'protocol=https\nhost=github.com\nusername=x-access-token\npassword=${GH_TOKEN}' | git credential approve
-      set -x
     - mkdir archive
     - cd archive
     - git init
@@ -33,13 +35,15 @@
     - ./btfhub -d "${DISTRO}" -r "${RELEASE}" -a "${BTF_ARCH}"
     - cd archive
     - git status
-    # TODO only commit if on scheduled main
-    - git config --local user.name "dd-btfhub-ebpf-platform[bot]"
-    - git config --local user.email "205981682+dd-btfhub-ebpf-platform[bot]@users.noreply.github.com"
-    - git status
-    #- git add -A
-    #- git diff-index --quiet HEAD || git commit -m "${DISTRO}/${RELEASE}/${BTF_ARCH} update on $(date -u +%Y-%m-%d)"
-    #- git push || (git pull --rebase && git push)
+    - |
+      if [[ "${CI_COMMIT_BRANCH}" == "main" && "${CI_PIPELINE_SOURCE}" == "schedule" ]]; then
+        set -x
+        git config --local user.name "dd-btfhub-ebpf-platform[bot]"
+        git config --local user.email "205981682+dd-btfhub-ebpf-platform[bot]@users.noreply.github.com"
+        git add -A
+        git diff-index --quiet HEAD || git commit -m "${DISTRO}/${RELEASE}/${BTF_ARCH} update on $(date -u +%Y-%m-%d)"
+        git push || (git pull --rebase && git push)
+      fi
 
 btf-generate-direct-x64:
   extends: .btf-generate
