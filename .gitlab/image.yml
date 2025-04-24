@@ -1,6 +1,8 @@
 ---
 .ci-image-build:
-  rules: !reference [ .on_image_changes_or_manual ]
+  rules:
+    - !reference [ .on_image_changes ]
+    - !reference [ .manual ]
   stage: build_image
   image: "registry.ddbuild.io/images/docker:27.3.1"
   tags:
