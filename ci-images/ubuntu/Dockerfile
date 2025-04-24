@@ -10,7 +10,7 @@ ARG VAULT_SHA256_LINUX_AMD64
 RUN dpkg --purge unattended-upgrades \
   && apt-get update \
   && apt-get install -y --no-install-recommends \
-    bsdutils \
+    bsdutils=1:2.39.3-9ubuntu6.2 \
     build-essential \
     clang \
     cmake \
