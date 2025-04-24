@@ -1,0 +1,51 @@
+---
+.ci-image-build:
+  rules:
+    - !reference [ .on_image_changes ]
+    - !reference [ .manual ]
+  stage: build_image
+  image: "registry.ddbuild.io/images/docker:27.3.1"
+  tags:
+    - arch:amd64
+  script:
+    - git submodule update --init --recursive
+    - BUILD_ARGS=$(cat ci.env | sed -e 's/^/--build-arg=/' | tr '\n' ' ')
+    - >-
+      docker buildx build
+      --platform "${PLATFORM}"
+      $BUILD_ARGS
+      --label target=build
+      --tag "registry.ddbuild.io/${CI_IMAGE_REPO}/${IMAGE}:v${CI_PIPELINE_ID}-${CI_COMMIT_SHORT_SHA}"
+      --push
+      --file "ci-images/${IMAGE}/Dockerfile" .
+
+ci-image:
+  extends: .ci-image-build
+  parallel:
+    matrix:
+      - IMAGE: amzn1
+        PLATFORM: linux/amd64
+      - IMAGE: amzn2
+        PLATFORM: linux/amd64
+      - IMAGE: ubuntu
+        PLATFORM: linux/amd64
+      - IMAGE: rhel7-sub
+        PLATFORM: linux/amd64
+      - IMAGE: rhel8-sub
+        PLATFORM: "linux/amd64,linux/arm64"
+
+ci-image-rhel7:
+  extends: .ci-image-build
+  needs:
+    - ci-subscribe-rhel7
+  variables:
+    IMAGE: rhel7
+    PLATFORM: linux/amd64
+
+ci-image-rhel8:
+  extends: .ci-image-build
+  needs:
+    - ci-subscribe-rhel8
+  variables:
+    IMAGE: rhel8
+    PLATFORM: "linux/amd64,linux/arm64"
