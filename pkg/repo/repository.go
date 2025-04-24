@@ -13,6 +13,7 @@ type RepoOptions struct {
 	Ordered       bool
 	DryRun        bool
 	Query         *regexp.Regexp
+	Launchpad     bool
 }
 
 type JobChannels struct {

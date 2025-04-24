@@ -71,9 +71,12 @@ func (uRepo *UbuntuRepo) GetKernelPackages(
 		return fmt.Errorf("parsing debug package list: %s", err)
 	}
 
-	lpDbgPkgs, err := getLaunchpadPackages(ctx, release, releaseName, altArch)
-	if err != nil {
-		return fmt.Errorf("launchpad search: %s", err)
+	var lpDbgPkgs []*pkg.UbuntuPackage
+	if opts.Launchpad {
+		lpDbgPkgs, err = getLaunchpadPackages(ctx, release, releaseName, altArch)
+		if err != nil {
+			return fmt.Errorf("launchpad search: %s", err)
+		}
 	}
 
 	for _, ktype := range []string{"unsigned", "signed"} {
