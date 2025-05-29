@@ -12,6 +12,7 @@
     KUBERNETES_MEMORY_LIMIT: 16Gi
     KUBERNETES_CPU_REQUEST: 8
     GITHUB_PEM_PATH: "${CI_PROJECT_DIR}/github_app_key.pem"
+    ARCHIVE_BRANCH: main
   script:
     - make
     - export GITHUB_INSTALLATION_ID=$(vault kv get -field=installation_id kv/k8s/gitlab-runner/btfhub/github-app)
@@ -23,14 +24,14 @@
     - echo -e '\thelper = "cache --timeout=3600"' >> ~/.gitconfig
     - |
       set +x
-      echo -e 'protocol=https\nhost=github.com\nusername=x-access-token\npassword=${GH_TOKEN}' | git credential approve
+      echo -e "protocol=https\nhost=github.com\nusername=x-access-token\npassword=${GH_TOKEN}" | git credential approve
     - mkdir archive
     - cd archive
     - git init
     - git remote add origin https://github.com/DataDog/btfhub-archive
-    - git fetch --filter=blob:none --no-tags --progress --depth=1 origin main
+    - git fetch --filter=blob:none --no-tags --progress --depth=1 origin "${ARCHIVE_BRANCH}"
     - git sparse-checkout set --cone "${DISTRO}/${RELEASE}/${BTF_ARCH}"
-    - git checkout --progress --force main
+    - git checkout --progress --force "${ARCHIVE_BRANCH}"
     - cd ..
     - ./btfhub -d "${DISTRO}" -r "${RELEASE}" -a "${BTF_ARCH}"
     - cd archive
