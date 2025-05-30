@@ -67,7 +67,7 @@ ENV PATH="/usr/local/go/bin:${PATH}"
 ENV PATH="${GOPATH}/bin:${PATH}"
 
 # install elfutils
-RUN wget -nv -O /tmp/elfutils.tar.bz2 "https://sourceware.org/elfutils/ftp/${ELFUTILS_VERSION}/elfutils-${ELFUTILS_VERSION}.tar.bz2" \
+RUN wget -nv -O /tmp/elfutils.tar.bz2 "https://mirrors.kernel.org/sourceware/elfutils/${ELFUTILS_VERSION}/elfutils-${ELFUTILS_VERSION}.tar.bz2" \
   && echo "${ELFUTILS_SHA256}  /tmp/elfutils.tar.bz2" | sha256sum --check \
   && tar -C /tmp -xf /tmp/elfutils.tar.bz2 \
   && cd "/tmp/elfutils-${ELFUTILS_VERSION}" \
