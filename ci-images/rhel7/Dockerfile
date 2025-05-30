@@ -12,6 +12,8 @@ ARG TAR_VERSION
 ARG TARGETARCH
 ARG VAULT_VERSION
 ARG VAULT_SHA256_LINUX_AMD64
+ARG GH_CLI_VERSION
+ARG GH_CLI_SHA256_LINUX_AMD64
 
 RUN rm -rf /etc/rhsm-host
 RUN --mount=type=bind,target=/etc/pki/consumer,source=.tmp/${TARGETARCH}/consumer \
