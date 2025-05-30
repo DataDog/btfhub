@@ -41,7 +41,7 @@
         set -x
         git config --local user.name "dd-btfhub-ebpf-platform[bot]"
         git config --local user.email "205981682+dd-btfhub-ebpf-platform[bot]@users.noreply.github.com"
-        git checkout -b "${DISTRO}/${RELEASE}/${BTF_ARCH}/$(date -u +%Y-%m-%dT%H:%M:%S)"
+        git checkout -b "${DISTRO}/${RELEASE}/${BTF_ARCH}/$(date -u +%Y-%m-%dT%H-%M-%S)"
         git add -A
         if git diff-index --quiet HEAD; then
           echo "No changes"
