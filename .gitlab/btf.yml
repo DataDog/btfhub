@@ -49,7 +49,7 @@
         else
           git commit -m "${DISTRO}/${RELEASE}/${BTF_ARCH} update on $(date -u +%Y-%m-%d)"
           git push --set-upstream origin "${BRANCH_NAME}"
-          gh pr create -R DataDog/btfhub-archive -B main -r DataDog/ebpf-platform -f
+          gh pr create -R DataDog/btfhub-archive -B main -f
         fi
       #fi
 
