@@ -18,7 +18,7 @@
     - export GITHUB_INSTALLATION_ID=$(vault kv get -field=installation_id kv/k8s/gitlab-runner/btfhub/github-app)
     - export GITHUB_CLIENT_ID=$(vault kv get -field=client_id kv/k8s/gitlab-runner/btfhub/github-app)
     - vault kv get -field=key_b64 kv/k8s/gitlab-runner/btfhub/github-app | base64 -d > "${GITHUB_PEM_PATH}"
-    - GH_TOKEN=$(go run ./cmd/github-auth)
+    - export GH_TOKEN=$(go run ./cmd/github-auth)
     - echo '[credential "https://github.com"]' >> ~/.gitconfig
     - echo -e '\tusername = x-access-token' >> ~/.gitconfig
     - echo -e '\thelper = "cache --timeout=3600"' >> ~/.gitconfig
@@ -41,9 +41,16 @@
         set -x
         git config --local user.name "dd-btfhub-ebpf-platform[bot]"
         git config --local user.email "205981682+dd-btfhub-ebpf-platform[bot]@users.noreply.github.com"
+        BRANCH_NAME="${DISTRO}/${RELEASE}/${BTF_ARCH}/$(date -u +%Y-%m-%dT%H-%M-%S)"
+        git checkout -b "${BRANCH_NAME}"
         git add -A
-        git diff-index --quiet HEAD || git commit -m "${DISTRO}/${RELEASE}/${BTF_ARCH} update on $(date -u +%Y-%m-%d)"
-        git push || (git pull --rebase && git push)
+        if git diff-index --quiet HEAD; then
+          echo "No changes"
+        else
+          git commit -m "${DISTRO}/${RELEASE}/${BTF_ARCH} update on $(date -u +%Y-%m-%d)"
+          git push --set-upstream origin "${BRANCH_NAME}"
+          gh pr create -R DataDog/btfhub-archive -B main -f
+        fi
       fi
 
 btf-generate-direct-x64:
