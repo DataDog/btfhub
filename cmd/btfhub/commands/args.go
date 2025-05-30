@@ -4,7 +4,7 @@ import "flag"
 
 var distroArg, releaseArg, archArg, queryArg string
 var numWorkers int
-var force, kernelModules, ordered, dryRun bool
+var force, kernelModules, ordered, dryRun, launchpad bool
 
 func init() {
 	flag.StringVar(&distroArg, "distro", "", "distribution to update (ubuntu,debian,centos,fedora,ol,rhel,amazon,sles)")
@@ -21,4 +21,5 @@ func init() {
 	flag.BoolVar(&kernelModules, "kmod", true, "generate BTF for kernel modules, in addition to the base kernel (defaults to true)")
 	flag.BoolVar(&ordered, "ordered", true, "process kernels in order so future kernels can be skipped once BTF is detected")
 	flag.BoolVar(&dryRun, "dry-run", false, "do not make changes")
+	flag.BoolVar(&launchpad, "launchpad", false, "query Ubuntu Launchpad for additional kernels")
 }

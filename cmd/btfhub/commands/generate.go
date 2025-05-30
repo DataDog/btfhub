@@ -114,6 +114,7 @@ func Generate(ctx context.Context) error {
 						Ordered:       ordered,
 						DryRun:        dryRun,
 						Query:         qre,
+						Launchpad:     launchpad,
 					}
 					return rep.GetKernelPackages(prodCtx, workDir, release, arch, opts, chans)
 				})
