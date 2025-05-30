@@ -37,7 +37,7 @@
     - cd archive
     - git status
     - |
-      #if [[ "${CI_COMMIT_BRANCH}" == "main" && "${CI_PIPELINE_SOURCE}" == "schedule" ]]; then
+      if [[ "${CI_COMMIT_BRANCH}" == "main" && "${CI_PIPELINE_SOURCE}" == "schedule" ]]; then
         set -x
         git config --local user.name "dd-btfhub-ebpf-platform[bot]"
         git config --local user.email "205981682+dd-btfhub-ebpf-platform[bot]@users.noreply.github.com"
@@ -51,7 +51,7 @@
           git push --set-upstream origin "${BRANCH_NAME}"
           gh pr create -R DataDog/btfhub-archive -B main -f
         fi
-      #fi
+      fi
 
 btf-generate-direct-x64:
   extends: .btf-generate
