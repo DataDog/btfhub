@@ -1,0 +1,11 @@
+---
+unit-test:
+  stage: test
+  needs: []
+  image: "registry.ddbuild.io/$CI_IMAGE_REPO/ubuntu:$IMAGE_VERSION"
+  tags:
+    - "arch:amd64"
+  script:
+    - go tool -modfile=golangci-lint.mod golangci-lint run
+    - CC=clang go build ./cmd/btfhub
+    - go test -v -race ./cmd/... ./pkg/...
