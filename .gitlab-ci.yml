@@ -3,6 +3,7 @@ include:
   - .gitlab/btf.yml
   - .gitlab/image.yml
   - .gitlab/rhel.yml
+  - .gitlab/pr.yml
 
 variables:
   CI_IMAGE_REPO: "ci/${CI_PROJECT_NAME}"
