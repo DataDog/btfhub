@@ -15,6 +15,9 @@ ARG TARGETARCH
 ARG VAULT_VERSION
 ARG VAULT_SHA256_LINUX_AMD64
 ARG VAULT_SHA256_LINUX_ARM64
+ARG GH_CLI_VERSION
+ARG GH_CLI_SHA256_LINUX_AMD64
+ARG GH_CLI_SHA256_LINUX_ARM64
 
 RUN rm -rf /etc/rhsm-host
 RUN --mount=type=bind,target=/etc/pki/consumer,source=.tmp/${TARGETARCH}/consumer \
@@ -128,4 +131,17 @@ RUN if [ "${TARGETARCH}" = "amd64" ]; then \
       && echo "${VAULT_SHA256_LINUX_ARM64}" /tmp/vault.zip | sha256sum --check \
       && unzip -o /tmp/vault.zip -d /usr/bin vault \
       && rm /tmp/vault.zip \
+; fi
+
+# Install gh CLI
+RUN if [ "${TARGETARCH}" = "amd64" ]; then \
+  wget -nv -O /tmp/gh.tar.gz "https://github.com/cli/cli/releases/download/v${GH_CLI_VERSION}/gh_${GH_CLI_VERSION}_linux_${TARGETARCH}.tar.gz" \
+    && echo "${GH_CLI_SHA256_LINUX_AMD64}" /tmp/gh.tar.gz | sha256sum --check \
+    && tar -C /usr/local --strip-components=1 -xzf /tmp/gh.tar.gz \
+    && rm -f /tmp/gh.tar.gz \
+; elif [ "${TARGETARCH}" = "arm64" ]; then \
+  wget -nv -O /tmp/gh.tar.gz "https://github.com/cli/cli/releases/download/v${GH_CLI_VERSION}/gh_${GH_CLI_VERSION}_linux_${TARGETARCH}.tar.gz" \
+    && echo "${GH_CLI_SHA256_LINUX_ARM64}" /tmp/gh.tar.gz | sha256sum --check \
+    && tar -C /usr/local --strip-components=1 -xzf /tmp/gh.tar.gz \
+    && rm -f /tmp/gh.tar.gz \
 ; fi
