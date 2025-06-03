@@ -253,6 +253,28 @@ func processPackage(
 	case error:
 		return v
 	default:
-		return nil
 	}
+
+	if opts.S3Bucket != "" {
+		uploadJob := &job.S3UploadJob{
+			SourcePath: btfTarPath,
+			Bucket:     opts.S3Bucket,
+			Key:        path.Join(opts.S3Prefix, btfTarName),
+			ReplyChan:  make(chan any),
+		}
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case chans.BTF <- uploadJob: // send upload job to worker
+		}
+
+		reply = <-uploadJob.ReplyChan // wait for reply
+		switch v := reply.(type) {
+		case error:
+			return v
+		default:
+		}
+	}
+
+	return nil
 }

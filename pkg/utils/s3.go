@@ -3,7 +3,10 @@ package utils
 import (
 	"context"
 	"errors"
+	"fmt"
+	"io"
 	"sync"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -38,4 +41,29 @@ func S3Exists(ctx context.Context, bucket string, key string) (bool, error) {
 		return false, nil
 	}
 	return false, err
+}
+
+func S3Upload(ctx context.Context, bucket string, key string, data io.Reader) error {
+	client, err := S3Client()
+	if err != nil {
+		return err
+	}
+
+	_, err = client.PutObject(ctx, &s3.PutObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(key),
+		Body:   data,
+	})
+	if err != nil {
+		return fmt.Errorf("s3 put: %w", err)
+	}
+
+	err = s3.NewObjectExistsWaiter(client).Wait(ctx, &s3.HeadObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(key),
+	}, time.Minute)
+	if err != nil {
+		return errors.New("timed out waiting for object to exist")
+	}
+	return nil
 }
