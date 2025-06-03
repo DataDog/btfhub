@@ -14,6 +14,11 @@ type RepoOptions struct {
 	DryRun        bool
 	Query         *regexp.Regexp
 	Launchpad     bool
+
+	// S3Bucket is the AWS S3 bucket where uploaded BTFs should be stored
+	S3Bucket string
+	// S3Prefix is the key prefix used when uploading BTFs
+	S3Prefix string
 }
 
 type JobChannels struct {

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path"
 	"path/filepath"
 
 	"golang.org/x/sync/errgroup"
@@ -91,6 +92,18 @@ func processPackage(
 		if pkg.PackageBTFExists(p, workDir) {
 			log.Printf("SKIP: %s exists\n", btfTarName)
 			return nil
+		}
+
+		if opts.S3Bucket != "" {
+			key := path.Join(opts.S3Prefix, btfTarName)
+			exists, err := utils.S3Exists(ctx, opts.S3Bucket, key)
+			if err != nil {
+				return err
+			}
+			if exists {
+				log.Printf("SKIP: %s/%s exists in S3\n", opts.S3Bucket, key)
+				return nil
+			}
 		}
 	}
 

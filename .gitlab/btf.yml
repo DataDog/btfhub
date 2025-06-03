@@ -33,7 +33,7 @@
     - git sparse-checkout set --cone "${DISTRO}/${RELEASE}/${BTF_ARCH}"
     - git checkout --progress --force "${ARCHIVE_BRANCH}"
     - cd ..
-    - ./btfhub -d "${DISTRO}" -r "${RELEASE}" -a "${BTF_ARCH}"
+    - ./btfhub -d "${DISTRO}" -r "${RELEASE}" -a "${BTF_ARCH}" -s3-bucket dd-agent -s3-prefix btfs
     - cd archive
     - git status
     - |
