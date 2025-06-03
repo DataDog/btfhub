@@ -14,7 +14,7 @@
     GITHUB_PEM_PATH: "${CI_PROJECT_DIR}/github_app_key.pem"
     ARCHIVE_BRANCH: main
   script:
-    - make
+    - CC=clang go build ./cmd/btfhub
     - export GITHUB_INSTALLATION_ID=$(vault kv get -field=installation_id kv/k8s/gitlab-runner/btfhub/github-app)
     - export GITHUB_CLIENT_ID=$(vault kv get -field=client_id kv/k8s/gitlab-runner/btfhub/github-app)
     - vault kv get -field=key_b64 kv/k8s/gitlab-runner/btfhub/github-app | base64 -d > "${GITHUB_PEM_PATH}"
