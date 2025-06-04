@@ -82,6 +82,7 @@ func processPackage(
 	if pkg.PackageKernelHasBTF(p, workDir) {
 		return utils.ErrKernelHasBTF
 	}
+	s3key := path.Join(opts.S3Prefix, btfTarName)
 
 	if !opts.Force {
 		if pkg.PackageFailed(p, workDir) {
@@ -95,13 +96,12 @@ func processPackage(
 		}
 
 		if opts.S3Bucket != "" {
-			key := path.Join(opts.S3Prefix, btfTarName)
-			exists, err := utils.S3Exists(ctx, opts.S3Bucket, key)
+			exists, err := utils.S3Exists(ctx, opts.S3Bucket, s3key)
 			if err != nil {
 				return err
 			}
 			if exists {
-				log.Printf("SKIP: %s/%s exists in S3\n", opts.S3Bucket, key)
+				log.Printf("SKIP: %s/%s exists in S3\n", opts.S3Bucket, s3key)
 				return nil
 			}
 		}
@@ -259,7 +259,7 @@ func processPackage(
 		uploadJob := &job.S3UploadJob{
 			SourcePath: btfTarPath,
 			Bucket:     opts.S3Bucket,
-			Key:        path.Join(opts.S3Prefix, btfTarName),
+			Key:        s3key,
 			ReplyChan:  make(chan any),
 		}
 		select {

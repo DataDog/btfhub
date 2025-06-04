@@ -40,7 +40,7 @@ func S3Exists(ctx context.Context, bucket string, key string) (bool, error) {
 	if errors.As(err, &notFoundError) {
 		return false, nil
 	}
-	return false, err
+	return false, fmt.Errorf("s3 head %s/%s: %w", bucket, key, err)
 }
 
 func S3Upload(ctx context.Context, bucket string, key string, data io.Reader) error {

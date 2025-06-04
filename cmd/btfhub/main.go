@@ -25,6 +25,8 @@ func run(ctx context.Context) error {
 		switch fa[0] {
 		case "check":
 			return commands.Check(ctx)
+		case "upload":
+			return commands.Upload(ctx)
 		default:
 			log.Fatalf("unknown command %s", fa[0])
 		}

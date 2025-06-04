@@ -13,6 +13,7 @@
     KUBERNETES_CPU_REQUEST: 8
     GITHUB_PEM_PATH: "${CI_PROJECT_DIR}/github_app_key.pem"
     ARCHIVE_BRANCH: main
+    AWS_REGION: us-east-1
   script:
     - CC=clang go build ./cmd/btfhub
     - export GITHUB_INSTALLATION_ID=$(vault kv get -field=installation_id kv/k8s/gitlab-runner/btfhub/github-app)
