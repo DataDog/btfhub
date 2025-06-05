@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path"
 	"path/filepath"
 
 	"golang.org/x/sync/errgroup"
@@ -81,6 +82,7 @@ func processPackage(
 	if pkg.PackageKernelHasBTF(p, workDir) {
 		return utils.ErrKernelHasBTF
 	}
+	s3key := path.Join(opts.S3Prefix, btfTarName)
 
 	if !opts.Force {
 		if pkg.PackageFailed(p, workDir) {
@@ -91,6 +93,17 @@ func processPackage(
 		if pkg.PackageBTFExists(p, workDir) {
 			log.Printf("SKIP: %s exists\n", btfTarName)
 			return nil
+		}
+
+		if opts.S3Bucket != "" {
+			exists, err := utils.S3Exists(ctx, opts.S3Bucket, s3key)
+			if err != nil {
+				return err
+			}
+			if exists {
+				log.Printf("SKIP: %s/%s exists in S3\n", opts.S3Bucket, s3key)
+				return nil
+			}
 		}
 	}
 
@@ -240,6 +253,28 @@ func processPackage(
 	case error:
 		return v
 	default:
-		return nil
 	}
+
+	if opts.S3Bucket != "" {
+		uploadJob := &job.S3UploadJob{
+			SourcePath: btfTarPath,
+			Bucket:     opts.S3Bucket,
+			Key:        s3key,
+			ReplyChan:  make(chan any),
+		}
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case chans.BTF <- uploadJob: // send upload job to worker
+		}
+
+		reply = <-uploadJob.ReplyChan // wait for reply
+		switch v := reply.(type) {
+		case error:
+			return v
+		default:
+		}
+	}
+
+	return nil
 }

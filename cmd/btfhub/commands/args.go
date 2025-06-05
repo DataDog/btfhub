@@ -2,7 +2,7 @@ package commands
 
 import "flag"
 
-var distroArg, releaseArg, archArg, queryArg string
+var distroArg, releaseArg, archArg, queryArg, s3bucket, s3prefix string
 var numWorkers int
 var force, kernelModules, ordered, dryRun, launchpad bool
 
@@ -22,4 +22,6 @@ func init() {
 	flag.BoolVar(&ordered, "ordered", true, "process kernels in order so future kernels can be skipped once BTF is detected")
 	flag.BoolVar(&dryRun, "dry-run", false, "do not make changes")
 	flag.BoolVar(&launchpad, "launchpad", false, "query Ubuntu Launchpad for additional kernels")
+	flag.StringVar(&s3bucket, "s3-bucket", "", "AWS S3 bucket where new BTFs will be uploaded")
+	flag.StringVar(&s3prefix, "s3-prefix", "", "Key prefix to use when uploading BTFs")
 }

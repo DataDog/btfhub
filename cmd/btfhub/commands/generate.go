@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -115,6 +116,8 @@ func Generate(ctx context.Context) error {
 						DryRun:        dryRun,
 						Query:         qre,
 						Launchpad:     launchpad,
+						S3Bucket:      s3bucket,
+						S3Prefix:      path.Join(s3prefix, distro, release, arch),
 					}
 					return rep.GetKernelPackages(prodCtx, workDir, release, arch, opts, chans)
 				})
