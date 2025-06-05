@@ -30,6 +30,6 @@ func (job *BTFMergeJob) Do(ctx context.Context) error {
 	return nil
 }
 
-func (job *BTFMergeJob) Reply() chan<- any {
+func (job *BTFMergeJob) Reply() chan any {
 	return job.ReplyChan
 }

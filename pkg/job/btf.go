@@ -35,6 +35,6 @@ func (job *BTFGenerationJob) Do(ctx context.Context) error {
 	return nil
 }
 
-func (job *BTFGenerationJob) Reply() chan<- any {
+func (job *BTFGenerationJob) Reply() chan any {
 	return job.ReplyChan
 }

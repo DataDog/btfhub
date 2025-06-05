@@ -39,6 +39,6 @@ func (job *S3UploadJob) Do(ctx context.Context) error {
 	return nil
 }
 
-func (job *S3UploadJob) Reply() chan<- any {
+func (job *S3UploadJob) Reply() chan any {
 	return job.ReplyChan
 }
