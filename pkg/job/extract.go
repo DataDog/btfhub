@@ -62,6 +62,6 @@ func (job *KernelExtractionJob) Do(ctx context.Context) error {
 	return nil
 }
 
-func (job *KernelExtractionJob) Reply() chan<- any {
+func (job *KernelExtractionJob) Reply() chan any {
 	return job.ReplyChan
 }
