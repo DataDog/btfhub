@@ -32,6 +32,6 @@ func (job *BTFCompressionJob) Do(ctx context.Context) error {
 	return nil
 }
 
-func (job *BTFCompressionJob) Reply() chan<- any {
+func (job *BTFCompressionJob) Reply() chan any {
 	return job.ReplyChan
 }

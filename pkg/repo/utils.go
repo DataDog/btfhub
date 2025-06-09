@@ -129,23 +129,12 @@ func processPackage(
 		Force:         opts.Force,
 		KernelModules: opts.KernelModules,
 	}
-
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case chans.Default <- kernelExtJob: // send vmlinux file extraction job to worker
-	}
-
-	reply := <-kernelExtJob.ReplyChan // wait for reply
-	var extractReply *job.KernelExtractReply
-	switch v := reply.(type) {
-	case error:
-		if errors.Is(v, utils.ErrKernelHasBTF) {
+	extractReply, err := job.SubmitAndWaitT[job.KernelExtractReply](ctx, kernelExtJob, chans.Default)
+	if err != nil {
+		if errors.Is(err, utils.ErrKernelHasBTF) {
 			_ = pkg.MarkPackageHasBTF(p, workDir)
 		}
-		return v
-	case *job.KernelExtractReply:
-		extractReply = v
+		return err
 	}
 
 	// from this point on, we just want to kick the jobs off and proceed with other packages
@@ -161,16 +150,8 @@ func processPackage(
 		BTFPath:       vmlinuxBTF,
 		ReplyChan:     make(chan any),
 	}
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case chans.BTF <- btfGenJob: // send BTF generation job to worker
-	}
-	reply = <-btfGenJob.ReplyChan // wait for reply
-	switch v := reply.(type) {
-	case error:
-		return v
-	default:
+	if err := job.SubmitAndWait(ctx, btfGenJob, chans.BTF); err != nil {
+		return err
 	}
 
 	g := new(errgroup.Group)
@@ -183,21 +164,11 @@ func processPackage(
 			BTFPath:       filepath.Join(btfGenDir, filename),
 			ReplyChan:     make(chan any),
 		}
-
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case chans.BTF <- btfGenJob: // send BTF generation job to worker
+		if err := job.Submit(ctx, btfGenJob, chans.BTF); err != nil {
+			return err
 		}
-
 		g.Go(func() error {
-			reply := <-btfGenJob.ReplyChan // wait for reply
-			switch v := reply.(type) {
-			case error:
-				return v
-			default:
-				return nil
-			}
+			return job.Wait(btfGenJob)
 		})
 	}
 
@@ -219,16 +190,8 @@ func processPackage(
 			BTFPath:   btfPath,
 			ReplyChan: make(chan any),
 		}
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case chans.BTF <- mergeJob: // send BTF merge job to worker
-		}
-		reply := <-mergeJob.ReplyChan // wait for reply
-		switch v := reply.(type) {
-		case error:
-			return v
-		default:
+		if err := job.SubmitAndWait(ctx, mergeJob, chans.BTF); err != nil {
+			return err
 		}
 	} else {
 		if err := os.Rename(vmlinuxBTF, btfPath); err != nil {
@@ -241,18 +204,8 @@ func processPackage(
 		BTFTarPath: btfTarPath,
 		ReplyChan:  make(chan any),
 	}
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case chans.BTF <- compressJob: // send BTF compression job to worker
-	}
-
-	// removing the temp directory requires we want for this job to complete
-	reply = <-compressJob.ReplyChan // wait for reply
-	switch v := reply.(type) {
-	case error:
-		return v
-	default:
+	if err := job.SubmitAndWait(ctx, compressJob, chans.BTF); err != nil {
+		return err
 	}
 
 	if opts.S3Bucket != "" {
@@ -262,17 +215,8 @@ func processPackage(
 			Key:        s3key,
 			ReplyChan:  make(chan any),
 		}
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case chans.BTF <- uploadJob: // send upload job to worker
-		}
-
-		reply = <-uploadJob.ReplyChan // wait for reply
-		switch v := reply.(type) {
-		case error:
-			return v
-		default:
+		if err := job.SubmitAndWait(ctx, uploadJob, chans.BTF); err != nil {
+			return err
 		}
 	}
 
