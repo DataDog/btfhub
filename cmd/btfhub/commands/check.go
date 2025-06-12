@@ -6,12 +6,13 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"maps"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	fastxz "github.com/therootcompany/xz"
-	"golang.org/x/exp/maps"
 
 	"github.com/DataDog/btfhub/pkg/utils"
 )
@@ -33,7 +34,7 @@ func failedToEmoji(v bool) string {
 }
 
 func Check(ctx context.Context) error {
-	distros, releases, archs, err := processArgs(maps.Keys(distroReleases), distroReleases)
+	distros, releases, archs, err := processArgs(slices.Sorted(maps.Keys(distroReleases)), distroReleases)
 	if err != nil {
 		return err
 	}
