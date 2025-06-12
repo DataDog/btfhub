@@ -25,30 +25,37 @@ func processPackages(
 	chans *JobChannels,
 ) error {
 	if !opts.Ordered {
-		g, ctx := errgroup.WithContext(ctx)
-		for i, p := range pkgs {
-			pos := i + 1
-			gp := p
-			g.Go(func() error {
-				log.Printf("DEBUG: start pkg %s (%d/%d)\n", gp, pos, len(pkgs))
-				err := processPackage(ctx, gp, workDir, opts, chans)
-				if err != nil {
-					if errors.Is(err, utils.ErrKernelHasBTF) {
-						log.Printf("INFO: kernel %s has BTF already\n", gp)
-						return nil
-					}
-					if errors.Is(err, context.Canceled) {
-						return nil
-					}
-					log.Printf("ERROR: %s: %s\n", gp, err)
-				}
-				log.Printf("DEBUG: end pkg %s (%d/%d)\n", gp, pos, len(pkgs))
-				return nil
-			})
-		}
-		return g.Wait()
+		return processUnorderedPackages(ctx, workDir, pkgs, opts, chans)
 	}
+	return processOrderedPackages(ctx, workDir, pkgs, opts, chans)
+}
 
+func processUnorderedPackages(ctx context.Context, workDir string, pkgs []pkg.Package, opts RepoOptions, chans *JobChannels) error {
+	g, ctx := errgroup.WithContext(ctx)
+	for i, p := range pkgs {
+		pos := i + 1
+		gp := p
+		g.Go(func() error {
+			log.Printf("DEBUG: start pkg %s (%d/%d)\n", gp, pos, len(pkgs))
+			err := processPackage(ctx, gp, workDir, opts, chans)
+			if err != nil {
+				if errors.Is(err, utils.ErrKernelHasBTF) {
+					log.Printf("INFO: kernel %s has BTF already\n", gp)
+					return nil
+				}
+				if errors.Is(err, context.Canceled) {
+					return nil
+				}
+				log.Printf("ERROR: %s: %s\n", gp, err)
+			}
+			log.Printf("DEBUG: end pkg %s (%d/%d)\n", gp, pos, len(pkgs))
+			return nil
+		})
+	}
+	return g.Wait()
+}
+
+func processOrderedPackages(ctx context.Context, workDir string, pkgs []pkg.Package, opts RepoOptions, chans *JobChannels) error {
 	for i, p := range pkgs {
 		log.Printf("DEBUG: start pkg %s (%d/%d)\n", p, i+1, len(pkgs))
 		err := processPackage(ctx, p, workDir, opts, chans)
