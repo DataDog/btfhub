@@ -106,6 +106,11 @@ func Generate(ctx context.Context) error {
 					if err := os.MkdirAll(workDir, 0775); err != nil {
 						return fmt.Errorf("arch dir: %s", err)
 					}
+					var repoHashDir string
+					if hashDir != "" {
+						// order is different to match catalog nesting
+						repoHashDir = filepath.Join(hashDir, arch, distro, release)
+					}
 
 					// pick the repository creator and get the kernel packages
 					rep := repoCreators[distro]()
@@ -118,6 +123,7 @@ func Generate(ctx context.Context) error {
 						Launchpad:     launchpad,
 						S3Bucket:      s3bucket,
 						S3Prefix:      path.Join(s3prefix, distro, release, arch),
+						HashDir:       repoHashDir,
 					}
 					return rep.GetKernelPackages(prodCtx, workDir, release, arch, opts, chans)
 				})

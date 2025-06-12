@@ -4,6 +4,7 @@ include:
   - .gitlab/image.yml
   - .gitlab/rhel.yml
   - .gitlab/pr.yml
+  - .gitlab/catalog.yml
 
 variables:
   CI_IMAGE_REPO: "ci/${CI_PROJECT_NAME}"
@@ -19,6 +20,7 @@ stages:
   - test
   - build_image
   - btf
+  - catalog
   - cleanup
 
 default:
