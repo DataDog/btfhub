@@ -34,7 +34,12 @@
     - git sparse-checkout set --cone "${DISTRO}/${RELEASE}/${BTF_ARCH}"
     - git checkout --progress --force "${ARCHIVE_BRANCH}"
     - cd ..
-    - ./btfhub -d "${DISTRO}" -r "${RELEASE}" -a "${BTF_ARCH}" -s3-bucket dd-agent -s3-prefix btfs
+    - |
+      if [[ "${CI_COMMIT_BRANCH}" == "main" && "${CI_PIPELINE_SOURCE}" == "schedule" ]]; then
+        ./btfhub -d "${DISTRO}" -r "${RELEASE}" -a "${BTF_ARCH}" -s3-bucket dd-agent -s3-prefix btfs -hash-dir .tmp/hash
+      else
+        ./btfhub -d "${DISTRO}" -r "${RELEASE}" -a "${BTF_ARCH}" -hash-dir .tmp/hash
+      fi
     - cd archive
     - git status
     - |
@@ -53,6 +58,9 @@
           gh pr create -R DataDog/btfhub-archive -B main -f
         fi
       fi
+  artifacts:
+    paths:
+      - ".tmp/hash/"
 
 btf-generate-direct-x64:
   extends: .btf-generate

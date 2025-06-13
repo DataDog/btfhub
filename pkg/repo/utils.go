@@ -227,5 +227,16 @@ func processPackage(
 		}
 	}
 
+	if opts.HashDir != "" {
+		hashJob := &job.HashJob{
+			SourcePath: btfTarPath,
+			DestPath:   filepath.Join(opts.HashDir, p.BTFFilename()),
+			ReplyChan:  make(chan any),
+		}
+		if err := job.SubmitAndWait(ctx, hashJob, chans.BTF); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }

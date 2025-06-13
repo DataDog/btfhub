@@ -14,6 +14,7 @@ type RepoOptions struct {
 	DryRun        bool
 	Query         *regexp.Regexp
 	Launchpad     bool
+	HashDir       string
 
 	// S3Bucket is the AWS S3 bucket where uploaded BTFs should be stored
 	S3Bucket string

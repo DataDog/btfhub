@@ -27,6 +27,8 @@ func run(ctx context.Context) error {
 			return commands.Check(ctx)
 		case "upload":
 			return commands.Upload(ctx)
+		case "catalog-update":
+			return commands.CatalogUpdate(ctx)
 		default:
 			log.Fatalf("unknown command %s", fa[0])
 		}

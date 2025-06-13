@@ -1,0 +1,44 @@
+---
+catalog-pr-create:
+  rules:
+    - !reference [ .on_scheduled_main ]
+    - !reference [ .manual ]
+  stage: catalog
+  needs:
+    - btf-generate-direct-x64
+    - btf-generate-amzn-x64
+    - btf-generate-rhel-7
+    - btf-generate-rhel-8-x64
+    - btf-generate-rhel-8-arm64
+  image: "registry.ddbuild.io/$CI_IMAGE_REPO/ubuntu:$IMAGE_VERSION"
+  tags:
+    - "arch:amd64"
+  variables:
+    GITHUB_PEM_PATH: "${CI_PROJECT_DIR}/github_app_key.pem"
+  script:
+    - CC=clang go build ./cmd/btfhub
+    - export GITHUB_INSTALLATION_ID=$(vault kv get -field=installation_id kv/k8s/gitlab-runner/btfhub/github-app)
+    - export GITHUB_CLIENT_ID=$(vault kv get -field=client_id kv/k8s/gitlab-runner/btfhub/github-app)
+    - vault kv get -field=key_b64 kv/k8s/gitlab-runner/btfhub/github-app | base64 -d > "${GITHUB_PEM_PATH}"
+    - export GH_TOKEN=$(go run ./cmd/github-auth)
+    - gh repo clone DataDog/rc-employee-configurations -- --depth=1
+    - ./btfhub -hash-dir .tmp/hash -catalog-json rc-employee-configurations/configs/BTF_DD/btfs.json catalog-update
+    - cd rc-employee-configurations
+    - git status
+    - git diff
+    - |
+      if [[ "${CI_COMMIT_BRANCH}" == "main" && "${CI_PIPELINE_SOURCE}" == "schedule" ]]; then
+        set -x
+        git config --local user.name "dd-btfhub-ebpf-platform[bot]"
+        git config --local user.email "205981682+dd-btfhub-ebpf-platform[bot]@users.noreply.github.com"
+        BRANCH_NAME="btfs/$(date -u +%Y-%m-%dT%H-%M-%S)"
+        git checkout -b "${BRANCH_NAME}"
+        git add -A
+        if git diff-index --quiet HEAD; then
+          echo "No changes"
+        else
+          git commit -m "BTF_DD catalog update on $(date -u +%Y-%m-%d)"
+          git push --set-upstream origin "${BRANCH_NAME}"
+          gh pr create -R DataDog/rc-employee-configurations -B main -f
+        fi
+      fi
