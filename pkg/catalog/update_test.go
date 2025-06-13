@@ -171,6 +171,7 @@ func TestJSONIndent(t *testing.T) {
 	require.NoError(t, err)
 
 	newCatalogData, err := os.ReadFile(catalogPath)
+	require.NoError(t, err)
 	require.Equal(t, testIndentContent, newCatalogData)
 	require.NotEqual(t, oldStat.ModTime(), newStat.ModTime())
 }
