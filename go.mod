@@ -14,7 +14,6 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/kfcampbell/ghinstallation v0.0.6
 	github.com/therootcompany/xz v1.0.1
-	golang.org/x/exp v0.0.0-20250305212735-054e65f0b394
 	golang.org/x/sync v0.15.0
 	pault.ag/go/debian v0.18.0
 )

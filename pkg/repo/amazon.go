@@ -6,11 +6,11 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"maps"
 	"os/exec"
+	"slices"
 	"sort"
 	"strings"
-
-	"golang.org/x/exp/maps"
 
 	"github.com/DataDog/btfhub/pkg/kernel"
 	"github.com/DataDog/btfhub/pkg/pkg"
@@ -101,5 +101,5 @@ func parseRepoqueryPackages(rdr io.Reader, minVersion kernel.Version) ([]pkg.Pac
 	if err := bio.Err(); err != nil {
 		return nil, err
 	}
-	return maps.Values(pkgs), nil
+	return slices.Collect(maps.Values(pkgs)), nil
 }
