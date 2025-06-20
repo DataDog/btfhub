@@ -109,7 +109,10 @@ func Generate(ctx context.Context) error {
 					var repoHashDir string
 					if hashDir != "" {
 						// order is different to match catalog nesting
-						repoHashDir = filepath.Join(hashDir, arch, distro, release)
+						repoHashDir, err = filepath.Abs(filepath.Join(hashDir, arch, distro, release))
+						if err != nil {
+							return fmt.Errorf("hash dir abs: %s", err)
+						}
 					}
 
 					// pick the repository creator and get the kernel packages
