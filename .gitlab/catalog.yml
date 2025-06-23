@@ -17,10 +17,7 @@ catalog-pr-create:
     GITHUB_PEM_PATH: "${CI_PROJECT_DIR}/github_app_key.pem"
   script:
     - CC=clang go build ./cmd/btfhub
-    - export GITHUB_INSTALLATION_ID=$(vault kv get -field=installation_id kv/k8s/gitlab-runner/btfhub/github-app)
-    - export GITHUB_CLIENT_ID=$(vault kv get -field=client_id kv/k8s/gitlab-runner/btfhub/github-app)
-    - vault kv get -field=key_b64 kv/k8s/gitlab-runner/btfhub/github-app | base64 -d > "${GITHUB_PEM_PATH}"
-    - export GH_TOKEN=$(go run ./cmd/github-auth)
+    - !reference [.github_auth]
     - gh repo clone DataDog/rc-employee-configurations -- --depth=1
     - ./btfhub -hash-dir .tmp/hash -catalog-json rc-employee-configurations/configs/BTF_DD/btfs.json catalog-update
     - cd rc-employee-configurations
