@@ -1,5 +1,5 @@
 ---
-.github-auth:
+.github_auth:
   - export GITHUB_INSTALLATION_ID=$(vault kv get -field=installation_id kv/k8s/gitlab-runner/btfhub/github-app)
   - export GITHUB_CLIENT_ID=$(vault kv get -field=client_id kv/k8s/gitlab-runner/btfhub/github-app)
   - vault kv get -field=key_b64 kv/k8s/gitlab-runner/btfhub/github-app | base64 -d > "${GITHUB_PEM_PATH}"
