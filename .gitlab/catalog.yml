@@ -35,5 +35,5 @@ catalog-pr-create:
       else
         git commit -m "BTF_DD catalog update on $(date -u +%Y-%m-%d)"
         git push --set-upstream origin "${BRANCH_NAME}"
-        gh pr create -R DataDog/rc-employee-configurations -B main -f
+        gh pr create -R DataDog/rc-employee-configurations -B main -f --head $(git branch --show-current)
       fi
