@@ -28,7 +28,7 @@ func (job *HashJob) Do(_ context.Context) error {
 		return fmt.Errorf("sha256 hash: %w", err)
 	}
 	destDir := filepath.Dir(job.DestPath)
-	if err := os.Mkdir(destDir, 0755); err != nil {
+	if err := os.MkdirAll(destDir, 0755); err != nil {
 		return fmt.Errorf("mkdir %s: %w", destDir, err)
 	}
 	if err := os.WriteFile(job.DestPath, []byte(hash), 0644); err != nil {
