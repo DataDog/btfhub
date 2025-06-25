@@ -223,6 +223,8 @@ func processPackage(
 			ReplyChan:  make(chan any),
 		}
 		if err := job.SubmitAndWait(ctx, uploadJob, chans.BTF); err != nil {
+			// remove source file, so we don't end up out of sync with generation and upload
+			os.Remove(btfTarPath)
 			return err
 		}
 	}
@@ -234,6 +236,8 @@ func processPackage(
 			ReplyChan:  make(chan any),
 		}
 		if err := job.SubmitAndWait(ctx, hashJob, chans.BTF); err != nil {
+			// remove source file, so we don't end up out of sync with generation, upload, and hash
+			os.Remove(btfTarPath)
 			return err
 		}
 	}
