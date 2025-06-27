@@ -3,7 +3,6 @@
   rules:
     - !reference [ .on_btf_changes ]
     - !reference [ .on_scheduled_main ]
-    - !reference [ .manual ]
   stage: btf
   needs: []
   image: "registry.ddbuild.io/$CI_IMAGE_REPO/$IMAGE:$IMAGE_VERSION"
@@ -25,11 +24,12 @@
     - git sparse-checkout set --cone "${DISTRO}/${RELEASE}/${BTF_ARCH}"
     - git checkout --progress --force "${ARCHIVE_BRANCH}"
     - cd ..
+    - !reference [.catalog_checkout]
     - |
       if [[ "${CI_COMMIT_BRANCH}" == "main" && "${CI_PIPELINE_SOURCE}" == "schedule" ]]; then
-        ./btfhub -d "${DISTRO}" -r "${RELEASE}" -a "${BTF_ARCH}" -s3-bucket dd-agent -s3-prefix btfs -hash-dir .tmp/hash
+        ./btfhub -d "${DISTRO}" -r "${RELEASE}" -a "${BTF_ARCH}" -s3-bucket dd-agent -s3-prefix btfs -hash-dir .tmp/hash -catalog-json rc-employee-configurations/configs/BTF_DD/btfs.json
       else
-        ./btfhub -d "${DISTRO}" -r "${RELEASE}" -a "${BTF_ARCH}" -hash-dir .tmp/hash
+        ./btfhub -d "${DISTRO}" -r "${RELEASE}" -a "${BTF_ARCH}" -hash-dir .tmp/hash -catalog-json rc-employee-configurations/configs/BTF_DD/btfs.json
       fi
     - cd archive
     - git status

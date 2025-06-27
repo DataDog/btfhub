@@ -9,12 +9,17 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/DataDog/btfhub/pkg/catalog"
 )
 
 type HashJob struct {
 	SourcePath string
 	DestPath   string
 	ReplyChan  chan any
+
+	Catalog                        *catalog.BTFCatalog
+	Arch, Distro, Release, Version string
 }
 
 // Do implements the Job interface, and is called by the worker.
@@ -27,6 +32,19 @@ func (job *HashJob) Do(_ context.Context) error {
 	if err != nil {
 		return fmt.Errorf("sha256 hash: %w", err)
 	}
+
+	if job.Catalog != nil {
+		catalogHash := job.Catalog.GetHash(job.Arch, job.Distro, job.Release, job.Version)
+		if catalogHash != "" {
+			if catalogHash == hash {
+				log.Printf("DEBUG: %s exists in catalog, skipping\n", job.SourcePath)
+				job.ReplyChan <- nil
+				return nil
+			}
+			return fmt.Errorf("hash mismatch for %s/%s/%s/%s (expected %s, got %s)", job.Arch, job.Distro, job.Release, job.Version, hash, catalogHash)
+		}
+	}
+
 	destDir := filepath.Dir(job.DestPath)
 	if err := os.MkdirAll(destDir, 0755); err != nil {
 		return fmt.Errorf("mkdir %s: %w", destDir, err)

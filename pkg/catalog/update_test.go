@@ -16,7 +16,7 @@ const (
 )
 
 func TestWalkNoHashes(t *testing.T) {
-	catalog := &btfCatalog{}
+	catalog := &BTFCatalog{}
 	hashFS := fstest.MapFS{}
 	err := updateCatalog(t.Context(), hashFS, catalog)
 	require.NoError(t, err)
@@ -25,8 +25,8 @@ func TestWalkNoHashes(t *testing.T) {
 }
 
 func TestWalkHashConflict(t *testing.T) {
-	catalog := &btfCatalog{
-		X64: map[string]btfDistroCatalog{"amzn": {"2": btfReleaseCatalog{"4.14.355-276.639.amzn2.x86_64": btfEntry{SHA256: testHash1}}}},
+	catalog := &BTFCatalog{
+		X64: map[string]BTFDistroCatalog{"amzn": {"2": BTFReleaseCatalog{"4.14.355-276.639.amzn2.x86_64": BTFEntry{SHA256: testHash1}}}},
 	}
 	hashFS := fstest.MapFS{
 		"x86_64/amzn/2/4.14.355-276.639.amzn2.x86_64": &fstest.MapFile{Data: []byte(testHash2)},
@@ -36,8 +36,8 @@ func TestWalkHashConflict(t *testing.T) {
 }
 
 func TestWalkAddEntry(t *testing.T) {
-	catalog := &btfCatalog{
-		X64: map[string]btfDistroCatalog{"amzn": {"2": btfReleaseCatalog{"4.14.355-276.639.amzn2.x86_64": btfEntry{SHA256: testHash1}}}},
+	catalog := &BTFCatalog{
+		X64: map[string]BTFDistroCatalog{"amzn": {"2": BTFReleaseCatalog{"4.14.355-276.639.amzn2.x86_64": BTFEntry{SHA256: testHash1}}}},
 	}
 	hashFS := fstest.MapFS{
 		"x86_64/amzn/2/4.14.355-277.647.amzn2.x86_64": &fstest.MapFile{Data: []byte(testHash2)},
@@ -55,8 +55,8 @@ func TestWalkAddEntry(t *testing.T) {
 }
 
 func TestWalkNewDistro(t *testing.T) {
-	catalog := &btfCatalog{
-		X64: map[string]btfDistroCatalog{"amzn": {"2": btfReleaseCatalog{"4.14.355-276.639.amzn2.x86_64": btfEntry{SHA256: testHash1}}}},
+	catalog := &BTFCatalog{
+		X64: map[string]BTFDistroCatalog{"amzn": {"2": BTFReleaseCatalog{"4.14.355-276.639.amzn2.x86_64": BTFEntry{SHA256: testHash1}}}},
 	}
 	hashFS := fstest.MapFS{
 		"x86_64/ubuntu/20.04/5.4.0-1097-aws": &fstest.MapFile{Data: []byte(testHash2)},
@@ -74,8 +74,8 @@ func TestWalkNewDistro(t *testing.T) {
 }
 
 func TestWalkNewRelease(t *testing.T) {
-	catalog := &btfCatalog{
-		X64: map[string]btfDistroCatalog{"amzn": {"2": btfReleaseCatalog{"4.14.355-276.639.amzn2.x86_64": btfEntry{SHA256: testHash1}}}},
+	catalog := &BTFCatalog{
+		X64: map[string]BTFDistroCatalog{"amzn": {"2": BTFReleaseCatalog{"4.14.355-276.639.amzn2.x86_64": BTFEntry{SHA256: testHash1}}}},
 	}
 	hashFS := fstest.MapFS{
 		"x86_64/amzn/2018/4.14.355-196.647.amzn1.x86_64": &fstest.MapFile{Data: []byte(testHash2)},
@@ -93,8 +93,8 @@ func TestWalkNewRelease(t *testing.T) {
 }
 
 func TestWalkNewArch(t *testing.T) {
-	catalog := &btfCatalog{
-		X64: map[string]btfDistroCatalog{"amzn": {"2": btfReleaseCatalog{"4.14.355-276.639.amzn2.x86_64": btfEntry{SHA256: testHash1}}}},
+	catalog := &BTFCatalog{
+		X64: map[string]BTFDistroCatalog{"amzn": {"2": BTFReleaseCatalog{"4.14.355-276.639.amzn2.x86_64": BTFEntry{SHA256: testHash1}}}},
 	}
 	hashFS := fstest.MapFS{
 		"arm64/amzn/2/4.14.355-277.647.amzn2.aarch64": &fstest.MapFile{Data: []byte(testHash2)},
@@ -112,8 +112,8 @@ func TestWalkNewArch(t *testing.T) {
 }
 
 func TestWalkIgnoreFiles(t *testing.T) {
-	catalog := &btfCatalog{
-		X64: map[string]btfDistroCatalog{"amzn": {"2": btfReleaseCatalog{"4.14.355-276.639.amzn2.x86_64": btfEntry{SHA256: testHash1}}}},
+	catalog := &BTFCatalog{
+		X64: map[string]BTFDistroCatalog{"amzn": {"2": BTFReleaseCatalog{"4.14.355-276.639.amzn2.x86_64": BTFEntry{SHA256: testHash1}}}},
 	}
 	hashFS := fstest.MapFS{
 		"x86_64/amzn/2018/4.14.355-196.647.amzn1.x86_64": &fstest.MapFile{Data: []byte(testHash2)},

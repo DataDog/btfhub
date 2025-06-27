@@ -12,6 +12,7 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
+	"github.com/DataDog/btfhub/pkg/catalog"
 	"github.com/DataDog/btfhub/pkg/job"
 	"github.com/DataDog/btfhub/pkg/repo"
 )
@@ -91,6 +92,14 @@ func Generate(ctx context.Context) error {
 		qre = regexp.MustCompile(queryArg)
 	}
 
+	var cat *catalog.BTFCatalog
+	if catalogJSONPath != "" {
+		cat, err = catalog.Read(catalogJSONPath)
+		if err != nil {
+			return err
+		}
+	}
+
 	chans := &repo.JobChannels{BTF: btfChan, Default: jobChan}
 	// Workers: job producers (per distro, per release)
 	produce, prodCtx := errgroup.WithContext(ctx)
@@ -127,6 +136,10 @@ func Generate(ctx context.Context) error {
 						S3Bucket:      s3bucket,
 						S3Prefix:      path.Join(s3prefix, distro, release, arch),
 						HashDir:       repoHashDir,
+						Catalog:       cat,
+						Arch:          arch,
+						Release:       release,
+						Distro:        distro,
 					}
 					return rep.GetKernelPackages(prodCtx, workDir, release, arch, opts, chans)
 				})
