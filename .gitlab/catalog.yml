@@ -18,7 +18,7 @@ catalog-pr-create:
   script:
     - CC=clang go build ./cmd/btfhub
     - !reference [.github_auth]
-    - gh repo clone DataDog/rc-employee-configurations -- --depth=1
+    - !reference [.catalog_checkout]
     - ./btfhub -hash-dir .tmp/hash -catalog-json rc-employee-configurations/configs/BTF_DD/btfs.json catalog-update
     - cd rc-employee-configurations
     - git status
