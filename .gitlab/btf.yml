@@ -3,7 +3,6 @@
   rules:
     - !reference [ .on_btf_changes ]
     - !reference [ .on_scheduled_main ]
-    - !reference [ .manual ]
   stage: btf
   needs: []
   image: "registry.ddbuild.io/$CI_IMAGE_REPO/$IMAGE:$IMAGE_VERSION"
