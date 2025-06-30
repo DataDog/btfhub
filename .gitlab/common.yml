@@ -10,3 +10,13 @@
   - |
     set +x
     echo -e "protocol=https\nhost=github.com\nusername=x-access-token\npassword=${GH_TOKEN}" | git credential approve
+
+.catalog_checkout:
+  - mkdir rc-employee-configurations
+  - cd rc-employee-configurations
+  - git init
+  - git remote add origin https://github.com/DataDog/rc-employee-configurations
+  - git fetch --filter=blob:none --no-tags --progress --depth=1 origin main
+  - git sparse-checkout set --cone configs/BTF_DD
+  - git checkout --progress --force main
+  - cd ..

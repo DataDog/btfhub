@@ -4,6 +4,7 @@ import (
 	"context"
 	"regexp"
 
+	"github.com/DataDog/btfhub/pkg/catalog"
 	"github.com/DataDog/btfhub/pkg/job"
 )
 
@@ -15,6 +16,11 @@ type RepoOptions struct {
 	Query         *regexp.Regexp
 	Launchpad     bool
 	HashDir       string
+
+	Catalog *catalog.BTFCatalog
+	Arch    string
+	Release string
+	Distro  string
 
 	// S3Bucket is the AWS S3 bucket where uploaded BTFs should be stored
 	S3Bucket string

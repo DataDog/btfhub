@@ -4,7 +4,6 @@
     - !reference [ .on_image_changes ]
     - !reference [ .on_btf_changes ]
     - !reference [ .on_scheduled_main ]
-    - !reference [ .manual ]
   stage: setup
   tags:
     - "arch:$ARCH"
@@ -39,7 +38,6 @@ ci-subscribe-rhel8:
     - !reference [ .on_image_changes ]
     - !reference [ .on_btf_changes ]
     - !reference [ .on_scheduled_main ]
-    - !reference [ .manual ]
   when: always
   stage: cleanup
   tags:

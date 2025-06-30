@@ -91,26 +91,16 @@ func processPackage(
 	}
 	s3key := path.Join(opts.S3Prefix, btfTarName)
 
+	fileExists := false
 	if !opts.Force {
 		if pkg.PackageFailed(p, workDir) {
 			log.Printf("SKIP: %s previously failed\n", btfTarName)
 			return nil
 		}
-
-		if pkg.PackageBTFExists(p, workDir) {
+		fileExists = pkg.PackageBTFExists(p, workDir)
+		if fileExists && opts.S3Bucket == "" {
 			log.Printf("SKIP: %s exists\n", btfTarName)
 			return nil
-		}
-
-		if opts.S3Bucket != "" {
-			exists, err := utils.S3Exists(ctx, opts.S3Bucket, s3key)
-			if err != nil {
-				return err
-			}
-			if exists {
-				log.Printf("SKIP: %s/%s exists in S3\n", opts.S3Bucket, s3key)
-				return nil
-			}
 		}
 	}
 
@@ -118,6 +108,62 @@ func processPackage(
 		return nil
 	}
 
+	if !fileExists {
+		// if there is no BTF file, generate it
+		err := generateBTFFile(ctx, p, workDir, opts, chans, btfTarPath)
+		if err != nil {
+			return err
+		}
+	}
+
+	if opts.S3Bucket != "" {
+		var err error
+		s3exists := false
+		if fileExists {
+			// if the BTF file exists, check if it exists in S3, if not upload
+			s3exists, err = utils.S3Exists(ctx, opts.S3Bucket, s3key)
+			if err != nil {
+				return err
+			}
+		}
+
+		if !s3exists {
+			uploadJob := &job.S3UploadJob{
+				SourcePath: btfTarPath,
+				Bucket:     opts.S3Bucket,
+				Key:        s3key,
+				ReplyChan:  make(chan any),
+			}
+			if err := job.SubmitAndWait(ctx, uploadJob, chans.BTF); err != nil {
+				// remove source file, so we don't end up out of sync with generation and upload
+				os.Remove(btfTarPath)
+				return err
+			}
+		}
+	}
+
+	if opts.HashDir != "" {
+		hashJob := &job.HashJob{
+			SourcePath: btfTarPath,
+			DestPath:   filepath.Join(opts.HashDir, p.BTFFilename()),
+			ReplyChan:  make(chan any),
+			Catalog:    opts.Catalog,
+			Arch:       opts.Arch,
+			Distro:     opts.Distro,
+			Release:    opts.Release,
+			Version:    p.BTFFilename(),
+		}
+		if err := job.SubmitAndWait(ctx, hashJob, chans.BTF); err != nil {
+			// remove source file, so we don't end up out of sync with generation, upload, and hash
+			os.Remove(btfTarPath)
+			return err
+		}
+	}
+
+	return nil
+}
+
+func generateBTFFile(ctx context.Context, p pkg.Package, workDir string, opts RepoOptions, chans *JobChannels, btfTarPath string) error {
 	tmpDir, err := os.MkdirTemp("", fmt.Sprintf("btfhub-%s-*", p.BTFFilename()))
 	if err != nil {
 		return fmt.Errorf("create temp dir for package: %w", err)
@@ -213,29 +259,6 @@ func processPackage(
 	}
 	if err := job.SubmitAndWait(ctx, compressJob, chans.BTF); err != nil {
 		return err
-	}
-
-	if opts.S3Bucket != "" {
-		uploadJob := &job.S3UploadJob{
-			SourcePath: btfTarPath,
-			Bucket:     opts.S3Bucket,
-			Key:        s3key,
-			ReplyChan:  make(chan any),
-		}
-		if err := job.SubmitAndWait(ctx, uploadJob, chans.BTF); err != nil {
-			return err
-		}
-	}
-
-	if opts.HashDir != "" {
-		hashJob := &job.HashJob{
-			SourcePath: btfTarPath,
-			DestPath:   filepath.Join(opts.HashDir, p.BTFFilename()),
-			ReplyChan:  make(chan any),
-		}
-		if err := job.SubmitAndWait(ctx, hashJob, chans.BTF); err != nil {
-			return err
-		}
 	}
 
 	return nil
