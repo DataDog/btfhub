@@ -60,6 +60,7 @@ btf-generate-direct-x64:
     - "arch:amd64"
   variables:
     IMAGE: ubuntu
+  timeout: 3h
   parallel:
     matrix:
       - DISTRO: ubuntu
