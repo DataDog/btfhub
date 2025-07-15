@@ -4,6 +4,10 @@ vmlinux=$1
 
 # TODO: add check for the existence of uretprobe syscall when testing before 6.11
 
+objdump -t $vmlinux 2> /dev/null | grep -q __x64_sys_uretprobe
+st=$?
+[ $st -ne 0 ] && exit 0
+
 objdump -t $vmlinux 2> /dev/null | grep seccomp_cache_prepare_bitmap | cut -d ' ' -f 1 | sort > syms
 echo "'seccomp_cache_prepare_bitmap' symbol addresses: $(cat syms)"
 
@@ -23,5 +27,5 @@ echo "CMD: dd if=$vmlinux of=bits bs=1 count=$num_bytes skip=$skip_bytes"
 dd if=$vmlinux of=bits bs=1 count=$num_bytes skip=$skip_bytes
 
 xxd bits | grep -q "4f01"
-status=$?
-[ $status -ne 0 ] && exit 13
+st=$?
+[ $st -ne 0 ] && exit 13
