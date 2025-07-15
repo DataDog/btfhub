@@ -17,6 +17,7 @@
     - CC=clang go build ./cmd/btfhub
     - !reference [.github_auth]
     - mkdir archive
+    - apt install -y xxd
     - cd archive
     - git init
     - git remote add origin https://github.com/DataDog/btfhub-archive
