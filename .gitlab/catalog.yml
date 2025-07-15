@@ -22,6 +22,9 @@ catalog-pr-create:
     - ./btfhub -hash-dir .tmp/hash -catalog-json rc-employee-configurations/configs/BTF_DD/btfs.json catalog-update
     - cd rc-employee-configurations
     - |
+      set -x
+      git config --local user.name "dd-btfhub-ebpf-platform[bot]"
+      git config --local user.email "205981682+dd-btfhub-ebpf-platform[bot]@users.noreply.github.com"
       # Define a stable branch for updates
       BRANCH_NAME="btfhub-catalog-update"
       # Checkout the existing branch or create it from main
