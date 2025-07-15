@@ -6,7 +6,7 @@ import (
 	"log"
 )
 
-func StartWorker(ctx context.Context, btfchan <-chan Job, jobchan <-chan Job) error {
+func StartWorker(ctx context.Context, btfchan <-chan Job, seccompChan <-chan Job, jobchan <-chan Job) error {
 	var job Job
 	var ok bool
 	for {
@@ -17,9 +17,17 @@ func StartWorker(ctx context.Context, btfchan <-chan Job, jobchan <-chan Job) er
 			if !ok {
 				return nil
 			}
+		case job, ok = <-seccompChan:
+			if !ok {
+				return nil
+			}
 		default:
 			select {
 			case job, ok = <-btfchan:
+				if !ok {
+					return nil
+				}
+			case job, ok = <-seccompChan:
 				if !ok {
 					return nil
 				}

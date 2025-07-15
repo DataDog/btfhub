@@ -20,13 +20,13 @@ import (
 var possibleArchs = []string{"x86_64", "arm64"}
 
 var distroReleases = map[string][]string{
-	"ubuntu":        {"16.04", "18.04", "20.04"},
+	"ubuntu":        {"16.04", "18.04", "20.04", "22.04", "23.10", "24.04", "24.10"},
 	"debian":        {"9", "10"},
-	"fedora":        {"24", "25", "26", "27", "28", "29", "30", "31"},
+	"fedora":        {"24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "40", "41", "42"},
 	"centos":        {"7", "8"},
 	"ol":            {"7", "8"},
 	"rhel":          {"7", "8"},
-	"amzn":          {"2018", "2"},
+	"amzn":          {"2018", "2", "2023"},
 	"sles":          {"12.3", "12.4", "12.5", "15.0", "15.1", "15.2", "15.3"},
 	"opensuse-leap": {"15.0", "15.1", "15.2", "15.3"},
 }
@@ -34,14 +34,14 @@ var distroReleases = map[string][]string{
 var defaultDistros = []string{"ubuntu", "debian", "fedora", "centos", "ol"}
 
 var defaultReleases = map[string][]string{
-	"ubuntu": {"16.04", "18.04", "20.04"},
+	"ubuntu": {"16.04", "18.04", "20.04", "22.04", "23.10", "24.04", "24.10"},
 	// no 9/stretch for debian
-	"debian":        {"10"},
-	"fedora":        {"24", "25", "26", "27", "28", "29", "30", "31"},
+	"debian":        {"10", "11", "12"},
+	"fedora":        {"24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "40", "41", "42"},
 	"centos":        {"7", "8"},
 	"ol":            {"7", "8"},
 	"rhel":          {"7", "8"},
-	"amzn":          {"2018", "2"},
+	"amzn":          {"2018", "2", "2023"},
 	"sles":          {"12.3", "12.4", "12.5", "15.0", "15.1", "15.2", "15.3"},
 	"opensuse-leap": {"15.0", "15.1", "15.2", "15.3"},
 }
@@ -78,12 +78,13 @@ func Generate(ctx context.Context) error {
 	// Workers: job consumers (pool)
 	jobChan := make(chan job.Job)
 	btfChan := make(chan job.Job)
+	seccompChan := make(chan job.Job)
 	consume, consCtx := errgroup.WithContext(ctx)
 
 	log.Printf("Using %d workers\n", numWorkers)
 	for i := 0; i < numWorkers; i++ {
 		consume.Go(func() error {
-			return job.StartWorker(consCtx, btfChan, jobChan)
+			return job.StartWorker(consCtx, btfChan, seccompChan, jobChan)
 		})
 	}
 
@@ -93,16 +94,11 @@ func Generate(ctx context.Context) error {
 	}
 
 	var cat *catalog.BTFCatalog
-	if catalogJSONPath != "" {
-		cat, err = catalog.Read(catalogJSONPath)
-		if err != nil {
-			return err
-		}
-	}
-
-	chans := &repo.JobChannels{BTF: btfChan, Default: jobChan}
+	chans := &repo.JobChannels{BTF: btfChan, Seccomp: seccompChan, Default: jobChan}
 	// Workers: job producers (per distro, per release)
 	produce, prodCtx := errgroup.WithContext(ctx)
+
+	fmt.Println(distros, releases, archs)
 	for _, d := range distros {
 		for _, r := range releases[d] {
 			release := r
@@ -124,12 +120,14 @@ func Generate(ctx context.Context) error {
 						}
 					}
 
+					fmt.Printf("[DEBUG] processing %s %s %s\n", d, r, a)
+
 					// pick the repository creator and get the kernel packages
 					rep := repoCreators[distro]()
 					opts := repo.RepoOptions{
 						Force:         force,
-						KernelModules: kernelModules,
-						Ordered:       ordered,
+						KernelModules: false,
+						Ordered:       false,
 						DryRun:        dryRun,
 						Query:         qre,
 						Launchpad:     launchpad,

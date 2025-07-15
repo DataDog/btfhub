@@ -15,3 +15,7 @@ func GenerateBTF(ctx context.Context, debugFile string, baseFile string, out str
 	args = append(args, "--btf_gen_floats", "--skip_encoding_btf_inconsistent_proto", "--btf_gen_optimized", "--btf_encode_detached", out, debugFile)
 	return utils.RunCMD(ctx, "", "pahole", args...)
 }
+
+func CheckSeccompBug(ctx context.Context, debugFile string) error {
+	return nil
+}

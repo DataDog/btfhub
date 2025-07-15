@@ -33,6 +33,11 @@ var repoOrganization = []string{
 	"https://archives.fedoraproject.org/pub/archive/fedora/linux/updates/%s/Everything/%s/debug/Packages/k/",
 }
 
+var latestRepoOrganization = []string{
+	"https://mirrors.ircam.fr/pub/fedora/linux/releases/%s/Everything/%s/os/Packages/k/",
+	"https://mirrors.ircam.fr/pub/fedora/linux/updates/%s/Everything/%s/Packages/k/",
+}
+
 func NewFedoraRepo() Repository {
 	return &FedoraRepo{
 		archs: map[string]string{
@@ -40,14 +45,17 @@ func NewFedoraRepo() Repository {
 			"arm64":  "aarch64",
 		},
 		repos: map[string][]string{
-			"24": olderRepoOrganization, // amd64
-			"25": oldRepoOrganization,   // amd64
-			"26": oldRepoOrganization,   // amd64
-			"27": oldRepoOrganization,   // amd64
-			"28": repoOrganization,      // amd64, arm64
-			"29": repoOrganization,      // amd64, arm64
-			"30": repoOrganization,      // amd64, arm64
-			"31": repoOrganization,      // amd64, arm64
+			"24": olderRepoOrganization,  // amd64
+			"25": oldRepoOrganization,    // amd64
+			"26": oldRepoOrganization,    // amd64
+			"27": oldRepoOrganization,    // amd64
+			"28": repoOrganization,       // amd64, arm64
+			"29": repoOrganization,       // amd64, arm64
+			"30": repoOrganization,       // amd64, arm64
+			"31": repoOrganization,       // amd64, arm64
+			"40": repoOrganization,       // amd64, arm64
+			"41": latestRepoOrganization, // amd64, arm64
+			"42": latestRepoOrganization, // amd64, arm64
 			// "32": repoOrganization,
 			// "33": repoOrganization,
 			// "34": repoOrganization,

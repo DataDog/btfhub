@@ -30,6 +30,7 @@ type RepoOptions struct {
 
 type JobChannels struct {
 	BTF     chan<- job.Job
+	Seccomp chan<- job.Job
 	Default chan<- job.Job
 }
 

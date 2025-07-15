@@ -82,19 +82,13 @@ func ExtractVmlinuxFromRPM(ctx context.Context, rpmPath string, extractDir strin
 		}
 
 		// Extract vmlinux and .ko.debug files
-		if strings.Contains(cpioHeader.Name, "vmlinux") {
+		if strings.Contains(cpioHeader.Name, "vmlinux") && !strings.Contains(cpioHeader.Name, ".py") {
 			vmlinuxPath = filepath.Join(extractDir, "vmlinux")
 			err = extractFile(ctx, vmlinuxPath, cpioHeader, cpioReader)
 			if err != nil {
 				return "", nil, err
 			}
-			hasBTF, err := HasBTFSection(vmlinuxPath)
-			if err != nil {
-				return "", nil, err
-			}
-			if hasBTF {
-				return "", nil, ErrKernelHasBTF
-			}
+
 			if !kernelModules {
 				return vmlinuxPath, nil, nil
 			}
