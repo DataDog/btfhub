@@ -11,10 +11,13 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/cenkalti/backoff/v4"
 	fastxz "github.com/therootcompany/xz"
 )
+
+const downloadRetryMaxElapsedTime = 10 * time.Minute
 
 func DownloadFile(ctx context.Context, url string, file string) error {
 	f, err := os.Create(file)
@@ -29,7 +32,14 @@ func DownloadFile(ctx context.Context, url string, file string) error {
 // Download downloads a file from a given URL, and writes it to a given
 // destination, which can be a file or a pipe
 func Download(ctx context.Context, url string, dest io.Writer) error {
+	retryBackoff := backoff.NewExponentialBackOff()
+	retryBackoff.MaxElapsedTime = downloadRetryMaxElapsedTime
+	return backoff.Retry(func() error {
+		return download(ctx, url, dest)
+	}, backoff.WithContext(retryBackoff, ctx))
+}
 
+func download(ctx context.Context, url string, dest io.Writer) error {
 	// Request given URL
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
