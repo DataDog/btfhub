@@ -165,7 +165,15 @@ func TestJSONIndent(t *testing.T) {
 	oldStat, err := os.Stat(catalogPath)
 	require.NoError(t, err)
 
-	err = Update(t.Context(), t.TempDir(), catalogPath)
+	// Create a hash directory with a hash file to ensure Update() processes and rewrites the catalog
+	hashDir := t.TempDir()
+	hashFilePath := filepath.Join(hashDir, "x86_64", "amzn", "2", "4.14.355-276.639.amzn2.x86_64")
+	err = os.MkdirAll(filepath.Dir(hashFilePath), 0755)
+	require.NoError(t, err)
+	err = os.WriteFile(hashFilePath, []byte("3d9ada50ed6b72ea53c52b7655d9ce4a0dba76a012f3430c416dfc51c5dff6bb"), 0644)
+	require.NoError(t, err)
+
+	err = Update(t.Context(), hashDir, catalogPath)
 	require.NoError(t, err)
 	newStat, err := os.Stat(catalogPath)
 	require.NoError(t, err)
