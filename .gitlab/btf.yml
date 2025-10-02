@@ -73,9 +73,6 @@ btf-generate-direct-x64:
       - DISTRO: ol
         RELEASE: [ "7", "8" ]
         BTF_ARCH: [ x86_64, arm64 ]
-      - DISTRO: opensuse-leap
-        RELEASE: [ "15.0", "15.1", "15.2", "15.3" ]
-        BTF_ARCH: [ x86_64, arm64 ]
       - DISTRO: ubuntu
         RELEASE: [ "16.04", "18.04", "20.04" ]
         BTF_ARCH: [ x86_64, arm64 ]
