@@ -27,20 +27,27 @@ catalog-pr-create:
       git config --local user.email "205981682+dd-btfhub-ebpf-platform[bot]@users.noreply.github.com"
       # Define a stable branch for updates
       BRANCH_NAME="btfhub-catalog-update"
+      # Stash any local changes to avoid checkout conflicts
+      git stash push -u -m "Temporary stash for catalog update"
       # Checkout the existing branch or create it from main
       if git ls-remote --exit-code origin "${BRANCH_NAME}"; then
         git fetch origin "${BRANCH_NAME}:${BRANCH_NAME}"
         git checkout "${BRANCH_NAME}"
+        # Reset to main to discard any previous changes on the branch
+        git reset --hard origin/main
       else
         git checkout -b "${BRANCH_NAME}" origin/main
       fi
+      # Restore the local changes
+      git stash pop
+      # Stage the new catalog changes
       git add -A
       if git diff-index --quiet HEAD; then
         echo "No changes"
         exit 0
       fi
-      # Amend the existing commit for a single, up-to-date commit
-      git commit --amend -m "BTF_DD catalog update on $(date -u +%Y-%m-%d)"
+      # Create a fresh commit for the catalog update
+      git commit -m "BTF_DD catalog update on $(date -u +%Y-%m-%d)"
       git push --force origin "${BRANCH_NAME}"
       # Only create a PR if none is already open for this branch
       if gh pr list -R DataDog/rc-employee-configurations --head "${BRANCH_NAME}" --state open | grep -q '.'; then
