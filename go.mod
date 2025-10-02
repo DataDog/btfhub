@@ -13,7 +13,7 @@ require (
 	github.com/cavaliergopher/rpm v1.3.0
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/kfcampbell/ghinstallation v0.0.6
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	github.com/therootcompany/xz v1.0.1
 	golang.org/x/sync v0.15.0
 	pault.ag/go/debian v0.19.0
