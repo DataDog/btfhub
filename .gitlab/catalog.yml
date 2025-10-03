@@ -28,8 +28,8 @@ catalog-pr-create:
       # Define a stable branch for updates
       BRANCH_NAME="btfhub-catalog-update"
       # Stash any local changes to avoid checkout conflicts
-      STASH_OUTPUT=$(git stash push -u -m "Temporary stash for catalog update" 2>&1)
-      echo "$STASH_OUTPUT"
+      STASH_OUTPUT="$(git stash push -u -m "Temporary stash for catalog update" 2>&1)"
+      echo "${STASH_OUTPUT}"
       # Checkout the existing branch or create it from main
       if git ls-remote --exit-code origin "${BRANCH_NAME}"; then
         git fetch origin "${BRANCH_NAME}:${BRANCH_NAME}"
@@ -40,7 +40,7 @@ catalog-pr-create:
         git checkout -b "${BRANCH_NAME}" origin/main
       fi
       # Restore the local changes only if we actually stashed something
-      if [[ ! "$STASH_OUTPUT" =~ "No local changes to save" ]]; then
+      if [[ ! "${STASH_OUTPUT}" =~ "No local changes to save" ]]; then
         git stash pop
       fi
       # Stage the new catalog changes
