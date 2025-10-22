@@ -53,6 +53,3 @@ default:
 .on_scheduled_main:
   - <<: *if_scheduled_main
     when: always
-
-.manual:
-  - when: manual

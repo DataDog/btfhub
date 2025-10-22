@@ -2,7 +2,6 @@
 catalog-pr-create:
   rules:
     - !reference [ .on_scheduled_main ]
-    - !reference [ .manual ]
   stage: catalog
   needs:
     - btf-generate-direct-x64
