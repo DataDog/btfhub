@@ -15,7 +15,7 @@ require (
 	github.com/kfcampbell/ghinstallation v0.0.6
 	github.com/stretchr/testify v1.11.1
 	github.com/therootcompany/xz v1.0.1
-	golang.org/x/sync v0.17.0
+	golang.org/x/sync v0.18.0
 	pault.ag/go/debian v0.19.0
 )
 
