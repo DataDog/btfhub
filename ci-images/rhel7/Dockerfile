@@ -14,6 +14,8 @@ ARG VAULT_VERSION
 ARG VAULT_SHA256_LINUX_AMD64
 ARG GH_CLI_VERSION
 ARG GH_CLI_SHA256_LINUX_AMD64
+ARG GIT_VERSION
+ARG GIT_SHA256
 
 RUN rm -rf /etc/rhsm-host
 RUN --mount=type=bind,target=/etc/pki/consumer,source=.tmp/${TARGETARCH}/consumer \
@@ -21,6 +23,8 @@ RUN --mount=type=bind,target=/etc/pki/consumer,source=.tmp/${TARGETARCH}/consume
   subscription-manager repos \
     --enable=rhel-7-server-debug-rpms \
     --enable=rhel-7-server-rpms \
+    --enable=rhel-7-server-els-debug-rpms \
+    --enable=rhel-7-server-els-rpms \
   && yum install -y \
     bzip2 \
     cmake \
@@ -57,8 +61,17 @@ ENV PATH="/opt/rh/devtoolset-7/root/usr/bin:/opt/rh/llvm-toolset-7/root/usr/sbin
 RUN --mount=type=bind,target=/etc/pki/consumer,source=.tmp/${TARGETARCH}/consumer \
   --mount=type=bind,target=/etc/pki/entitlement,source=.tmp/${TARGETARCH}/entitlement \
   yum remove -y git \
-  && yum install -y https://repo.ius.io/ius-release-el7.rpm https://dl.fedoraproject.org/pub/archive/epel/7/x86_64/Packages/e/epel-release-7-14.noarch.rpm \
-  && yum install -y git236
+  && yum install -y autoconf cpio curl-devel expat-devel gcc gettext-devel make openssl-devel perl-ExtUtils-MakeMaker zlib-devel \
+  && wget -O /tmp/git.tar.gz "https://www.kernel.org/pub/software/scm/git/git-${GIT_VERSION}.tar.gz" \
+  && echo "${GIT_SHA256}  /tmp/git.tar.gz" | sha256sum --check \
+  && tar -C /tmp -xf /tmp/git.tar.gz \
+  && cd "/tmp/git-${GIT_VERSION}" \
+  && make configure \
+  && ./configure --prefix=/usr \
+  && make all \
+  && make install \
+  && rm -rf "/tmp/git-${GIT_VERSION}" \
+  && rm -f /tmp/git.tar.gz
 
 # install Go
 ENV GO_VERSION=$GO_VERSION

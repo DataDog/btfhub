@@ -12,7 +12,7 @@ ARG GH_CLI_SHA256_LINUX_AMD64
 RUN dpkg --purge unattended-upgrades \
   && apt-get update \
   && apt-get install -y --no-install-recommends \
-    bsdutils=1:2.39.3-9ubuntu6.2 \
+    bsdutils=1:2.39.3-9ubuntu6.3 \
     build-essential \
     clang \
     cmake \

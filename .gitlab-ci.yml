@@ -9,7 +9,7 @@ include:
 
 variables:
   CI_IMAGE_REPO: "ci/${CI_PROJECT_NAME}"
-  IMAGE_VERSION: "v66563033-382d76f1"
+  IMAGE_VERSION: "v86122698-8baeea42"
   SUB_IMAGE_VERSION: "v59502123-970bf756"
   VAULT_VERSION: "1.17.2"
   VAULT_SHA256_LINUX_AMD64: a0c0449e640c8be5dcf7b7b093d5884f6a85406dbb86bbad0ea06becad5aaab8
@@ -40,7 +40,7 @@ default:
 .on_image_changes:
   - changes:
       paths:
-        - ci-images/**
+        - ci-images/**/*
         - .gitlab/image.yml
         - .gitlab/rhel.yml
       compare_to: main
