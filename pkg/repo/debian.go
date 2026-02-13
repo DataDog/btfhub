@@ -14,7 +14,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v5"
 
 	"github.com/DataDog/btfhub/pkg/kernel"
 	"github.com/DataDog/btfhub/pkg/pkg"

@@ -12,7 +12,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v5"
 	fastxz "github.com/therootcompany/xz"
 )
 
