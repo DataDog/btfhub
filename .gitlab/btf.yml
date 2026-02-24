@@ -94,6 +94,7 @@ btf-generate-amzn-x64:
 
 .btf-generate-rhel:
   extends: .btf-generate
+  timeout: 2h
   tags:
     - "arch:$ARCH"
   variables:
