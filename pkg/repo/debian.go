@@ -14,7 +14,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v5"
 
 	"github.com/DataDog/btfhub/pkg/kernel"
 	"github.com/DataDog/btfhub/pkg/pkg"
@@ -152,16 +152,16 @@ func (d *DebianRepo) GetKernelPackages(
 					ReleaseName:   releaseName,
 				}
 
-				var binpkg snapshotBinaryPackage
-				if err := retryQueryJsonAPI(ctx, fmt.Sprintf(debianSnapshotURL+"/mr/binary/%s/", name), &binpkg, nil); err != nil {
+				binpkg, err := retryQueryJsonAPI[snapshotBinaryPackage](ctx, fmt.Sprintf(debianSnapshotURL+"/mr/binary/%s/", name), nil)
+				if err != nil {
 					return fmt.Errorf("snapshot package API error for %s: %s", name, err)
 				}
 				if len(binpkg.Result) == 0 {
 					continue
 				}
 
-				var verInfo snapshotBinaryVersionInfo
-				if err := retryQueryJsonAPI(ctx, fmt.Sprintf(debianSnapshotURL+"/mr/binary/%s/%s/binfiles?fileinfo=1", name, binpkg.Result[0].BinaryVersion), &verInfo, nil); err != nil {
+				verInfo, err := retryQueryJsonAPI[snapshotBinaryVersionInfo](ctx, fmt.Sprintf(debianSnapshotURL+"/mr/binary/%s/%s/binfiles?fileinfo=1", name, binpkg.Result[0].BinaryVersion), nil)
+				if err != nil {
 					return fmt.Errorf("snapshot version API error for %s: %s", name, err)
 				}
 				for _, info := range verInfo.FileInfo {
@@ -213,16 +213,16 @@ type snapshotBinaryVersionInfo struct {
 	FileInfo map[string][]snapshotBinaryPackageFileInfo `json:"fileinfo"`
 }
 
-func retryQueryJsonAPI[T any](ctx context.Context, url string, out *T, headers map[string]string) error {
-	return backoff.Retry(func() error {
-		return queryJsonAPI(ctx, url, out, headers)
-	}, backoff.WithContext(backoff.NewExponentialBackOff(), ctx))
+func retryQueryJsonAPI[T any](ctx context.Context, url string, headers map[string]string) (*T, error) {
+	return backoff.Retry(ctx, func() (*T, error) {
+		return queryJsonAPI[T](ctx, url, headers)
+	})
 }
 
-func queryJsonAPI[T any](ctx context.Context, url string, out *T, headers map[string]string) error {
+func queryJsonAPI[T any](ctx context.Context, url string, headers map[string]string) (*T, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	for k, v := range headers {
 		req.Header.Set(k, v)
@@ -230,15 +230,15 @@ func queryJsonAPI[T any](ctx context.Context, url string, out *T, headers map[st
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
 		if resp.StatusCode/100 == 5 {
-			return fmt.Errorf("%s returned status code: %d", url, resp.StatusCode)
+			return nil, fmt.Errorf("%s returned status code: %d", url, resp.StatusCode)
 		}
-		return backoff.Permanent(fmt.Errorf("%s returned status code: %d", url, resp.StatusCode))
+		return nil, backoff.Permanent(fmt.Errorf("%s returned status code: %d", url, resp.StatusCode))
 	}
 
 	var rdr io.Reader
@@ -248,15 +248,16 @@ func queryJsonAPI[T any](ctx context.Context, url string, out *T, headers map[st
 	case "gzip":
 		rdr, err = gzip.NewReader(resp.Body)
 		if err != nil {
-			return backoff.Permanent(fmt.Errorf("gzip body read: %s", err))
+			return nil, backoff.Permanent(fmt.Errorf("gzip body read: %s", err))
 		}
 	default:
 		rdr = resp.Body
 	}
 
+	out := new(T)
 	err = json.NewDecoder(rdr).Decode(out)
 	if err != nil {
-		return backoff.Permanent(fmt.Errorf("JSON decode error: %s", err))
+		return nil, backoff.Permanent(fmt.Errorf("JSON decode error: %s", err))
 	}
-	return nil
+	return out, nil
 }

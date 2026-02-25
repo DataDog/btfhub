@@ -72,8 +72,8 @@ func getLaunchpadPackages(ctx context.Context, release string, releaseName strin
 	pkgMap := make(map[string]lpPublishedBinary)
 	for i := 0; ; i++ {
 		fmt.Printf("TRACE: get %s\n", url)
-		var binaries lpPublishedBinaries
-		if err := retryQueryJsonAPI(ctx, url, &binaries, map[string]string{"TE": "gzip"}); err != nil {
+		binaries, err := retryQueryJsonAPI[lpPublishedBinaries](ctx, url, map[string]string{"TE": "gzip"})
+		if err != nil {
 			return nil, err
 		}
 		if i == 0 && binaries.TotalSizeLink != "" {

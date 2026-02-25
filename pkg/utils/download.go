@@ -12,7 +12,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v5"
 	fastxz "github.com/therootcompany/xz"
 )
 
@@ -63,10 +63,12 @@ func Download(ctx context.Context, url string, dest io.Writer) error {
 	contentType := resp.Header.Get("Content-Type")
 	switch {
 	case contentType == "application/x-gzip", strings.HasSuffix(url, ".gz"):
-		rdr, err = gzip.NewReader(brdr)
+		grdr, err := gzip.NewReader(brdr)
 		if err != nil {
 			return fmt.Errorf("gzip body read: %s", err)
 		}
+		defer grdr.Close()
+		rdr = grdr
 	case contentType == "application/x-xz", strings.HasSuffix(url, ".xz"):
 		rdr, err = fastxz.NewReader(brdr, 0)
 		if err != nil {
@@ -94,12 +96,9 @@ var linksClient = http.Client{
 }
 
 func GetRelativeLinks(ctx context.Context, repoURL string, baseURL string) (urls []string, err error) {
-	err = backoff.Retry(func() error {
-		var innerErr error
-		urls, innerErr = getRelativeLinks(ctx, repoURL, baseURL)
-		return innerErr
-	}, backoff.WithContext(backoff.NewExponentialBackOff(), ctx))
-	return urls, err
+	return backoff.Retry(ctx, func() ([]string, error) {
+		return getRelativeLinks(ctx, repoURL, baseURL)
+	})
 }
 
 func getRelativeLinks(ctx context.Context, repoURL string, baseURL string) ([]string, error) {
