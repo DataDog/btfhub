@@ -94,6 +94,7 @@ btf-generate-amzn-x64:
 
 .btf-generate-rhel:
   extends: .btf-generate
+  timeout: 2h
   tags:
     - "arch:$ARCH"
   variables:
@@ -102,6 +103,7 @@ btf-generate-amzn-x64:
   before_script:
     - cp -R ".tmp/${ARCH}/consumer" /etc/pki
     - cp -R ".tmp/${ARCH}/entitlement" /etc/pki
+    - subscription-manager repos --list-enabled
 
 btf-generate-rhel-7:
   extends: .btf-generate-rhel
