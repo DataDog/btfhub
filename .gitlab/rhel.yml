@@ -15,7 +15,7 @@
     - cp -R /etc/pki/consumer ".tmp/${ARCH}"
     - cp -R /etc/pki/entitlement ".tmp/${ARCH}"
   artifacts:
-    expire_in: 1 hrs
+    expire_in: 3 hrs
     paths:
       - ".tmp/$ARCH/consumer"
       - ".tmp/$ARCH/entitlement"
