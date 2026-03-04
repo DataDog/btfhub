@@ -35,6 +35,7 @@
     - git status
     - |
       if [[ "${CI_COMMIT_BRANCH}" == "main" && "${CI_PIPELINE_SOURCE}" == "schedule" ]]; then
+        !reference [.github_auth]
         set -x
         git config --local user.name "dd-btfhub-ebpf-platform[bot]"
         git config --local user.email "205981682+dd-btfhub-ebpf-platform[bot]@users.noreply.github.com"
