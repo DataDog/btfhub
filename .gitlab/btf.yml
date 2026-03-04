@@ -26,7 +26,7 @@
     - cd ..
     - !reference [.catalog_checkout]
     - |
-      if [[ "${CI_COMMIT_BRANCH}" == "main" && "${CI_PIPELINE_SOURCE}" == "schedule" ]]; then
+      if [[ "${CI_COMMIT_BRANCH}" == "main" && "${CI_PIPELINE_SOURCE}" == "schedule" ]] || [[ "${MANUAL_GENERATE}" == "yes" ]]; then
         ./btfhub -d "${DISTRO}" -r "${RELEASE}" -a "${BTF_ARCH}" -s3-bucket dd-agent -s3-prefix btfs -hash-dir .tmp/hash -catalog-json rc-employee-configurations/configs/BTF_DD/btfs.json
       else
         ./btfhub -d "${DISTRO}" -r "${RELEASE}" -a "${BTF_ARCH}" -hash-dir .tmp/hash -catalog-json rc-employee-configurations/configs/BTF_DD/btfs.json
@@ -34,7 +34,7 @@
     - cd archive
     - git status
     - |
-      if [[ "${CI_COMMIT_BRANCH}" == "main" && "${CI_PIPELINE_SOURCE}" == "schedule" ]]; then
+      if [[ "${CI_COMMIT_BRANCH}" == "main" && "${CI_PIPELINE_SOURCE}" == "schedule" ]] || [[ "${MANUAL_GENERATE}" == "yes" ]]; then
         !reference [.github_auth]
         set -x
         git config --local user.name "dd-btfhub-ebpf-platform[bot]"
