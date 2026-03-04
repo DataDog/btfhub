@@ -35,7 +35,10 @@
     - git status
     - |
       if [[ "${CI_COMMIT_BRANCH}" == "main" && "${CI_PIPELINE_SOURCE}" == "schedule" ]] || [[ "${MANUAL_GENERATE}" == "yes" ]]; then
-        !reference [.github_auth]
+        # refresh github auth prior to commit because it may have expired
+        export GH_TOKEN=$(go run ../cmd/github-auth)
+        set +x
+        echo -e "protocol=https\nhost=github.com\nusername=x-access-token\npassword=${GH_TOKEN}" | git credential approve
         set -x
         git config --local user.name "dd-btfhub-ebpf-platform[bot]"
         git config --local user.email "205981682+dd-btfhub-ebpf-platform[bot]@users.noreply.github.com"
