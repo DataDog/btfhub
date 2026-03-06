@@ -6,17 +6,22 @@
   image: "registry.ddbuild.io/images/docker:27.3.1"
   tags:
     - arch:amd64
+  variables:
+    IMAGE_TAG: "v${CI_PIPELINE_ID}-${CI_COMMIT_SHORT_SHA}"
   script:
     - git submodule update --init --recursive
     - BUILD_ARGS=$(cat ci.env | sed -e 's/^/--build-arg=/' | tr '\n' ' ')
+    - METADATA_FILE=$(mktemp)
     - >-
       docker buildx build
       --platform "${PLATFORM}"
       $BUILD_ARGS
       --label target=build
-      --tag "registry.ddbuild.io/${CI_IMAGE_REPO}/${IMAGE}:v${CI_PIPELINE_ID}-${CI_COMMIT_SHORT_SHA}"
+      --tag "registry.ddbuild.io/${CI_IMAGE_REPO}/${IMAGE}:${IMAGE_TAG}"
       --push
+      --metadata-file "${METADATA_FILE}"
       --file "ci-images/${IMAGE}/Dockerfile" .
+    - ddsign sign "registry.ddbuild.io/${CI_IMAGE_REPO}/${IMAGE}:${IMAGE_TAG}" --docker-metadata-file "${METADATA_FILE}"
 
 ci-image:
   extends: .ci-image-build
