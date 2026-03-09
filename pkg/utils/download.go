@@ -63,10 +63,12 @@ func Download(ctx context.Context, url string, dest io.Writer) error {
 	contentType := resp.Header.Get("Content-Type")
 	switch {
 	case contentType == "application/x-gzip", strings.HasSuffix(url, ".gz"):
-		rdr, err = gzip.NewReader(brdr)
+		grdr, err := gzip.NewReader(brdr)
 		if err != nil {
 			return fmt.Errorf("gzip body read: %s", err)
 		}
+		defer grdr.Close()
+		rdr = grdr
 	case contentType == "application/x-xz", strings.HasSuffix(url, ".xz"):
 		rdr, err = fastxz.NewReader(brdr, 0)
 		if err != nil {
