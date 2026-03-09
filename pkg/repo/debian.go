@@ -246,10 +246,12 @@ func queryJsonAPI[T any](ctx context.Context, url string, headers map[string]str
 	transferEncoding := resp.Header.Get("Transfer-Encoding")
 	switch transferEncoding {
 	case "gzip":
-		rdr, err = gzip.NewReader(resp.Body)
+		grdr, err := gzip.NewReader(resp.Body)
 		if err != nil {
 			return nil, backoff.Permanent(fmt.Errorf("gzip body read: %s", err))
 		}
+		defer grdr.Close()
+		rdr = grdr
 	default:
 		rdr = resp.Body
 	}
