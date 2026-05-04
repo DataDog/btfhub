@@ -2,6 +2,8 @@ module github.com/DataDog/btfhub
 
 go 1.25.8
 
+toolchain go1.26.2
+
 require (
 	github.com/DataDog/zstd v1.5.7
 	github.com/aws/aws-sdk-go-v2 v1.41.6
