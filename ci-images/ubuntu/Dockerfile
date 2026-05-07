@@ -1,4 +1,4 @@
-FROM ubuntu:24.04
+FROM registry.ddbuild.io/images/mirror/ubuntu:24.04
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG GO_SHA256_LINUX_AMD64

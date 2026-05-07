@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/rhel7:latest
+FROM registry.ddbuild.io/images/mirror/rhel/7:7.9
 
 ARG CLANG_SHA256_LINUX_AMD64
 ARG CLANG_VERSION

@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi8/ubi:latest
+FROM registry.ddbuild.io/images/mirror/rhel/8:8.10
 
 ARG CLANG_SHA256_LINUX_AMD64
 ARG CLANG_SHA256_LINUX_ARM64

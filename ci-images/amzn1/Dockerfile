@@ -1,4 +1,4 @@
-FROM amazonlinux:1
+FROM registry.ddbuild.io/images/mirror/amazonlinux:1
 
 ARG CLANG_SHA256_LINUX_AMD64
 ARG CLANG_VERSION
