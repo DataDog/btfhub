@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi8/ubi:latest
+FROM registry.ddbuild.io/images/mirror/rhel/8:8.10
 
 ARG TARGETARCH
 ARG VAULT_VERSION

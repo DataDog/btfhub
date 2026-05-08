@@ -1,4 +1,4 @@
-FROM ubuntu:24.04
+FROM registry.ddbuild.io/images/mirror/ubuntu:24.04
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG GO_SHA256_LINUX_AMD64
@@ -12,7 +12,7 @@ ARG GH_CLI_SHA256_LINUX_AMD64
 RUN dpkg --purge unattended-upgrades \
   && apt-get update \
   && apt-get install -y --no-install-recommends \
-    bsdutils=1:2.39.3-9ubuntu6.4 \
+    bsdutils=1:2.39.3-9ubuntu6.5 \
     build-essential \
     clang \
     cmake \

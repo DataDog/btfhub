@@ -2,6 +2,8 @@
 .ci-image-build:
   rules:
     - !reference [ .on_image_changes ]
+    - !reference [ .on_not_scheduled_main ]
+    - !reference [ .manual ]
   stage: build_image
   image: "registry.ddbuild.io/images/docker:27.3.1"
   tags:
@@ -45,6 +47,9 @@ ci-image-rhel7:
   variables:
     IMAGE: rhel7
     PLATFORM: linux/amd64
+    KUBERNETES_MEMORY_REQUEST: 4Gi
+    KUBERNETES_CPU_REQUEST: 2
+    KUBERNETES_CPU_LIMIT: 2
 
 ci-image-rhel8:
   extends: .ci-image-build
@@ -53,3 +58,6 @@ ci-image-rhel8:
   variables:
     IMAGE: rhel8
     PLATFORM: "linux/amd64,linux/arm64"
+    KUBERNETES_MEMORY_REQUEST: 4Gi
+    KUBERNETES_CPU_REQUEST: 2
+    KUBERNETES_CPU_LIMIT: 2
