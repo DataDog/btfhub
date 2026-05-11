@@ -63,3 +63,4 @@ default:
 
 .manual:
   - when: manual
+    allow_failure: true
