@@ -1,9 +1,5 @@
 ---
 .ci-image-build:
-  rules:
-    - !reference [ .on_image_changes ]
-    - !reference [ .on_not_scheduled_main ]
-    - !reference [ .manual ]
   stage: build_image
   image: "registry.ddbuild.io/images/docker:27.3.1"
   tags:
@@ -27,6 +23,10 @@
 
 ci-image:
   extends: .ci-image-build
+  rules:
+    - !reference [ .on_image_changes ]
+    - !reference [ .on_not_scheduled_main ]
+    - !reference [ .manual ]
   parallel:
     matrix:
       - IMAGE: amzn1
@@ -42,6 +42,9 @@ ci-image:
 
 ci-image-rhel7:
   extends: .ci-image-build
+  rules:
+    - !reference [ .on_image_changes ]
+    - !reference [ .on_not_scheduled_main ]
   needs:
     - ci-subscribe-rhel7
   variables:
@@ -53,6 +56,9 @@ ci-image-rhel7:
 
 ci-image-rhel8:
   extends: .ci-image-build
+  rules:
+    - !reference [ .on_image_changes ]
+    - !reference [ .on_not_scheduled_main ]
   needs:
     - ci-subscribe-rhel8
   variables:
