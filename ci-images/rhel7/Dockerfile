@@ -129,3 +129,6 @@ RUN wget -nv -O /tmp/gh.tar.gz "https://github.com/cli/cli/releases/download/v${
   && echo "${GH_CLI_SHA256_LINUX_AMD64}" /tmp/gh.tar.gz | sha256sum --check \
   && tar -C /usr/local --strip-components=1 -xzf /tmp/gh.tar.gz \
   && rm -f /tmp/gh.tar.gz
+
+# Install commit-headless
+COPY --from=registry.ddbuild.io/commit-headless /commit-headless /usr/local/bin/commit-headless
