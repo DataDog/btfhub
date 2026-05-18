@@ -33,10 +33,14 @@ catalog-pr-create:
       if git ls-remote --exit-code origin "${BRANCH_NAME}"; then
         git fetch origin "${BRANCH_NAME}:${BRANCH_NAME}"
         git checkout "${BRANCH_NAME}"
+        REV=$(git rev-parse HEAD)
+        CREATE_FLAG=""
         # Reset to main to discard any previous changes on the branch
         git reset --hard origin/main
       else
         git checkout -b "${BRANCH_NAME}" origin/main
+        REV=$(git rev-parse HEAD)
+        CREATE_FLAG="--create-branch"
       fi
       # Restore the local changes only if we actually stashed something
       if [[ ! "${STASH_OUTPUT}" =~ "No local changes to save" ]]; then
@@ -50,7 +54,7 @@ catalog-pr-create:
       fi
       # Create a fresh commit for the catalog update
       git commit -m "BTF_DD catalog update on $(date -u +%Y-%m-%d)"
-      git push --force origin "${BRANCH_NAME}"
+      commit-headless push -T DataDog/rc-employee-configurations --branch "${BRANCH_NAME}" "${CREATE_FLAG}" --head-sha "${REV}" --force --reset
       # Only create a PR if none is already open for this branch
       if gh pr list -R DataDog/rc-employee-configurations --head "${BRANCH_NAME}" --state open | grep -q '.'; then
         echo "PR already open"

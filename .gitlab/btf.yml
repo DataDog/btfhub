@@ -49,7 +49,7 @@
           echo "No changes"
         else
           git commit -m "${DISTRO}/${RELEASE}/${BTF_ARCH} update on $(date -u +%Y-%m-%d)"
-          git push --set-upstream origin "${BRANCH_NAME}"
+          commit-headless push -T DataDog/btfhub-archive --branch "${BRANCH_NAME}" --create-branch --head-sha "$(git rev-parse HEAD^)" --reset
           gh pr create -R DataDog/btfhub-archive -B main -f
         fi
       fi
