@@ -1,6 +1,7 @@
 ---
 catalog-pr-create:
   rules:
+    - !reference [ .on_btf_changes ]
     - !reference [ .on_scheduled_main ]
   stage: catalog
   needs:
@@ -52,12 +53,15 @@ catalog-pr-create:
         echo "No changes"
         exit 0
       fi
-      # Create a fresh commit for the catalog update
-      git commit -m "BTF_DD catalog update on $(date -u +%Y-%m-%d)"
-      commit-headless push -T DataDog/rc-employee-configurations --branch "${BRANCH_NAME}" "${CREATE_FLAG}" --head-sha "${REV}" --force --reset
-      # Only create a PR if none is already open for this branch
-      if gh pr list -R DataDog/rc-employee-configurations --head "${BRANCH_NAME}" --state open | grep -q '.'; then
-        echo "PR already open"
-      else
-        gh pr create -R DataDog/rc-employee-configurations -B main -f --head "${BRANCH_NAME}"
+      git status
+      if [[ "${CI_COMMIT_BRANCH}" == "main" && "${CI_PIPELINE_SOURCE}" == "schedule" ]] || [[ "${MANUAL_GENERATE}" == "yes" ]]; then
+        # Create a fresh commit for the catalog update
+        git commit -m "BTF_DD catalog update on $(date -u +%Y-%m-%d)"
+        commit-headless push -T DataDog/rc-employee-configurations --branch "${BRANCH_NAME}" "${CREATE_FLAG}" --head-sha "${REV}" --force --reset
+        # Only create a PR if none is already open for this branch
+        if gh pr list -R DataDog/rc-employee-configurations --head "${BRANCH_NAME}" --state open | grep -q '.'; then
+          echo "PR already open"
+        else
+          gh pr create -R DataDog/rc-employee-configurations -B main -f --head "${BRANCH_NAME}"
+        fi
       fi
