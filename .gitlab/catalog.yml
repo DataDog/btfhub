@@ -34,15 +34,14 @@ catalog-pr-create:
       if git ls-remote --exit-code origin "${BRANCH_NAME}"; then
         git fetch origin "${BRANCH_NAME}:${BRANCH_NAME}"
         git checkout "${BRANCH_NAME}"
-        REV=$(git rev-parse HEAD)
         CREATE_FLAG=""
         # Reset to main to discard any previous changes on the branch
         git reset --hard origin/main
       else
         git checkout -b "${BRANCH_NAME}" origin/main
-        REV=$(git rev-parse HEAD)
         CREATE_FLAG="--create-branch"
       fi
+      REV=$(git rev-parse HEAD)
       # Restore the local changes only if we actually stashed something
       if [[ ! "${STASH_OUTPUT}" =~ "No local changes to save" ]]; then
         git stash pop
