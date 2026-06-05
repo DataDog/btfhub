@@ -74,11 +74,21 @@ btf-generate-direct-x64:
       - DISTRO: fedora
         RELEASE: [ "24", "25", "26", "27", "28", "29", "30", "31" ]
         BTF_ARCH: [ x86_64, arm64 ]
-      - DISTRO: ol
-        RELEASE: [ "7", "8" ]
-        BTF_ARCH: [ x86_64, arm64 ]
       - DISTRO: ubuntu
         RELEASE: [ "16.04", "18.04", "20.04" ]
+        BTF_ARCH: [ x86_64, arm64 ]
+
+btf-generate-ol:
+  extends: .btf-generate
+  timeout: 2h
+  tags:
+    - "arch:amd64"
+  variables:
+    IMAGE: ubuntu
+    DISTRO: ol
+  parallel:
+    matrix:
+      - RELEASE: [ "7", "8" ]
         BTF_ARCH: [ x86_64, arm64 ]
 
 btf-generate-amzn-x64:
