@@ -65,12 +65,3 @@ catalog-pr-create:
           gh pr create -R DataDog/rc-employee-configurations -B main -f --head "${BRANCH_NAME}"
         fi
       fi
-
-s3_acl:
-  stage: catalog
-  image: "registry.ddbuild.io/$CI_IMAGE_REPO/ubuntu:$IMAGE_VERSION"
-  tags:
-    - "arch:amd64"
-  script:
-    - CC=clang go build ./cmd/btfhub
-    - ./btfhub -s3-bucket dd-agent -s3-prefix btfs acl
