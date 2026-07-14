@@ -53,6 +53,7 @@ func S3Upload(ctx context.Context, bucket string, key string, data io.Reader) er
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
 		Body:   data,
+		ACL:    types.ObjectCannedACLPublicRead,
 	})
 	if err != nil {
 		return fmt.Errorf("s3 put: %w", err)
