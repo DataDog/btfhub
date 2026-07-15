@@ -53,6 +53,7 @@ func S3Upload(ctx context.Context, bucket string, key string, data io.Reader) er
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
 		Body:   data,
+		ACL:    types.ObjectCannedACLPublicRead,
 	})
 	if err != nil {
 		return fmt.Errorf("s3 put: %w", err)
@@ -64,6 +65,46 @@ func S3Upload(ctx context.Context, bucket string, key string, data io.Reader) er
 	}, time.Minute)
 	if err != nil {
 		return errors.New("timed out waiting for object to exist")
+	}
+	return nil
+}
+
+func S3List(ctx context.Context, bucket string, prefix string) ([]string, error) {
+	client, err := S3Client()
+	if err != nil {
+		return nil, err
+	}
+
+	var keys []string
+	page := s3.NewListObjectsV2Paginator(client, &s3.ListObjectsV2Input{
+		Bucket: aws.String(bucket),
+		Prefix: aws.String(prefix + "/"),
+	})
+	for page.HasMorePages() {
+		out, err := page.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, obj := range out.Contents {
+			keys = append(keys, *obj.Key)
+		}
+	}
+	return keys, nil
+}
+
+func S3PutACL(ctx context.Context, bucket string, key string) error {
+	client, err := S3Client()
+	if err != nil {
+		return err
+	}
+
+	_, err = client.PutObjectAcl(ctx, &s3.PutObjectAclInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(key),
+		ACL:    types.ObjectCannedACLPublicRead,
+	})
+	if err != nil {
+		return fmt.Errorf("s3 put ACL: %w", err)
 	}
 	return nil
 }
