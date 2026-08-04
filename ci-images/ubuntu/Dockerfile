@@ -24,6 +24,7 @@ RUN dpkg --purge unattended-upgrades \
     llvm \
     pkgconf \
     software-properties-common \
+    ubuntu-advantage-tools \
     ubuntu-dev-tools \
     unzip \
     wget \
