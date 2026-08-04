@@ -28,8 +28,8 @@ func NewUbuntuRepo() Repository {
 		},
 		debugRepo: "http://ddebs.ubuntu.com",
 		kernelTypes: map[string]string{
-			"signed":   "linux-image-[0-9.]+-.*-(generic|azure|gke|gkeop|gcp|aws|aws-fips)",
-			"unsigned": "linux-image-unsigned-[0-9.]+-.*-(generic|azure|gke|gkeop|gcp|aws|aws-fips)",
+			"signed":   "linux-image-[0-9.]+-.*-(generic|fips|azure|azure-fips|gke|gkeop|gcp|gcp-fips|aws|aws-fips)",
+			"unsigned": "linux-image-unsigned-[0-9.]+-.*-(generic|fips|azure|azure-fips|gke|gkeop|gcp|gcp-fips|aws|aws-fips)",
 		},
 		archs: map[string]string{
 			"x86_64": "amd64",
