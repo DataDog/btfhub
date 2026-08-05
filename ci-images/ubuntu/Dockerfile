@@ -70,3 +70,5 @@ COPY --from=registry.ddbuild.io/commit-headless /commit-headless /usr/local/bin/
 
 # Install dd-octo-sts
 COPY --from=registry.ddbuild.io/dd-octo-sts:v1.11.0@sha256:2c1116ae71e10b26614aa29603fbd81a4d1445a6e2573154d347823b38160bec /usr/local/bin/dd-octo-sts /usr/local/bin/dd-octo-sts
+
+COPY --from=registry.ddbuild.io/ci-identities/ci-identities-ci-job-client:v0.8.1@sha256:50bdfa9b60c6679a5df9bcac530bbd65cdc8b614d4f39b81d8299c43113c401b /usr/local/bin/ci-identities-ci-job-client /usr/local/bin/ci-identities-ci-job-client
