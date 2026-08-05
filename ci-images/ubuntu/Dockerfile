@@ -67,3 +67,6 @@ ENV PATH="/usr/local/bin:${PATH}"
 
 # Install commit-headless
 COPY --from=registry.ddbuild.io/commit-headless /commit-headless /usr/local/bin/commit-headless
+
+# Install dd-octo-sts
+COPY --from=registry.ddbuild.io/dd-octo-sts:v1.11.0@sha256:2c1116ae71e10b26614aa29603fbd81a4d1445a6e2573154d347823b38160bec /usr/local/bin/dd-octo-sts /usr/local/bin/dd-octo-sts
