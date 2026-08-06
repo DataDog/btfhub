@@ -20,14 +20,14 @@ catalog-pr-create:
     - CC=clang go build ./cmd/btfhub
     - !reference [.github_auth]
     - !reference [.catalog_checkout]
-    - ./btfhub -hash-dir .tmp/hash -catalog-json rc-employee-configurations/configs/BTF_DD/btfs.json catalog-update
+    - ./btfhub -hash-dir .tmp/hash -catalog-json rc-employee-configurations/configs/BTF_DD/btfs.prod.json catalog-update
     - cd rc-employee-configurations
     - |
       set -x
       git config --local user.name "dd-btfhub-ebpf-platform[bot]"
       git config --local user.email "205981682+dd-btfhub-ebpf-platform[bot]@users.noreply.github.com"
       # Define a stable branch for updates
-      BRANCH_NAME="btfhub-catalog-update"
+      BRANCH_NAME="btf/automated/prod"
       # Stash any local changes to avoid checkout conflicts
       STASH_OUTPUT="$(git stash push -u -m "Temporary stash for catalog update" 2>&1)"
       echo "${STASH_OUTPUT}"
@@ -56,7 +56,7 @@ catalog-pr-create:
       git status
       if [[ "${CI_COMMIT_BRANCH}" == "main" && "${CI_PIPELINE_SOURCE}" == "schedule" ]] || [[ "${MANUAL_GENERATE}" == "yes" ]]; then
         # Create a fresh commit for the catalog update
-        git commit -m "BTF_DD catalog update on $(date -u +%Y-%m-%d)"
+        git commit -m "BTF_DD prod catalog update on $(date -u +%Y-%m-%d)"
         commit-headless push -T DataDog/rc-employee-configurations --branch "${BRANCH_NAME}" ${CREATE_FLAG:+"$CREATE_FLAG"} --head-sha "${REV}" --force --reset
         # Only create a PR if none is already open for this branch
         if gh pr list -R DataDog/rc-employee-configurations --head "${BRANCH_NAME}" --state open | grep -q '.'; then
