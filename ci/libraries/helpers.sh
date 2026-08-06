@@ -20,6 +20,7 @@ setup_gh_token() {
     set +x
 
     log "Obtaining GitHub token via Octo-STS..."
+    dd-octo-sts debug --scope "DataDog" --policy "btfhub.create-pull-request"
     # https://github.com/DataDog/.github/blob/main/.github/chainguard/btfhub.create-pull-request.sts.yaml
     GITHUB_TOKEN=$(dd-octo-sts token --scope "DataDog" --policy "btfhub.create-pull-request")
     export GITHUB_TOKEN
