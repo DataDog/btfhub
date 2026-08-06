@@ -9,7 +9,7 @@ include:
 
 variables:
   CI_IMAGE_REPO: "ci/${CI_PROJECT_NAME}"
-  IMAGE_VERSION: "v113830861-00824303"
+  IMAGE_VERSION: "v129287823-7ec3ac47"
   SUB_IMAGE_VERSION: "v113830861-00824303"
   VAULT_VERSION: "1.17.2"
   VAULT_SHA256_LINUX_AMD64: a0c0449e640c8be5dcf7b7b093d5884f6a85406dbb86bbad0ea06becad5aaab8
@@ -34,6 +34,9 @@ default:
       - scheduler_failure
       - api_failure
 
+.if_main: &if_main
+  if: $CI_COMMIT_BRANCH == "main"
+
 .if_scheduled_main: &if_scheduled_main
   if: $CI_PIPELINE_SOURCE == "schedule" && $CI_COMMIT_BRANCH == "main"
 
@@ -52,6 +55,10 @@ default:
   - changes:
       paths:
         - .gitlab/btf.yml
+
+.on_main:
+  - <<: *if_main
+    when: always
 
 .on_scheduled_main:
   - <<: *if_scheduled_main
