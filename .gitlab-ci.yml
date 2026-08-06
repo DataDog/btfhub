@@ -54,6 +54,8 @@ default:
   - changes:
       paths:
         - .gitlab/btf.yml
+        - ci/btf
+        - ci/libraries/**
 
 .on_main:
   - <<: *if_main
