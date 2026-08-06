@@ -13,46 +13,14 @@
     GITHUB_PEM_PATH: "${CI_PROJECT_DIR}/github_app_key.pem"
     ARCHIVE_BRANCH: main
     AWS_REGION: us-east-1
+  id_tokens:
+    DDOCTOSTS_ID_TOKEN:
+      aud: dd-octo-sts
   script:
     - CC=clang go build ./cmd/btfhub
-    - !reference [.github_auth]
-    - mkdir archive
-    - cd archive
-    - git init
-    - git remote add origin https://github.com/DataDog/btfhub-archive
-    - git fetch --filter=blob:none --no-tags --progress --depth=1 origin "${ARCHIVE_BRANCH}"
-    - git sparse-checkout set --cone "${DISTRO}/${RELEASE}/${BTF_ARCH}"
-    - git checkout --progress --force "${ARCHIVE_BRANCH}"
-    - cd ..
-    - !reference [.catalog_checkout]
-    - |
-      if [[ "${CI_COMMIT_BRANCH}" == "main" && "${CI_PIPELINE_SOURCE}" == "schedule" ]] || [[ "${MANUAL_GENERATE}" == "yes" ]]; then
-        ./btfhub -d "${DISTRO}" -r "${RELEASE}" -a "${BTF_ARCH}" -s3-bucket dd-agent -s3-prefix btfs -hash-dir .tmp/hash -catalog-json rc-employee-configurations/configs/BTF_DD/btfs.prod.json
-      else
-        ./btfhub -d "${DISTRO}" -r "${RELEASE}" -a "${BTF_ARCH}" -hash-dir .tmp/hash -catalog-json rc-employee-configurations/configs/BTF_DD/btfs.prod.json
-      fi
-    - cd archive
-    - git status
-    - |
-      if [[ "${CI_COMMIT_BRANCH}" == "main" && "${CI_PIPELINE_SOURCE}" == "schedule" ]] || [[ "${MANUAL_GENERATE}" == "yes" ]]; then
-        # refresh github auth prior to commit because it may have expired
-        export GH_TOKEN=$(go run ../cmd/github-auth)
-        set +x
-        echo -e "protocol=https\nhost=github.com\nusername=x-access-token\npassword=${GH_TOKEN}" | git credential approve
-        set -x
-        git config --local user.name "dd-btfhub-ebpf-platform[bot]"
-        git config --local user.email "205981682+dd-btfhub-ebpf-platform[bot]@users.noreply.github.com"
-        BRANCH_NAME="${DISTRO}/${RELEASE}/${BTF_ARCH}/$(date -u +%Y-%m-%dT%H-%M-%S)"
-        git checkout -b "${BRANCH_NAME}"
-        git add -A
-        if git diff-index --quiet HEAD; then
-          echo "No changes"
-        else
-          git commit -m "${DISTRO}/${RELEASE}/${BTF_ARCH} update on $(date -u +%Y-%m-%d)"
-          commit-headless push -T DataDog/btfhub-archive --branch "${BRANCH_NAME}" --create-branch --head-sha "$(git rev-parse HEAD^)" --reset
-          gh pr create -R DataDog/btfhub-archive -B main -f
-        fi
-      fi
+    - ci/btf
+  after_script:
+    - dd-octo-sts revoke
   artifacts:
     paths:
       - ".tmp/hash/"

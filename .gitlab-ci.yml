@@ -1,6 +1,5 @@
 ---
 include:
-  - .gitlab/common.yml
   - .gitlab/btf.yml
   - .gitlab/image.yml
   - .gitlab/rhel.yml

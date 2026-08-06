@@ -1,44 +1,5 @@
 #!/bin/bash
 
-##
-# Logs a message with a date
-# Examples:
-#   "hello, world" WARN => ø
-log() { set -e
-  local message=$1     # what to log, as a single string
-  local error_level=$2 # the log level that will prefix the message, defaults to INFO if empty
-
-  if [[ -z "$error_level" ]]; then
-    error_level=INFO
-  fi
-
-  echo "${error_level} [$(date "+%Y.%m.%d-%H:%M:%S %Z")] ${message}" 1>&2
-}
-
-setup_gh_token() {
-    set -e
-    set +x
-
-    if [[ -n "$GITHUB_TOKEN" ]]; then
-        return 0
-    fi
-
-    log "Obtaining GitHub token via Octo-STS..."
-    # https://github.com/DataDog/.github/blob/main/.github/chainguard/btfhub.create-pull-request.sts.yaml
-    GITHUB_TOKEN=$(dd-octo-sts token --scope "DataDog" --policy "btfhub.create-pull-request")
-    export GITHUB_TOKEN
-    if [[ -n "$GITHUB_TOKEN" ]]; then
-        log "Successfully obtained GitHub token via Octo-STS"
-    else
-        log "Octo-STS token exchange failed" ERROR
-        exit 1
-    fi
-
-    # shellcheck disable=SC2016
-    git config --global credential.helper \
-        '!f() { echo username=x-access-token; echo "password=$GITHUB_TOKEN"; };f'
-}
-
 get_branch_name() {
     set -e
     set +x
@@ -51,8 +12,6 @@ get_branch_name() {
 setup_catalog_repo() {
     set -e
     set +x
-
-    cd "$TMPDIR"
 
     log "Setting up the GH token..."
     setup_gh_token
@@ -71,14 +30,14 @@ setup_catalog_repo() {
     fi
     log "Cloning https://github.com/DataDog/rc-employee-configurations... Done"
 
-    cd rc-employee-configurations
-
+    curdir="$(pwd)"
+    mkdir bin
     # Build outside the repo working tree so the binary doesn't show up in
     # `git status --porcelain` and pollute the dirty-tree checks below.
-    mkdir -p "$TMPDIR/bin"
-    RC_BIN="$TMPDIR/bin/rc-employee-configurations"
+    RC_BIN="$curdir/bin/rc-employee-configurations"
     export RC_BIN
 
+    pushd rc-employee-configurations
     log "Building rc-employee-configurations..."
     for i in $(seq 1 5); do
         # shellcheck disable=SC2015
@@ -86,6 +45,7 @@ setup_catalog_repo() {
         log "Attempt #$i to build rc-employee-configurations failed." ERROR
     done
     log "Building rc-employee-configurations... Done"
+    popd
 }
 
 # Reset signed/BTF_DD/ to its state on main, undoing any prior signing done on
@@ -168,8 +128,10 @@ open_or_update_catalog_pr() {
     TMPDIR="$(mktemp -d)"
     export TMPDIR
 
+    pushd "$TMPDIR"
     setup_catalog_repo
 
+    pushd rc-employee-configurations
     log "Checking out branch from git..."
     local GIT_BRANCH
     GIT_BRANCH=$(get_branch_name "$destination")
@@ -231,5 +193,8 @@ EOF
     else
         log "No changes to commit, skipping PR creation."
     fi
+
+    popd
+    popd
     rm -rf "$TMPDIR"
 }
