@@ -13,10 +13,6 @@ setup_catalog_repo() {
     set -e
     set +x
 
-    log "Setting up the GH token..."
-    setup_gh_token
-    log "Setting up the GH token... Done"
-
     log "Cloning https://github.com/DataDog/rc-employee-configurations..."
     # shellcheck disable=SC2034
     for i in $(seq 1 5); do

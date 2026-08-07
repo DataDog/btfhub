@@ -7,5 +7,9 @@ source "$(dirname "$0")/libraries/helpers.sh"
 # shellcheck source=ci/libraries/catalog.sh
 source "$(dirname "$0")/libraries/catalog.sh"
 
+log "Setting up the GH token..."
+setup_gh_token
+log "Setting up the GH token... Done"
+
 open_or_update_catalog_pr staging
 open_or_update_catalog_pr prod

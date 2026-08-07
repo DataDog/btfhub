@@ -19,10 +19,15 @@ setup_gh_token() {
     set -e
     set +x
 
+    local policy
+    policy="read"
+    if [[ "${CI_COMMIT_BRANCH}" == "main" && "${CI_PIPELINE_SOURCE}" == "schedule" ]]; then
+        # https://github.com/DataDog/.github/blob/main/.github/chainguard/btfhub.create-pull-request.sts.yaml
+        policy="create-pull-request"
+    fi
+
     log "Obtaining GitHub token via Octo-STS..."
-    dd-octo-sts debug --scope "DataDog" --policy "btfhub.create-pull-request"
-    # https://github.com/DataDog/.github/blob/main/.github/chainguard/btfhub.create-pull-request.sts.yaml
-    GITHUB_TOKEN=$(dd-octo-sts token --scope "DataDog" --policy "btfhub.create-pull-request")
+    GITHUB_TOKEN=$(dd-octo-sts token --scope "DataDog" --policy "btfhub.${policy}")
     export GITHUB_TOKEN
     if [[ -n "$GITHUB_TOKEN" ]]; then
         log "Successfully obtained GitHub token via Octo-STS"

@@ -18,21 +18,20 @@ git sparse-checkout set --cone "${DISTRO}/${RELEASE}/${BTF_ARCH}"
 git checkout --progress --force "${ARCHIVE_BRANCH}"
 popd
 
-TMPDIR="$(mktemp -d)"
-export TMPDIR
-pushd "$TMPDIR"
-setup_catalog_repo
-popd
-
-if [[ "${CI_COMMIT_BRANCH}" == "main" && "${CI_PIPELINE_SOURCE}" == "schedule" ]] || [[ "${MANUAL_GENERATE}" == "yes" ]]; then
+if [[ "${CI_COMMIT_BRANCH}" == "main" && "${CI_PIPELINE_SOURCE}" == "schedule" ]]; then
+    TMPDIR="$(mktemp -d)"
+    export TMPDIR
+    pushd "$TMPDIR"
+    setup_catalog_repo
+    popd
     ./btfhub -d "${DISTRO}" -r "${RELEASE}" -a "${BTF_ARCH}" -s3-bucket dd-agent -s3-prefix btfs -hash-dir .tmp/hash -catalog-json "$TMPDIR/rc-employee-configurations/configs/BTF_DD/btfs.prod.json"
 else
-    ./btfhub -d "${DISTRO}" -r "${RELEASE}" -a "${BTF_ARCH}" -hash-dir .tmp/hash -catalog-json "$TMPDIR/rc-employee-configurations/configs/BTF_DD/btfs.prod.json"
+    ./btfhub -d "${DISTRO}" -r "${RELEASE}" -a "${BTF_ARCH}" -hash-dir .tmp/hash
 fi
 
 pushd archive
 git status
-if [[ "${CI_COMMIT_BRANCH}" == "main" && "${CI_PIPELINE_SOURCE}" == "schedule" ]] || [[ "${MANUAL_GENERATE}" == "yes" ]]; then
+if [[ "${CI_COMMIT_BRANCH}" == "main" && "${CI_PIPELINE_SOURCE}" == "schedule" ]]; then
     # refresh github auth prior to commit because it may have expired
     setup_gh_token
     BRANCH_NAME="${DISTRO}/${RELEASE}/${BTF_ARCH}/$(date -u +%Y-%m-%dT%H-%M-%S)"
