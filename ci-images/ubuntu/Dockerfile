@@ -72,3 +72,6 @@ COPY --from=registry.ddbuild.io/commit-headless /commit-headless /usr/local/bin/
 COPY --from=registry.ddbuild.io/dd-octo-sts:v1.11.0@sha256:2c1116ae71e10b26614aa29603fbd81a4d1445a6e2573154d347823b38160bec /usr/local/bin/dd-octo-sts /usr/local/bin/dd-octo-sts
 
 COPY --from=registry.ddbuild.io/ci-identities/ci-identities-ci-job-client:v0.9.0@sha256:ac69e9e8bb3ed613e5a01e371bc1802d5b535cbf434f7eaa9534becf9c4e0cab /usr/local/bin/ci-identities-ci-job-client /usr/local/bin/ci-identities-ci-job-client
+COPY --from=registry.ddbuild.io/images/datadog-ca-certs:standard /certs/ /usr/local/share/ca-certificates/
+RUN chmod -R o-w /usr/local/share/ca-certificates \
+    && update-ca-certificates
