@@ -22,4 +22,4 @@ catalog-pr-create:
     - CC=clang go build ./cmd/btfhub
     - ci/catalog
   after_script:
-    - dd-octo-sts revoke
+    - dd-octo-sts revoke $(cat token.txt)

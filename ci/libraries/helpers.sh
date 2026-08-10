@@ -27,7 +27,8 @@ setup_gh_token() {
     fi
 
     log "Obtaining GitHub token via Octo-STS..."
-    GITHUB_TOKEN=$(dd-octo-sts token --scope "DataDog" --policy "btfhub.${policy}")
+    dd-octo-sts token --scope "DataDog" --policy "btfhub.${policy}" > "$CI_PROJECT_DIR/token.txt"
+    GITHUB_TOKEN=$(cat "$CI_PROJECT_DIR/token.txt")
     export GITHUB_TOKEN
     if [[ -n "$GITHUB_TOKEN" ]]; then
         log "Successfully obtained GitHub token via Octo-STS"

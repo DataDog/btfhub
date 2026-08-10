@@ -20,7 +20,7 @@
     - CC=clang go build ./cmd/btfhub
     - ci/btf
   after_script:
-    - dd-octo-sts revoke
+    - dd-octo-sts revoke $(cat token.txt)
   artifacts:
     paths:
       - ".tmp/hash/"
