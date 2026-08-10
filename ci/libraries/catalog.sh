@@ -14,16 +14,14 @@ setup_catalog_repo() {
     set +x
 
     log "Cloning https://github.com/DataDog/rc-employee-configurations..."
-    # shellcheck disable=SC2034
-    for i in $(seq 1 5); do
-        # shellcheck disable=SC2015
-        git clone --quiet --depth=1 "https://github.com/DataDog/rc-employee-configurations" && break || true
-        log "Attempt #$i to clone https://github.com/DataDog/rc-employee-configurations failed." ERROR
-    done
-    if [ ! -d "rc-employee-configurations" ]; then
-        log "Cloning https://github.com/DataDog/rc-employee-configurations failed after max retries."
-        return 1
-    fi
+    mkdir rc-employee-configurations
+    pushd rc-employee-configurations
+    git init
+    git remote add origin https://github.com/DataDog/rc-employee-configurations
+    git fetch --filter=blob:none --no-tags --progress --depth=1 origin main
+    git sparse-checkout set --cone configs/BTF_DD signed/BTF_DD
+    git checkout --progress --force main
+    popd
     log "Cloning https://github.com/DataDog/rc-employee-configurations... Done"
 
     curdir="$(pwd)"
@@ -35,38 +33,9 @@ setup_catalog_repo() {
 
     pushd rc-employee-configurations
     log "Building rc-employee-configurations..."
-    for i in $(seq 1 5); do
-        # shellcheck disable=SC2015
-        go build -v -o "$RC_BIN" . && break || true
-        log "Attempt #$i to build rc-employee-configurations failed." ERROR
-    done
+    go build -v -o "$RC_BIN" .
     log "Building rc-employee-configurations... Done"
     popd
-}
-
-# Reset signed/BTF_DD/ to its state on main, undoing any prior signing done on
-# this branch. Scoped to BTF_DD only — other products' signed/ dirs are managed
-# by their own workflows and must not be touched here.
-# Forward-only commit: no history rewrite, no force push needed.
-reset_signed_to_base() {
-    local destination=$1
-
-    # Signing only happens for staging and prod (mirrors the check in sign_catalog).
-    case "$destination" in
-        staging|prod) ;;
-        *) return 0 ;;
-    esac
-
-    git fetch --quiet --depth=1 origin main
-    git rm -rf --quiet --ignore-unmatch signed/BTF_DD/
-    git checkout origin/main -- signed/BTF_DD/ 2>/dev/null || true
-
-    if git diff --cached --quiet; then
-        return 0
-    fi
-
-    git commit --quiet -m "Reset signed/BTF_DD for ${destination}"
-    log "Reset signed/BTF_DD to base state."
 }
 
 # Sign the catalog for staging or prod using the CI Vault key.
@@ -131,16 +100,18 @@ open_or_update_catalog_pr() {
     log "Checking out branch from git..."
     local GIT_BRANCH
     GIT_BRANCH=$(get_branch_name "$destination")
-    if git fetch origin "$GIT_BRANCH"; then
+    if git ls-remote --exit-code origin "$GIT_BRANCH"; then
         log "Fetching branch from origin/$GIT_BRANCH"
-        git remote set-branches --add origin "$GIT_BRANCH"
-        git fetch origin "$GIT_BRANCH"
-        git checkout -b "$GIT_BRANCH" origin/"$GIT_BRANCH"
-        reset_signed_to_base "$destination"
+        git fetch origin "$GIT_BRANCH:$GIT_BRANCH"
+        git checkout "$GIT_BRANCH"
+        CREATE_FLAG=""
+        git reset --hard origin/main
     else
         log "Checking out $GIT_BRANCH locally"
-        git checkout -b "$GIT_BRANCH"
+        git checkout -b "$GIT_BRANCH" origin/main
+        CREATE_FLAG="--create-branch"
     fi
+    REV=$(git rev-parse HEAD)
     log "Checking out branch from git... Done"
 
     # generate catalog updates
@@ -167,13 +138,13 @@ EOF
 
         if [[ "${CI_COMMIT_BRANCH}" == "main" && "${CI_PIPELINE_SOURCE}" == "schedule" ]]; then
             log "Pushing changes to origin $GIT_BRANCH... "
-            git push --quiet -u origin "$GIT_BRANCH"
+            commit-headless push -T DataDog/rc-employee-configurations --branch "${GIT_BRANCH}" ${CREATE_FLAG:+"$CREATE_FLAG"} --force --head-sha "${REV}" --reset
             log "Pushing changes to origin $GIT_BRANCH... Done"
 
             local pr_name
             local pr_number
             pr_name="[$destination] BTF Catalog updates"
-            pr_number=$(gh pr list --state open --head "$GIT_BRANCH" 2>/dev/null | awk '{print $1}')
+            pr_number=$(gh pr list -R DataDog/rc-employee-configurations --state open --head "$GIT_BRANCH" 2>/dev/null | awk '{print $1}')
             if [ -z "${pr_number}" ]; then # PR does not exist
                 log "Creating PR $pr_name."
                 cat <<EOF |
