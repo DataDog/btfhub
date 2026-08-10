@@ -93,7 +93,7 @@ sign_catalog() {
 
     log "Signing catalog for ${destination}..."
     VAULT_ADDR="https://vault.us1.ddbuild.io" \
-    ci-identities-gitlab-job-client --dns-type developer-gateway vault env -- \
+    ci-identities-ci-job-client --mode=k8s --dns-type=developer-gateway vault env -- \
         "$RC_BIN" sign \
             --product BTF_DD \
             --env "$destination" \

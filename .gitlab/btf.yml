@@ -16,6 +16,8 @@
   id_tokens:
     DDOCTOSTS_ID_TOKEN:
       aud: dd-octo-sts
+    CI_IDENTITIES_GITLAB_ID_TOKEN:
+      aud: ci-identities
   script:
     - CC=clang go build ./cmd/btfhub
     - ci/btf
