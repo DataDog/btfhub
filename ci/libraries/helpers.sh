@@ -40,4 +40,6 @@ setup_gh_token() {
     # shellcheck disable=SC2016
     git config --global credential.helper \
         '!f() { echo username=x-access-token; echo "password=$GITHUB_TOKEN"; };f'
+    git config user.email "ci@datadoghq.com"
+    git config user.name "CI Bot"
 }
