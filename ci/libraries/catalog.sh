@@ -125,14 +125,6 @@ BTF_DD $destination catalog update
 Updated by $CI_JOB_URL
 EOF
 
-        # Pull any concurrent updates before signing so signed/ covers the
-        # final configs/ tree we're about to push.
-        if git fetch origin "$GIT_BRANCH"; then
-            log "Pulling origin $GIT_BRANCH... "
-            git pull origin "$GIT_BRANCH" --allow-unrelated-histories
-            log "Pulling origin $GIT_BRANCH... Done"
-        fi
-
         # TODO enable signing once CI identity setup
         # sign_catalog "$destination"
 
