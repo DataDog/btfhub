@@ -27,9 +27,10 @@ setup_gh_token() {
     fi
 
     log "Obtaining GitHub token via Octo-STS..."
-    dd-octo-sts token --scope "DataDog" --policy "btfhub.${policy}" > "$CI_PROJECT_DIR/token.txt"
-    GITHUB_TOKEN=$(cat "$CI_PROJECT_DIR/token.txt")
+    GITHUB_TOKEN=$(dd-octo-sts token --scope "DataDog" --policy "btfhub.${policy}")
     export GITHUB_TOKEN
+    # shellcheck disable=SC2064
+    trap "set +x; dd-octo-sts revoke -t $GITHUB_TOKEN 2>/dev/null || true" EXIT
     if [[ -n "$GITHUB_TOKEN" ]]; then
         log "Successfully obtained GitHub token via Octo-STS"
     else
