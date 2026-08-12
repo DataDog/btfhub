@@ -90,10 +90,10 @@ open_or_update_catalog_pr() {
 
     local destination=$1
 
-    TMPDIR="$(mktemp -d)"
-    export TMPDIR
+    RCDIR="$(mktemp -d)"
+    export RCDIR
 
-    pushd "$TMPDIR"
+    pushd "$RCDIR"
     setup_catalog_repo
 
     pushd rc-employee-configurations
@@ -163,5 +163,5 @@ EOF
 
     popd
     popd
-    rm -rf "$TMPDIR"
+    rm -rf "$RCDIR"
 }
