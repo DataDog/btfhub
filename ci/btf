@@ -18,10 +18,11 @@ git sparse-checkout set --cone "${DISTRO}/${RELEASE}/${BTF_ARCH}"
 git checkout --progress --force "${ARCHIVE_BRANCH}"
 popd
 
-RCDIR="$(mktemp -d)"
-export RCDIR
-
 if [[ "${CI_COMMIT_BRANCH}" == "main" && "${CI_PIPELINE_SOURCE}" == "schedule" ]]; then
+    RCDIR="$(mktemp -d)"
+    export RCDIR
+    # shellcheck disable=SC2064
+    trap "rm -rf $RCDIR || true" EXIT
     pushd "$RCDIR"
     setup_catalog_repo
     popd
@@ -49,5 +50,3 @@ if [[ "${CI_COMMIT_BRANCH}" == "main" && "${CI_PIPELINE_SOURCE}" == "schedule" ]
     fi
 fi
 popd
-
-rm -rf "$RCDIR"
