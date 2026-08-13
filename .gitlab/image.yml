@@ -50,9 +50,9 @@ ci-image-rhel7:
   variables:
     IMAGE: rhel7
     PLATFORM: linux/amd64
-    KUBERNETES_MEMORY_REQUEST: 6Gi
-    KUBERNETES_CPU_REQUEST: 2
-    KUBERNETES_CPU_LIMIT: 2
+    KUBERNETES_MEMORY_REQUEST: 8Gi
+    KUBERNETES_CPU_REQUEST: 4
+    KUBERNETES_CPU_LIMIT: 4
 
 ci-image-rhel8:
   extends: .ci-image-build
