@@ -15,6 +15,36 @@ log() { set -e
   echo "${error_level} [$(date "+%Y.%m.%d-%H:%M:%S %Z")] ${message}" 1>&2
 }
 
+add_exit_trap() {
+    local cmd=$1 # command(s) to add
+    local old combined
+
+    # Compute effective trap list for current (sub)shell
+    # Based on info from https://stackoverflow.com/a/59307894/5116073
+    trap -- KILL >/dev/null 2>&1 || true
+    old=$( (trap -p EXIT) )
+
+    # extract/cleanup the existing registered command(s)
+    old=${old#*\'}         # remove leading "trap -- '"
+    old=${old%\'*}         # remove trailing "' EXIT"
+    old=${old//"'\''"/"'"} # unescape every '\'' to '
+
+    # if command is already registered exactly, do nothing
+    if [[ ";$old;" == *";$cmd;"* ]]; then
+        return 0
+    fi
+
+    # build the new combined handler
+    if [[ -n $old ]]; then
+        combined="$old;$cmd"
+    else
+        combined="$cmd"
+    fi
+
+    # register the new combined handler
+    trap -- "$combined" EXIT
+}
+
 setup_gh_token() {
     set -e
     set +x
@@ -30,7 +60,7 @@ setup_gh_token() {
     GITHUB_TOKEN=$(dd-octo-sts token --scope "DataDog" --policy "btfhub.${policy}")
     export GITHUB_TOKEN
     # shellcheck disable=SC2064
-    trap "set +x; dd-octo-sts revoke -t $GITHUB_TOKEN 2>/dev/null || true" EXIT
+    add_exit_trap "set +x; dd-octo-sts revoke -t $GITHUB_TOKEN 2>/dev/null || true"
     if [[ -n "$GITHUB_TOKEN" ]]; then
         log "Successfully obtained GitHub token via Octo-STS"
     else

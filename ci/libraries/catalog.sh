@@ -93,7 +93,7 @@ open_or_update_catalog_pr() {
     RCDIR="$(mktemp -d)"
     export RCDIR
     # shellcheck disable=SC2064
-    trap "rm -rf $RCDIR || true" EXIT
+    add_exit_trap "rm -rf $RCDIR || true"
 
     pushd "$RCDIR"
     setup_catalog_repo

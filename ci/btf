@@ -22,7 +22,7 @@ if [[ "${CI_COMMIT_BRANCH}" == "main" && "${CI_PIPELINE_SOURCE}" == "schedule" ]
     RCDIR="$(mktemp -d)"
     export RCDIR
     # shellcheck disable=SC2064
-    trap "rm -rf $RCDIR || true" EXIT
+    add_exit_trap "rm -rf $RCDIR || true"
     pushd "$RCDIR"
     setup_catalog_repo
     popd
