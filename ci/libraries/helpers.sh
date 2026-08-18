@@ -51,7 +51,7 @@ setup_gh_token() {
 
     local policy
     policy="read"
-    if [[ "${CI_COMMIT_BRANCH}" == "main" && "${CI_PIPELINE_SOURCE}" == "schedule" ]]; then
+    if [[ "${CI_COMMIT_BRANCH}" == "main" ]]; then
         # https://github.com/DataDog/.github/blob/main/.github/chainguard/btfhub.create-pull-request.sts.yaml
         policy="create-pull-request"
     fi
