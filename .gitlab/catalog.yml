@@ -1,8 +1,7 @@
 ---
 catalog-pr-create:
   rules:
-    - !reference [ .on_btf_changes ]
-    - !reference [ .on_scheduled_main ]
+    - !reference [ .on_main ]
   stage: catalog
   needs:
     - btf-generate-direct-x64
@@ -16,52 +15,11 @@ catalog-pr-create:
     - "arch:amd64"
   variables:
     GITHUB_PEM_PATH: "${CI_PROJECT_DIR}/github_app_key.pem"
+  id_tokens:
+    DDOCTOSTS_ID_TOKEN:
+      aud: dd-octo-sts
+    CI_IDENTITIES_GITLAB_ID_TOKEN:
+      aud: ci-identities
   script:
     - CC=clang go build ./cmd/btfhub
-    - !reference [.github_auth]
-    - !reference [.catalog_checkout]
-    - ./btfhub -hash-dir .tmp/hash -catalog-json rc-employee-configurations/configs/BTF_DD/btfs.prod.json catalog-update
-    - cd rc-employee-configurations
-    - |
-      set -x
-      git config --local user.name "dd-btfhub-ebpf-platform[bot]"
-      git config --local user.email "205981682+dd-btfhub-ebpf-platform[bot]@users.noreply.github.com"
-      # Define a stable branch for updates
-      BRANCH_NAME="btf/automated/prod"
-      # Stash any local changes to avoid checkout conflicts
-      STASH_OUTPUT="$(git stash push -u -m "Temporary stash for catalog update" 2>&1)"
-      echo "${STASH_OUTPUT}"
-      # Checkout the existing branch or create it from main
-      if git ls-remote --exit-code origin "${BRANCH_NAME}"; then
-        git fetch origin "${BRANCH_NAME}:${BRANCH_NAME}"
-        git checkout "${BRANCH_NAME}"
-        CREATE_FLAG=""
-        # Reset to main to discard any previous changes on the branch
-        git reset --hard origin/main
-      else
-        git checkout -b "${BRANCH_NAME}" origin/main
-        CREATE_FLAG="--create-branch"
-      fi
-      REV=$(git rev-parse HEAD)
-      # Restore the local changes only if we actually stashed something
-      if [[ ! "${STASH_OUTPUT}" =~ "No local changes to save" ]]; then
-        git stash pop
-      fi
-      # Stage the new catalog changes
-      git add -A
-      if git diff-index --quiet HEAD; then
-        echo "No changes"
-        exit 0
-      fi
-      git status
-      if [[ "${CI_COMMIT_BRANCH}" == "main" && "${CI_PIPELINE_SOURCE}" == "schedule" ]] || [[ "${MANUAL_GENERATE}" == "yes" ]]; then
-        # Create a fresh commit for the catalog update
-        git commit -m "BTF_DD prod catalog update on $(date -u +%Y-%m-%d)"
-        commit-headless push -T DataDog/rc-employee-configurations --branch "${BRANCH_NAME}" ${CREATE_FLAG:+"$CREATE_FLAG"} --head-sha "${REV}" --force --reset
-        # Only create a PR if none is already open for this branch
-        if gh pr list -R DataDog/rc-employee-configurations --head "${BRANCH_NAME}" --state open | grep -q '.'; then
-          echo "PR already open"
-        else
-          gh pr create -R DataDog/rc-employee-configurations -B main -f --head "${BRANCH_NAME}"
-        fi
-      fi
+    - ci/catalog

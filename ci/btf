@@ -1,0 +1,52 @@
+#!/bin/bash
+
+set -e
+
+# shellcheck source=ci/libraries/helpers.sh
+source "$(dirname "$0")/libraries/helpers.sh"
+# shellcheck source=ci/libraries/catalog.sh
+source "$(dirname "$0")/libraries/catalog.sh"
+
+setup_gh_token
+
+mkdir archive
+pushd archive
+git init
+git remote add origin https://github.com/DataDog/btfhub-archive
+git fetch --filter=blob:none --no-tags --progress --depth=1 origin "${ARCHIVE_BRANCH}"
+git sparse-checkout set --cone "${DISTRO}/${RELEASE}/${BTF_ARCH}"
+git checkout --progress --force "${ARCHIVE_BRANCH}"
+popd
+
+if [[ "${CI_COMMIT_BRANCH}" == "main" && "${CI_PIPELINE_SOURCE}" == "schedule" ]]; then
+    RCDIR="$(mktemp -d)"
+    export RCDIR
+    # shellcheck disable=SC2064
+    add_exit_trap "rm -rf $RCDIR || true"
+    pushd "$RCDIR"
+    setup_catalog_repo
+    popd
+
+    ci-identities-ci-job-client --mode=k8s assume-role
+    ./btfhub -d "${DISTRO}" -r "${RELEASE}" -a "${BTF_ARCH}" -s3-bucket dd-agent -s3-prefix btfs -hash-dir .tmp/hash -catalog-json "$RCDIR/rc-employee-configurations/configs/BTF_DD/btfs.prod.json"
+else
+    ./btfhub -d "${DISTRO}" -r "${RELEASE}" -a "${BTF_ARCH}" -hash-dir .tmp/hash
+fi
+
+pushd archive
+git status
+if [[ "${CI_COMMIT_BRANCH}" == "main" && "${CI_PIPELINE_SOURCE}" == "schedule" ]]; then
+    # refresh github auth prior to commit because it may have expired
+    setup_gh_token
+    BRANCH_NAME="${DISTRO}/${RELEASE}/${BTF_ARCH}/$(date -u +%Y-%m-%dT%H-%M-%S)"
+    git checkout -b "${BRANCH_NAME}"
+    git add -A
+    if git diff-index --quiet HEAD; then
+        echo "No changes"
+    else
+        git commit -m "${DISTRO}/${RELEASE}/${BTF_ARCH} update on $(date -u +%Y-%m-%d)"
+        commit-headless push -T DataDog/btfhub-archive --branch "${BRANCH_NAME}" --create-branch --head-sha "$(git rev-parse HEAD^)" --reset
+        gh pr create -R DataDog/btfhub-archive -B main -f
+    fi
+fi
+popd
