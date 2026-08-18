@@ -73,4 +73,5 @@ setup_gh_token() {
         '!f() { echo username=x-access-token; echo "password=$GITHUB_TOKEN"; };f'
     git config --global user.email "ci@datadoghq.com"
     git config --global user.name "CI Bot"
+    git config --global init.defaultBranch main
 }
