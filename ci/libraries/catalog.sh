@@ -19,7 +19,7 @@ setup_catalog_repo() {
     git init
     git remote add origin https://github.com/DataDog/rc-employee-configurations
     git fetch --filter=blob:none --no-tags --progress --depth=1 origin main
-    git sparse-checkout set --cone configs/BTF_DD signed/BTF_DD
+    git sparse-checkout set --cone configs/BTF_DD signed/BTF_DD cmd/ pkg/
     git checkout --progress --force main
     popd
     log "Cloning https://github.com/DataDog/rc-employee-configurations... Done"
