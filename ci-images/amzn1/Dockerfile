@@ -23,6 +23,7 @@ RUN yum install -y \
   git \
   gzip \
   m4 \
+  p11-kit \
   unzip \
   wget \
   xz \
