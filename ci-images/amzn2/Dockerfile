@@ -89,7 +89,8 @@ RUN wget -nv -O /tmp/gh.tar.gz "https://github.com/cli/cli/releases/download/v${
 
 COPY --from=registry.ddbuild.io/commit-headless /commit-headless /usr/local/bin/commit-headless
 COPY --from=registry.ddbuild.io/dd-octo-sts:v1.11.1@sha256:eb013c164a548e20ffd6e9fb86e74db867dc0ed13a46cfae2ddd560282bdbbb2 /usr/local/bin/dd-octo-sts-compat /usr/local/bin/dd-octo-sts
-COPY --from=registry.ddbuild.io/ci-identities/ci-identities-ci-job-client:v0.9.0@sha256:ac69e9e8bb3ed613e5a01e371bc1802d5b535cbf434f7eaa9534becf9c4e0cab /usr/local/bin/ci-identities-ci-job-client /usr/local/bin/ci-identities-ci-job-client
+COPY --from=registry.ddbuild.io/ci-identities/ci-identities-ci-job-client:v0.9.1@sha256:4ce4978c0c525c96e0ea1448c31dd8c988942ed73b2bed42eebe79de9f01cf76 /usr/local/bin/ci-identities-ci-job-client /usr/local/bin/ci-identities-ci-job-client
 COPY --from=registry.ddbuild.io/images/datadog-ca-certs:standard /certs/ /etc/pki/ca-trust/source/anchors/
-RUN chmod -R o-w /etc/pki/ca-trust/source/anchors \
-    && update-ca-trust \
+RUN find /etc/pki/ca-trust/source/anchors/datadog -name '*.crt' -type f -exec mv '{}' /etc/pki/ca-trust/source/anchors/ \; \
+    && chmod -R o-w /etc/pki/ca-trust/source/anchors \
+    && update-ca-trust extract
