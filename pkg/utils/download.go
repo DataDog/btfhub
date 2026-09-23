@@ -28,11 +28,25 @@ func DownloadFile(ctx context.Context, url string, file string) error {
 
 // Download downloads a file from a given URL, and writes it to a given
 // destination, which can be a file or a pipe
-func Download(ctx context.Context, url string, dest io.Writer) error {
+func Download(ctx context.Context, fileurl string, dest io.Writer) error {
+	u, err := url.Parse(fileurl)
+	if err != nil {
+		return fmt.Errorf("url parse: %s", err)
+	}
+	if u.Scheme == "file" {
+		rdr, err := os.Open(u.Path)
+		if err != nil {
+			return fmt.Errorf("open: %s", err)
+		}
+		defer rdr.Close()
+
+		_, err = io.Copy(dest, rdr) // copy to destination
+		return err
+	}
 
 	// Request given URL
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fileurl, nil)
 	if err != nil {
 		return err
 	}
@@ -43,7 +57,7 @@ func Download(ctx context.Context, url string, dest io.Writer) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		return fmt.Errorf("%s returned status code: %d", url, resp.StatusCode)
+		return fmt.Errorf("%s returned status code: %d", fileurl, resp.StatusCode)
 	}
 
 	// Create a progress counter reader
@@ -62,14 +76,14 @@ func Download(ctx context.Context, url string, dest io.Writer) error {
 
 	contentType := resp.Header.Get("Content-Type")
 	switch {
-	case contentType == "application/x-gzip", strings.HasSuffix(url, ".gz"):
+	case contentType == "application/x-gzip", strings.HasSuffix(fileurl, ".gz"):
 		grdr, err := gzip.NewReader(brdr)
 		if err != nil {
 			return fmt.Errorf("gzip body read: %s", err)
 		}
 		defer grdr.Close()
 		rdr = grdr
-	case contentType == "application/x-xz", strings.HasSuffix(url, ".xz"):
+	case contentType == "application/x-xz", strings.HasSuffix(fileurl, ".xz"):
 		rdr, err = fastxz.NewReader(brdr, 0)
 		if err != nil {
 			return fmt.Errorf("xz reader: %s", err)
