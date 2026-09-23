@@ -58,6 +58,18 @@ func NewFedoraRepo() Repository {
 	}
 }
 
+func (d *FedoraRepo) ProcessDebugPackage(
+	ctx context.Context,
+	workDir string,
+	release string,
+	arch string,
+	opts RepoOptions,
+	chans *JobChannels,
+	kernelFile string,
+) error {
+	return nil
+}
+
 func (d *FedoraRepo) GetKernelPackages(
 	ctx context.Context,
 	workDir string,

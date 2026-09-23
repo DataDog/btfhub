@@ -64,6 +64,18 @@ func NewDebianRepo() Repository {
 
 const debianSnapshotURL = "http://snapshot.debian.org"
 
+func (d *DebianRepo) ProcessDebugPackage(
+	ctx context.Context,
+	workDir string,
+	release string,
+	arch string,
+	opts RepoOptions,
+	chans *JobChannels,
+	kernelFile string,
+) error {
+	return nil
+}
+
 // GetKernelPackages downloads Packages.xz from the main, updates and security,
 // from the official repos and parses the list of kernel packages to download.
 // It then filters out kernel packages that we already have or failed to

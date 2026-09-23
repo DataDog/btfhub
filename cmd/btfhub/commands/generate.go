@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -64,6 +65,11 @@ func Generate(ctx context.Context) error {
 	distros, releases, archs, err := processArgs(defaultDistros, defaultReleases)
 	if err != nil {
 		return err
+	}
+	if kernelFile != "" {
+		if len(distros) != 1 || len(releases) != 1 || len(archs) != 1 {
+			return errors.New("only one distro, release, and arch may be specified when also specifying a debug kernel file")
+		}
 	}
 
 	archiveDir, err := archivePath()
@@ -141,6 +147,10 @@ func Generate(ctx context.Context) error {
 						Release:       release,
 						Distro:        distro,
 					}
+					if kernelFile != "" {
+						return rep.ProcessDebugPackage(prodCtx, workDir, release, arch, opts, chans, kernelFile)
+					}
+
 					return rep.GetKernelPackages(prodCtx, workDir, release, arch, opts, chans)
 				})
 			}

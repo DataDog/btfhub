@@ -74,6 +74,18 @@ func NewOpenSUSERepo() Repository {
 	}
 }
 
+func (d *openSUSERepo) ProcessDebugPackage(
+	ctx context.Context,
+	workDir string,
+	release string,
+	arch string,
+	opts RepoOptions,
+	chans *JobChannels,
+	kernelFile string,
+) error {
+	return nil
+}
+
 func (d *openSUSERepo) GetKernelPackages(ctx context.Context, workDir string, release string, arch string, opts RepoOptions, chans *JobChannels) error {
 	altArch := d.archs[arch]
 	repoURLs := d.repos[release][altArch]

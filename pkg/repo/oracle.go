@@ -32,6 +32,18 @@ func NewOracleRepo() Repository {
 	}
 }
 
+func (d *oracleRepo) ProcessDebugPackage(
+	ctx context.Context,
+	workDir string,
+	release string,
+	arch string,
+	opts RepoOptions,
+	chans *JobChannels,
+	kernelFile string,
+) error {
+	return nil
+}
+
 func (d *oracleRepo) GetKernelPackages(
 	ctx context.Context,
 	workDir string,

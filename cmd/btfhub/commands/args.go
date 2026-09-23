@@ -2,7 +2,7 @@ package commands
 
 import "flag"
 
-var distroArg, releaseArg, archArg, queryArg, s3bucket, s3prefix, hashDir, catalogJSONPath string
+var distroArg, releaseArg, archArg, queryArg, s3bucket, s3prefix, hashDir, catalogJSONPath, kernelFile string
 var numWorkers int
 var force, kernelModules, ordered, dryRun, launchpad bool
 
@@ -26,4 +26,5 @@ func init() {
 	flag.StringVar(&s3prefix, "s3-prefix", "", "Key prefix to use when uploading BTFs")
 	flag.StringVar(&hashDir, "hash-dir", "", "directory to store/read hash files")
 	flag.StringVar(&catalogJSONPath, "catalog-json", "", "path to catalog JSON file")
+	flag.StringVar(&kernelFile, "file", "", "path to debug kernel")
 }
