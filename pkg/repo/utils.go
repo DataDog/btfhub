@@ -175,9 +175,21 @@ func generateBTFFile(ctx context.Context, p pkg.Package, workDir string, opts Re
 	if err := os.Mkdir(exDir, 0777); err != nil {
 		return err
 	}
+	downloadJob := &job.DownloadJob{
+		Pkg:       p,
+		WorkDir:   exDir,
+		ReplyChan: make(chan any),
+		Force:     opts.Force,
+	}
+	downloadReply, err := job.SubmitAndWaitT[job.DownloadReply](ctx, downloadJob, chans.Default)
+	if err != nil {
+		return err
+	}
+
 	kernelExtJob := &job.KernelExtractionJob{
 		Pkg:           p,
 		WorkDir:       exDir,
+		Path:          downloadReply.Path,
 		ReplyChan:     make(chan any),
 		Force:         opts.Force,
 		KernelModules: opts.KernelModules,
