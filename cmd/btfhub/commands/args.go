@@ -4,7 +4,7 @@ import "flag"
 
 var distroArg, releaseArg, archArg, queryArg, s3bucket, s3prefix, hashDir, catalogJSONPath, kernelFile string
 var numWorkers int
-var force, kernelModules, ordered, dryRun, launchpad bool
+var force, kernelModules, ordered, dryRun, launchpad, checkExisting bool
 
 func init() {
 	flag.StringVar(&distroArg, "distro", "", "distribution to update (ubuntu,debian,centos,fedora,ol,rhel,amazon,sles)")
@@ -27,4 +27,5 @@ func init() {
 	flag.StringVar(&hashDir, "hash-dir", "", "directory to store/read hash files")
 	flag.StringVar(&catalogJSONPath, "catalog-json", "", "path to catalog JSON file")
 	flag.StringVar(&kernelFile, "file", "", "path to debug kernel")
+	flag.BoolVar(&checkExisting, "check-existing", false, "check existing BTF files for missing upload/catalog processing")
 }

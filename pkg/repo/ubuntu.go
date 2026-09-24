@@ -3,9 +3,11 @@ package repo
 import (
 	"context"
 	"fmt"
+	"io/fs"
 	"iter"
 	"log"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"slices"
@@ -16,6 +18,7 @@ import (
 
 	"github.com/DataDog/btfhub/pkg/kernel"
 	"github.com/DataDog/btfhub/pkg/pkg"
+	"github.com/DataDog/btfhub/pkg/utils"
 )
 
 type UbuntuRepo struct {
@@ -34,8 +37,8 @@ func NewUbuntuRepo() Repository {
 		},
 		debugRepo: "http://ddebs.ubuntu.com",
 		kernelTypes: map[string]string{
-			"signed":   "linux-image-[0-9.]+-.*-(generic|azure|gke|gkeop|gcp|aws|aws-fips)",
-			"unsigned": "linux-image-unsigned-[0-9.]+-.*-(generic|azure|gke|gkeop|gcp|aws|aws-fips)",
+			"signed":   "linux-image-[0-9.]+-.*-(generic|azure|gke|gkeop|gcp|aws-fips|aws)",
+			"unsigned": "linux-image-unsigned-[0-9.]+-.*-(generic|azure|gke|gkeop|gcp|aws-fips|aws)",
 		},
 		archs: map[string]string{
 			"x86_64": "amd64",
@@ -58,38 +61,50 @@ func (uRepo *UbuntuRepo) ProcessDebugPackage(
 	chans *JobChannels,
 	kernelFile string,
 ) error {
-	altArch := uRepo.archs[arch]
-	releaseName := uRepo.releaseNames[release]
-
-	stat, err := os.Stat(kernelFile)
+	localPkg, err := uRepo.packageFromFile(opts, kernelFile)
 	if err != nil {
-		return fmt.Errorf("stat %s: %w", kernelFile, err)
+		return err
 	}
+
+	apath, err := filepath.Abs(kernelFile)
+	if err != nil {
+		return fmt.Errorf("file abs: %s", err)
+	}
+
+	localPkg.URL = "file://" + apath
+	all := slices.Values([]*pkg.UbuntuPackage{localPkg})
+	return uRepo.processPackages(ctx, workDir, arch, opts, chans, all)
+}
+
+func (uRepo *UbuntuRepo) packageFromFile(opts RepoOptions, kernelFile string) (*pkg.UbuntuPackage, error) {
 	rootFile := strings.TrimSuffix(filepath.Base(kernelFile), filepath.Ext(kernelFile))
+	rootFile = strings.TrimSuffix(rootFile, ".btf.tar")
 	rootFile, _, _ = strings.Cut(rootFile, "_")
 	fn := strings.TrimPrefix(rootFile, "linux-image-")
 	fn, _, _ = strings.Cut(fn, "-dbgsym")
 	fn, _, _ = strings.Cut(fn, "-dbg")
 	fn = strings.TrimPrefix(fn, "unsigned-")
 
-	apath, err := filepath.Abs(kernelFile)
+	stat, err := os.Stat(kernelFile)
 	if err != nil {
-		return fmt.Errorf("file abs: %s", err)
+		return nil, fmt.Errorf("stat %s: %w", kernelFile, err)
 	}
+	size := uint64(stat.Size())
+	// prevent filtering for compressed BTF
+	if filepath.Ext(kernelFile) == ".xz" {
+		size = size * 10
+	}
+
 	up := &pkg.UbuntuPackage{
 		Name:          rootFile,
-		Architecture:  altArch,
+		Architecture:  uRepo.archs[opts.Arch],
 		KernelVersion: kernel.NewKernelVersion(fn),
 		NameOfFile:    fn,
-		URL:           "file://" + apath,
-		Size:          uint64(stat.Size()),
-		Release:       release,
-		ReleaseName:   releaseName,
+		Size:          size,
+		Release:       opts.Release,
+		ReleaseName:   uRepo.releaseNames[opts.Release],
 	}
-	log.Printf("%#v", up)
-
-	all := slices.Values([]*pkg.UbuntuPackage{up})
-	return uRepo.processPackages(ctx, workDir, arch, opts, chans, all)
+	return up, nil
 }
 
 // GetKernelPackages downloads Packages.xz from the main, updates and universe,
@@ -127,7 +142,15 @@ func (uRepo *UbuntuRepo) GetKernelPackages(
 		}
 	}
 
-	return uRepo.processPackages(ctx, workDir, arch, opts, chans, concatIter(kernelDbgPkgs, lpDbgPkgs))
+	var existingPkgs []*pkg.UbuntuPackage
+	if opts.CheckExisting {
+		existingPkgs, err = uRepo.getExistingPackages(ctx, opts)
+		if err != nil {
+			return fmt.Errorf("checking existing packages: %s", err)
+		}
+	}
+
+	return uRepo.processPackages(ctx, workDir, arch, opts, chans, concatIter(kernelDbgPkgs, lpDbgPkgs, existingPkgs))
 }
 
 func (uRepo *UbuntuRepo) processPackages(
@@ -212,6 +235,60 @@ func (uRepo *UbuntuRepo) filterPackages(pkgs iter.Seq[*pkg.UbuntuPackage]) map[s
 		}
 	}
 	return filteredKernelDbgPkgMap
+}
+
+func (uRepo *UbuntuRepo) getExistingPackages(
+	ctx context.Context,
+	opts RepoOptions,
+) ([]*pkg.UbuntuPackage, error) {
+	archiveDir, err := archivePath()
+	if err != nil {
+		return nil, fmt.Errorf("pwd: %s", err)
+	}
+
+	btfdir := filepath.Join(archiveDir, opts.Distro, opts.Release, opts.Arch)
+	if !utils.Exists(btfdir) {
+		return nil, nil
+	}
+
+	var pkgs []*pkg.UbuntuPackage
+	err = filepath.Walk(btfdir, func(walkPath string, info fs.FileInfo, walkErr error) error {
+		if cerr := ctx.Err(); cerr != nil {
+			return cerr
+		}
+		if walkErr != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "walk error: %s\n", walkErr)
+			return nil
+		}
+
+		if info.IsDir() {
+			return nil
+		}
+		if !strings.HasSuffix(walkPath, ".btf.tar.xz") {
+			return nil
+		}
+
+		localPkg, err := uRepo.packageFromFile(opts, walkPath)
+		if err != nil {
+			return err
+		}
+		localPkg.Name = "linux-image-unsigned-" + localPkg.Name + "-dbgsym"
+		pkgs = append(pkgs, localPkg)
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return pkgs, nil
+}
+
+func archivePath() (string, error) {
+	basedir, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("pwd: %s", err)
+	}
+	archiveDir := path.Join(basedir, "archive")
+	return archiveDir, nil
 }
 
 func concatIter[S ~[]E, E any](slices ...S) iter.Seq[E] {

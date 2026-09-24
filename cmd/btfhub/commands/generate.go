@@ -146,6 +146,7 @@ func Generate(ctx context.Context) error {
 						Arch:          arch,
 						Release:       release,
 						Distro:        distro,
+						CheckExisting: checkExisting,
 					}
 					if kernelFile != "" {
 						return rep.ProcessDebugPackage(prodCtx, workDir, release, arch, opts, chans, kernelFile)

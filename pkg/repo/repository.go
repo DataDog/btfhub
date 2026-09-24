@@ -15,6 +15,7 @@ type RepoOptions struct {
 	DryRun        bool
 	Query         *regexp.Regexp
 	Launchpad     bool
+	CheckExisting bool
 	HashDir       string
 
 	Catalog *catalog.BTFCatalog
