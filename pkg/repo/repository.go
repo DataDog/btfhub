@@ -15,6 +15,7 @@ type RepoOptions struct {
 	DryRun        bool
 	Query         *regexp.Regexp
 	Launchpad     bool
+	CheckExisting bool
 	HashDir       string
 
 	Catalog *catalog.BTFCatalog
@@ -41,5 +42,14 @@ type Repository interface {
 		arch string,
 		opts RepoOptions,
 		chans *JobChannels,
+	) error
+	ProcessDebugPackage(
+		ctx context.Context,
+		workDir string,
+		release string,
+		arch string,
+		opts RepoOptions,
+		chans *JobChannels,
+		kernelFile string,
 	) error
 }

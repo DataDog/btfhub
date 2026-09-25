@@ -35,6 +35,18 @@ func NewSUSERepo() Repository {
 	}
 }
 
+func (d *suseRepo) ProcessDebugPackage(
+	ctx context.Context,
+	workDir string,
+	release string,
+	arch string,
+	opts RepoOptions,
+	chans *JobChannels,
+	kernelFile string,
+) error {
+	return nil
+}
+
 func (d *suseRepo) GetKernelPackages(ctx context.Context, dir string, release string, arch string, opts RepoOptions, chans *JobChannels) error {
 	var repos []string
 	altArch := d.archs[arch]

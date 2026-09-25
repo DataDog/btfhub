@@ -32,6 +32,18 @@ func NewCentOSRepo() Repository {
 	}
 }
 
+func (d *CentosRepo) ProcessDebugPackage(
+	ctx context.Context,
+	workDir string,
+	release string,
+	arch string,
+	opts RepoOptions,
+	chans *JobChannels,
+	kernelFile string,
+) error {
+	return nil
+}
+
 func (d *CentosRepo) GetKernelPackages(
 	ctx context.Context,
 	workDir string,
