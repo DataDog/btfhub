@@ -50,10 +50,10 @@ sign_catalog() {
     local vault_key
     case "$destination" in
         staging)
-            vault_key="TODO"
+            vault_key="datadog_btfhub_trusted-jobs_btf_dd_1"
             ;;
         prod)
-            vault_key="TODO"
+            vault_key="datadog_btfhub_trusted-jobs_btf_dd_prod_1"
             ;;
         *)
             return 0
@@ -68,7 +68,7 @@ sign_catalog() {
             --env "$destination" \
             --vault-engine crypto/ci \
             --vault-key "$vault_key" \
-            --vault-identity "TODO"
+            --vault-identity "ci-btfhub"
     log "Signing catalog for ${destination}... Done"
 
     # The sign command writes both the new signed targets file
@@ -127,8 +127,7 @@ BTF_DD $destination catalog update
 Updated by $CI_JOB_URL
 EOF
 
-        # TODO enable signing once CI identity setup
-        # sign_catalog "$destination"
+        sign_catalog "$destination"
 
         if [[ "${CI_COMMIT_BRANCH}" == "main" && "${CI_PIPELINE_SOURCE}" == "schedule" ]]; then
             log "Pushing changes to origin $GIT_BRANCH... "
