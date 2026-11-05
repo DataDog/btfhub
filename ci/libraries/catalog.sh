@@ -145,7 +145,7 @@ Add new entries to the $destination catalog.
 
 This PR was automatically generated from $CI_PIPELINE_URL
 EOF
-                gh pr create --head "$GIT_BRANCH" --body-file - --title "$pr_name"
+                gh pr create -R DataDog/rc-employee-configurations -B main --head "$GIT_BRANCH" --body-file - --title "$pr_name"
             else # PR exists
                 log "PR #$pr_number already exists, updating it."
             fi
